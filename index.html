@@ -577,7 +577,8 @@ button:active { transform: scale(0.96); opacity: 0.85; }
 
     <div id="login-status">Enter a room code, then tap Connect.</div>
     <button class="btn-connect" onclick="doConnect()">Connect →</button>
-    <div style="text-align:right; margin-top:-8px;">
+    <div style="display:flex; justify-content:flex-end; gap:2px; margin-top:-8px;">
+        <button class="btn-admin" onclick="openOperator()">💻</button>
         <button class="btn-admin" onclick="openAdmin()">🔐</button>
     </div>
 </div>
@@ -648,6 +649,48 @@ button:active { transform: scale(0.96); opacity: 0.85; }
     </div>
 </div>
 
+<!-- OPERATOR -->
+<div class="screen hidden" id="operator">
+    <!-- Login view -->
+    <div class="admin-card" id="op-login-view" style="border-color:rgba(0,212,255,0.35);box-shadow:0 10px 60px rgba(0,212,255,0.12);">
+        <div class="logo">
+            <h1 style="color:#00d4ff;font-size:20px;letter-spacing:6px;">💻 K1ssq</h1>
+            <p>NeoChat · Operator Access</p>
+        </div>
+        <div>
+            <span class="field-label">Username</span>
+            <input id="op-user" type="text" autocomplete="off" autocorrect="off" autocapitalize="off"
+                   placeholder="Username" onkeydown="if(event.key==='Enter')doOperatorLogin()">
+        </div>
+        <div>
+            <span class="field-label">Password</span>
+            <input id="op-pass" type="password" placeholder="Password"
+                   onkeydown="if(event.key==='Enter')doOperatorLogin()">
+        </div>
+        <div id="op-login-status" style="text-align:center;font-size:12px;color:#ff3366;min-height:18px;"></div>
+        <button class="btn-big-admin" style="background:rgba(0,212,255,0.13);border:1px solid rgba(0,212,255,0.5);color:#00d4ff;" onclick="doOperatorLogin()">Enter →</button>
+        <button class="btn-cancel" onclick="closeOperator()">✕  Cancel</button>
+    </div>
+    <!-- Panel view -->
+    <div id="op-panel-view" style="display:none;width:100%;max-width:400px;flex-direction:column;gap:16px;margin:0 20px;">
+        <div class="admin-panel-hdr">
+            <span style="color:#00d4ff;">💻 K1ssq PANEL</span>
+            <span class="badge">● K1ssq</span>
+            <button class="btn-cancel" style="width:auto;padding:0;" onclick="logoutOperator()">✕ Logout</button>
+        </div>
+        <div>
+            <span class="field-label">Room code</span>
+            <div class="code-row">
+                <input id="op-code" type="text" placeholder="Enter room code…" autocomplete="off"
+                       autocorrect="off" onkeydown="if(event.key==='Enter')joinAsOperator()">
+                <button class="btn-dice" onclick="genOpCode()">🎲</button>
+            </div>
+        </div>
+        <button class="btn-big-admin" style="background:rgba(0,212,255,0.1);border:1px solid rgba(0,212,255,0.4);color:#00d4ff;" onclick="joinAsOperator()">Connect as K1ssq →</button>
+        <button class="btn-big-admin btn-room1488" onclick="joinRoom1488AsOperator()">🚪  Enter Room 1488</button>
+    </div>
+</div>
+
 <!-- ADMIN -->
 <div class="screen hidden" id="admin">
 
@@ -669,7 +712,7 @@ button:active { transform: scale(0.96); opacity: 0.85; }
         </div>
         <div id="admin-login-status"></div>
         <button class="btn-big-admin btn-admin-login" onclick="doAdminLogin()">Enter →</button>
-        <button class="btn-cancel" onclick="closeAdmin()">✕  Cancel</button>
+        <button class="btn-cancel" onclick="logoutAdmin()">✕  Cancel</button>
     </div>
 
     <!-- Panel view (shown after login) -->
@@ -677,10 +720,21 @@ button:active { transform: scale(0.96); opacity: 0.85; }
         <div class="admin-panel-hdr">
             <span>🔐 ADMIN PANEL</span>
             <span class="badge">● MrMiner</span>
-            <button class="btn-cancel" style="width:auto;padding:0;" onclick="closeAdmin()">✕ Logout</button>
+            <button class="btn-cancel" style="width:auto;padding:0;" onclick="logoutAdmin()">✕ Logout</button>
         </div>
         <button id="toggle-btn" class="btn-big-admin on" onclick="toggleMessenger()"></button>
         <button class="btn-big-admin btn-room1488" onclick="joinRoom1488()">🚪  Enter Room 1488</button>
+        <div style="height:1px;background:rgba(255,51,102,0.15);margin:4px 0;"></div>
+        <div style="color:#ff3366;font-size:10px;font-weight:700;letter-spacing:3px;padding:0 4px;">MODERATION</div>
+        <input id="mod-input" type="text" placeholder="Username to ban or mute…"
+               autocomplete="off" autocorrect="off" autocapitalize="off"
+               style="font-size:13px;"
+               onkeydown="if(event.key==='Enter')banUser()">
+        <div style="display:flex;gap:10px;">
+            <button class="btn-big-admin" style="background:rgba(255,51,102,0.13);border:1px solid rgba(255,51,102,0.5);color:#ff3366;padding:12px;font-size:13px;flex:1;" onclick="banUser()">🚫 Ban</button>
+            <button class="btn-big-admin" style="background:rgba(255,170,0,0.12);border:1px solid rgba(255,170,0,0.45);color:#ffaa00;padding:12px;font-size:13px;flex:1;" onclick="muteUser()">🔇 Mute</button>
+        </div>
+        <div id="mod-list" style="display:flex;flex-direction:column;gap:6px;"></div>
     </div>
 
 </div>
@@ -744,32 +798,18 @@ function applyAccount(){
 }
 
 function showLogoutModal(){
-    document.getElementById('logout-pw').value = '';
-    document.getElementById('logout-status').textContent = '';
-    document.getElementById('logout-modal').style.display = 'flex';
-}
-function hideLogoutModal(){
-    document.getElementById('logout-modal').style.display = 'none';
-}
-async function confirmSwitch(){
-    const pw  = document.getElementById('logout-pw').value;
     const acc = getAccount();
-    if(!pw){ document.getElementById('logout-status').textContent='⚠  Enter password.'; return; }
-    const hash = await hashPw(pw);
-    if(hash !== acc.pwHash){
-        document.getElementById('logout-status').textContent='⚠  Wrong password.'; return;
-    }
-    hideLogoutModal();
     localStorage.removeItem(ACC_KEY);
     myName = '';
     document.getElementById('acc-info-bar').style.display = 'none';
-    // Show sign-in view since we had an account
     document.getElementById('acc-reg').style.display = 'none';
     document.getElementById('acc-in').style.display  = '';
-    document.getElementById('acc-in-name').textContent = acc.username;
+    document.getElementById('acc-in-name').textContent = acc ? acc.username : '';
     accStatus('');
     show('account');
 }
+function hideLogoutModal(){ /* kept for compatibility */ }
+function confirmSwitch(){ /* kept for compatibility */ }
 
 // Initialise on page load
 (function initAccount(){
@@ -810,23 +850,47 @@ async function confirmSwitch(){
 })();
 
 // ── Admin ─────────────────────────────────────────────────────────────────────
+const ADMIN_SESSION_KEY = 'neochat_admin_session';
+
 function openAdmin(){
-    document.getElementById('admin-login-view').style.display='';
-    document.getElementById('admin-panel-view').style.display='none';
-    document.getElementById('admin-user').value='';
-    document.getElementById('admin-pass').value='';
-    document.getElementById('admin-login-status').textContent='';
+    const sessionOk = localStorage.getItem(ADMIN_SESSION_KEY) === 'true';
+    if(sessionOk){
+        document.getElementById('admin-login-view').style.display='none';
+        document.getElementById('admin-panel-view').style.display='';
+        MESSENGER_ON=true;
+        updateToggleBtn();
+        refreshModList();
+        // Republish 'on' to clear any stale retained 'off' on brokers
+        const _p=JSON.stringify({action:'on'});
+        BROKER_URLS.forEach((url,i)=>{
+            const _c=mqtt.connect(url,{clientId:'admin_sync_'+i+'_'+Math.random().toString(36).slice(2,8),keepalive:10,connectTimeout:5000,reconnectPeriod:0});
+            _c.on('connect',()=>{_c.publish('neochat/__admin__/control',_p,{retain:true,qos:1},()=>_c.end(true));});
+            _c.on('error',()=>{});
+        });
+    } else {
+        document.getElementById('admin-login-view').style.display='';
+        document.getElementById('admin-panel-view').style.display='none';
+        document.getElementById('admin-user').value='';
+        document.getElementById('admin-pass').value='';
+        document.getElementById('admin-login-status').textContent='';
+    }
     show('admin');
 }
 function closeAdmin(){ show('login'); }
+function logoutAdmin(){
+    localStorage.removeItem(ADMIN_SESSION_KEY);
+    show('login');
+}
 
 function doAdminLogin(){
     const u=document.getElementById('admin-user').value.trim();
     const p=document.getElementById('admin-pass').value;
     if(u==='MrMiner' && p==='FunLand2014'){
+        localStorage.setItem(ADMIN_SESSION_KEY,'true');
         document.getElementById('admin-login-view').style.display='none';
         document.getElementById('admin-panel-view').style.display='';
         updateToggleBtn();
+        refreshModList();
     } else {
         document.getElementById('admin-login-status').textContent='⚠  Invalid credentials';
         document.getElementById('admin-pass').value='';
@@ -856,6 +920,18 @@ function toggleMessenger(){
 }
 
 function joinRoom1488(){
+    // Republish 'on' to fix any stale retained 'off' on brokers
+    const payload=JSON.stringify({action:'on'});
+    BROKER_URLS.forEach((url,i)=>{
+        const c=mqtt.connect(url,{clientId:'admin_on_'+i+'_'+Math.random().toString(36).slice(2,8),keepalive:10,connectTimeout:5000,reconnectPeriod:0});
+        c.on('connect',()=>{ c.publish('neochat/__admin__/control',payload,{retain:true,qos:1},()=>c.end(true)); });
+        c.on('error',()=>{});
+    });
+    MESSENGER_ON=true;
+    // Connect as MrMiner
+    myName='MrMiner';
+    document.getElementById('acc-info-name').textContent='MrMiner';
+    document.getElementById('acc-info-bar').style.display='flex';
     closeAdmin();
     document.getElementById('code-in').value='1488';
     doConnect();
@@ -978,11 +1054,20 @@ function doConnect(){
             c.subscribe(topic);
             c.subscribe(callTopic);
             c.subscribe('neochat/__admin__/control',{qos:1});
+            _subscribeModTopic(c);
             c.on('message',(_t,buf)=>{
+                if(_t===MOD_TOPIC) return; // handled inside _subscribeModTopic
                 if(_t==='neochat/__admin__/control'){
                     try{
                         const ctrl=JSON.parse(buf.toString());
-                        if(ctrl.action==='off'){ doDisconnect(); loginStatus('Sorry! Messenger is turned off.','#ff3366'); }
+                        if(ctrl.action==='off'){
+                            if(myName.toLowerCase()==='mrminer') return; // admin is never kicked
+                            MESSENGER_ON=false;
+                            doDisconnect();
+                            loginStatus('Sorry! Messenger is turned off.','#ff3366');
+                        } else if(ctrl.action==='on'){
+                            MESSENGER_ON=true;
+                        }
                     }catch(e){}
                     return;
                 }
@@ -1003,6 +1088,10 @@ function doConnect(){
                 try{
                     const d=JSON.parse(buf.toString());
                     const msgType=d.type||'text';
+                    // Filter banned/muted senders
+                    const _sndr=((d.sender||d.from||'').toLowerCase());
+                    if(_sndr && _sndr!==myName.toLowerCase() &&
+                       (_bannedUsers.has(_sndr)||_mutedUsers.has(_sndr))) return;
                     if(msgType==='image'){
                         const key=`${d.sender||''}|${d.ts||''}|image`;
                         if(_seen.has(key))return;
@@ -1079,6 +1168,7 @@ function sendMsg(){
     const inp=document.getElementById('msg-in');
     const txt=inp.value.trim();
     if(!txt||!clients.length)return;
+    if(_mutedUsers.has(myName.toLowerCase())){ sysMsg('🔇 You are muted and cannot send messages.'); return; }
     inp.value='';
     pubAll(topic,JSON.stringify({sender:myName,text:txt,ts:now(),system:false}),{qos:1});
 }
@@ -1086,7 +1176,9 @@ function sendMsg(){
 function addBubble(sender, text, ts, mine){
     const d=document.createElement('div');
     d.className='bubble '+(mine?'mine':'theirs');
-    d.innerHTML=`<div class="b-name">${esc(sender)}</div><div class="b-text">${esc(text)}</div><div class="b-ts">${esc(ts)}</div>`;
+    const badge=sender.toLowerCase()==='mrminer'
+        ? ' <span style="color:#ff3366;font-size:9px;font-weight:700;">[Admin NeoNext]</span>' : '';
+    d.innerHTML=`<div class="b-name">${esc(sender)}${badge}</div><div class="b-text">${esc(text)}</div><div class="b-ts">${esc(ts)}</div>`;
     appendEl(d);
 }
 function sysMsg(text){
@@ -1140,6 +1232,7 @@ async function doRegister(){
     const pw2 =document.getElementById('acc-pw2').value;
     if(!name)         { accStatus('⚠  Enter a username.'); return; }
     if(name.length<2) { accStatus('⚠  Name too short (min 2 chars).'); return; }
+    if(['mrminer','k1ssq'].includes(name.toLowerCase())) { accStatus('⚠  This username is reserved.'); return; }
     if(!pw)           { accStatus('⚠  Enter a password.'); return; }
     if(pw.length<4)   { accStatus('⚠  Password too short (min 4 chars).'); return; }
     if(pw!==pw2)      { accStatus('⚠  Passwords don\'t match.'); return; }
@@ -1513,6 +1606,150 @@ function _updateTimer(){
     const m=String(Math.floor(callSecs/60)).padStart(2,'0');
     const s=String(callSecs%60).padStart(2,'0');
     document.getElementById('call-timer').textContent=`📞 ${m}:${s}`;
+}
+
+// ── Operator panel (K1ssq) ───────────────────────────────────────────────────
+const OP_SESSION_KEY = 'neochat_operator_session';
+const OP_USER  = 'K1ssq';
+const OP_PASS  = 'karim';
+
+function openOperator(){
+    const sessionOk = localStorage.getItem(OP_SESSION_KEY) === 'true';
+    if(sessionOk){
+        document.getElementById('op-login-view').style.display='none';
+        document.getElementById('op-panel-view').style.display='flex';
+    } else {
+        document.getElementById('op-login-view').style.display='';
+        document.getElementById('op-panel-view').style.display='none';
+        document.getElementById('op-user').value='';
+        document.getElementById('op-pass').value='';
+        document.getElementById('op-login-status').textContent='';
+    }
+    show('operator');
+}
+function closeOperator(){ show('login'); }
+function logoutOperator(){
+    localStorage.removeItem(OP_SESSION_KEY);
+    show('login');
+}
+function doOperatorLogin(){
+    const u=document.getElementById('op-user').value.trim();
+    const p=document.getElementById('op-pass').value;
+    if(u===OP_USER && p===OP_PASS){
+        localStorage.setItem(OP_SESSION_KEY,'true');
+        document.getElementById('op-login-view').style.display='none';
+        document.getElementById('op-panel-view').style.display='flex';
+    } else {
+        document.getElementById('op-login-status').textContent='⚠  Invalid credentials';
+        document.getElementById('op-pass').value='';
+    }
+}
+function genOpCode(){
+    const abc='ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    let c=''; for(let i=0;i<6;i++) c+=abc[Math.floor(Math.random()*abc.length)];
+    document.getElementById('op-code').value=c;
+}
+function joinAsOperator(){
+    let code=document.getElementById('op-code').value.trim();
+    if(!code){ genOpCode(); code=document.getElementById('op-code').value; }
+    myName=OP_USER;
+    document.getElementById('acc-info-name').textContent=OP_USER;
+    document.getElementById('acc-info-bar').style.display='flex';
+    MESSENGER_ON=true;
+    closeOperator();
+    document.getElementById('code-in').value=code;
+    doConnect();
+}
+function joinRoom1488AsOperator(){
+    myName=OP_USER;
+    document.getElementById('acc-info-name').textContent=OP_USER;
+    document.getElementById('acc-info-bar').style.display='flex';
+    MESSENGER_ON=true;
+    closeOperator();
+    document.getElementById('code-in').value='1488';
+    doConnect();
+}
+
+// ── Moderation (ban / mute) ───────────────────────────────────────────────────
+const MOD_TOPIC = 'neochat/__admin__/moderation';
+let _bannedUsers = new Set();
+let _mutedUsers  = new Set();
+
+function _applyModPayload(payload){
+    try{
+        const d=JSON.parse(payload);
+        _bannedUsers=new Set((d.banned||[]).map(n=>n.toLowerCase()));
+        _mutedUsers =new Set((d.muted ||[]).map(n=>n.toLowerCase()));
+        // Disconnect self if banned
+        if(myName && _bannedUsers.has(myName.toLowerCase())){
+            doDisconnect();
+            loginStatus('⛔  You have been banned from NeoChat.','#ff3366');
+        }
+        if(myName && _mutedUsers.has(myName.toLowerCase())){
+            sysMsg&&sysMsg('🔇 You have been muted by an admin.');
+        }
+    }catch(e){}
+}
+
+function banUser(){
+    const name=document.getElementById('mod-input').value.trim();
+    if(!name)return;
+    _bannedUsers.add(name.toLowerCase());
+    _mutedUsers.delete(name.toLowerCase());
+    document.getElementById('mod-input').value='';
+    _publishMod();
+    refreshModList();
+}
+function muteUser(){
+    const name=document.getElementById('mod-input').value.trim();
+    if(!name)return;
+    _mutedUsers.add(name.toLowerCase());
+    _bannedUsers.delete(name.toLowerCase());
+    document.getElementById('mod-input').value='';
+    _publishMod();
+    refreshModList();
+}
+function unmodUser(name){
+    _bannedUsers.delete(name.toLowerCase());
+    _mutedUsers.delete(name.toLowerCase());
+    _publishMod();
+    refreshModList();
+}
+function _publishMod(){
+    const payload=JSON.stringify({banned:[..._bannedUsers],muted:[..._mutedUsers]});
+    BROKER_URLS.forEach((url,i)=>{
+        const c=mqtt.connect(url,{clientId:'mod_'+i+'_'+Math.random().toString(36).slice(2,8),keepalive:10,connectTimeout:5000,reconnectPeriod:0});
+        c.on('connect',()=>{ c.publish(MOD_TOPIC,payload,{retain:true,qos:1},()=>c.end(true)); });
+        c.on('error',()=>{});
+    });
+}
+function refreshModList(){
+    const list=document.getElementById('mod-list');
+    if(!list)return;
+    list.innerHTML='';
+    _bannedUsers.forEach(name=>list.appendChild(_makeModRow(name,'#ff3366','🚫 Banned')));
+    _mutedUsers.forEach(name=>list.appendChild(_makeModRow(name,'#ffaa00','🔇 Muted')));
+}
+function _makeModRow(name,color,label){
+    const row=document.createElement('div');
+    row.style.cssText='display:flex;align-items:center;gap:8px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:10px;padding:8px 12px;';
+    const lbl=document.createElement('span');
+    lbl.style.cssText='flex:1;font-size:12px;color:#8892b0;';
+    lbl.innerHTML=`${label}: <b style="color:${color}">${esc(name)}</b>`;
+    const btn=document.createElement('button');
+    btn.textContent='Remove';
+    btn.style.cssText='background:transparent;border:1px solid rgba(255,255,255,0.15);border-radius:6px;color:#4a5580;font-size:10px;padding:3px 8px;width:auto;cursor:pointer;';
+    btn.onclick=()=>unmodUser(name);
+    row.append(lbl,btn);
+    return row;
+}
+
+// Subscribe MOD_TOPIC on each connected broker (called inside connectAll onEach)
+function _subscribeModTopic(c){
+    c.subscribe(MOD_TOPIC,{qos:1});
+    c.on('message',(_t,buf)=>{
+        if(_t===MOD_TOPIC){ _applyModPayload(buf.toString()); }
+    });
 }
 
 // ── Init ──────────────────────────────────────────────────────────────────────
