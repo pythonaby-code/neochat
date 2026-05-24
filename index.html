@@ -1359,7 +1359,7 @@ const _seenCalls=new Set();
 let pc=null, localStream=null;
 let callState='idle'; // idle | calling | incoming | waiting_offer | active
 let callPeer='', callOffer=null;
-let callTimerID=null, callSecs=0, _callTimeout=null;
+let callTimerID=null, callSecs=0, _callTimeout=null, _discTimeout=null;
 
 // STUN + free public TURN servers for NAT traversal
 const ICE_CONFIG = {
@@ -1368,11 +1368,6 @@ const ICE_CONFIG = {
         {urls:'stun:stun1.l.google.com:19302'},
         {urls:'stun:stun2.l.google.com:19302'},
         {urls:'stun:stun.cloudflare.com:3478'},
-        {
-            urls:['turn:numb.viagenie.ca'],
-            username:'webrtc@live.com',
-            credential:'muazkh'
-        },
         {
             urls:[
                 'turn:openrelay.metered.ca:80',
@@ -1400,16 +1395,25 @@ function _setupPC(){
     p.oniceconnectionstatechange = () => {
         if(!p) return;
         const s = p.iceConnectionState;
-        if(s==='checking')  document.getElementById('call-timer').textContent='📡 Connecting…';
+        if(s==='checking') document.getElementById('call-timer').textContent='📡 Connecting…';
         if(s==='connected'||s==='completed'){
+            clearTimeout(_discTimeout); _discTimeout=null;
             document.getElementById('call-timer').textContent='📞 00:00';
-            if(callSecs===0) _startCallTimer(); // start timer on first connected
+            if(callSecs===0) _startCallTimer();
         }
         if(s==='failed'){
+            clearTimeout(_discTimeout); _discTimeout=null;
             sysMsg('⚠  Call connection failed — try moving to a different network.');
             endCall();
         }
-        if(s==='disconnected') sysMsg('⚠  Call audio disconnected.');
+        if(s==='disconnected'){
+            _discTimeout = setTimeout(()=>{
+                if(pc && pc.iceConnectionState==='disconnected'){
+                    sysMsg('⚠  Call audio disconnected — trying to reconnect…');
+                    if(typeof pc.restartIce==='function') pc.restartIce();
+                }
+            }, 3000);
+        }
     };
     return p;
 }
@@ -1483,6 +1487,7 @@ function endCall(publish=true){
 
 function _cleanupCall(){
     clearTimeout(_callTimeout); _callTimeout=null;
+    clearTimeout(_discTimeout); _discTimeout=null;
     if(localStream){localStream.getTracks().forEach(t=>t.stop());localStream=null;}
     if(pc){pc.close();pc=null;}
     _stopCallTimer();
