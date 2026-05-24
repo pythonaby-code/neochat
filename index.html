@@ -1,0 +1,1759 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#07071a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<title>NeoChat</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+body {
+    background: #07071a;
+    color: #e8eaf6;
+    font-family: -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
+    height: 100vh;
+    height: 100dvh;
+    overflow: hidden;
+}
+
+.screen {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    opacity: 1;
+    transition: opacity 0.2s;
+}
+.screen.hidden { opacity: 0; pointer-events: none; }
+
+/* ── LOGIN ── */
+#login {
+    justify-content: center;
+    padding: 36px 28px;
+    gap: 18px;
+}
+.logo { text-align: center; margin-bottom: 4px; }
+.logo h1 { color: #00d4ff; font-size: 42px; font-weight: 800; letter-spacing: 2px; }
+.logo p  { color: #8892b0; font-size: 13px; margin-top: 8px; }
+
+.field-label { color: #8892b0; font-size: 11px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 6px; display: block; }
+
+input {
+    width: 100%;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 14px;
+    color: #e8eaf6;
+    font-size: 15px;
+    padding: 14px 16px;
+    outline: none;
+    transition: border-color 0.2s, background 0.2s;
+    -webkit-appearance: none;
+}
+input:focus { border-color: rgba(0,212,255,0.5); background: rgba(0,212,255,0.04); }
+
+.code-row { display: flex; gap: 10px; }
+.code-row input { flex: 1; }
+
+button {
+    border: none;
+    border-radius: 14px;
+    cursor: pointer;
+    font-size: 15px;
+    font-weight: 700;
+    padding: 15px 20px;
+    width: 100%;
+    transition: opacity 0.15s, transform 0.1s;
+}
+button:active { transform: scale(0.96); opacity: 0.85; }
+
+.btn-connect {
+    background: rgba(0,212,255,0.13);
+    border: 1px solid rgba(0,212,255,0.45);
+    color: #00d4ff;
+    margin-top: 4px;
+}
+.btn-dice {
+    background: rgba(139,92,246,0.13);
+    border: 1px solid rgba(139,92,246,0.4);
+    color: #8b5cf6;
+    width: 52px;
+    flex-shrink: 0;
+    font-size: 22px;
+    padding: 14px 0;
+    border-radius: 14px;
+}
+
+#login-status {
+    text-align: center;
+    font-size: 13px;
+    color: #4a5580;
+    min-height: 20px;
+}
+
+/* ── CHAT ── */
+#chat { background: #07071a; }
+
+.chat-header {
+    background: #03030f;
+    border-bottom: 1px solid rgba(0,212,255,0.1);
+    padding: 12px 14px;
+    padding-top: max(12px, env(safe-area-inset-top));
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-shrink: 0;
+}
+.btn-back {
+    background: none;
+    border: none;
+    color: #00d4ff;
+    font-size: 24px;
+    width: 40px;
+    padding: 0;
+    cursor: pointer;
+}
+.hdr-info { flex: 1; min-width: 0; }
+.hdr-room { color: #00d4ff; font-size: 16px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hdr-dot  { font-size: 11px; color: #4a5580; margin-top: 2px; }
+.hdr-dot.on  { color: #00ff9f; }
+.hdr-dot.off { color: #ff3366; }
+
+.messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 14px 14px 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+}
+.messages::-webkit-scrollbar { display: none; }
+
+.bubble {
+    max-width: 82%;
+    padding: 9px 13px;
+    border-radius: 18px;
+    word-break: break-word;
+}
+.bubble .b-name { font-size: 10px; font-weight: 700; opacity: 0.85; margin-bottom: 3px; }
+.bubble .b-text { font-size: 14px; line-height: 1.45; color: #e8eaf6; }
+
+.bubble.mine   { align-self: flex-end;   background: rgba(0,212,255,0.13);  border: 1px solid rgba(0,212,255,0.3); }
+.bubble.theirs { align-self: flex-start; background: rgba(139,92,246,0.13); border: 1px solid rgba(139,92,246,0.3); }
+.bubble.mine   .b-name { color: #00d4ff; }
+.bubble.theirs .b-name { color: #8b5cf6; }
+.bubble .b-ts  { font-size: 10px; color: #4a5580; margin-top: 3px; }
+
+.bubble.sys {
+    align-self: center;
+    background: none;
+    border: none;
+    padding: 2px 0;
+}
+.bubble.sys .b-text { color: #4a5580; font-size: 11px; text-align: center; }
+
+.input-bar {
+    background: #03030f;
+    border-top: 1px solid rgba(255,255,255,0.06);
+    padding: 10px 12px;
+    padding-bottom: max(10px, env(safe-area-inset-bottom));
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-shrink: 0;
+}
+.input-bar input {
+    flex: 1;
+    border-radius: 24px;
+    padding: 12px 16px;
+    font-size: 14px;
+    margin: 0;
+}
+.btn-send {
+    background: rgba(0,212,255,0.13);
+    border: 1px solid rgba(0,212,255,0.4);
+    color: #00d4ff;
+    width: 46px;
+    height: 46px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    font-size: 20px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* ── CYBER BACKGROUND ── */
+#cyber-bg {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+}
+.screen { z-index: 1; }
+
+/* ── ACCOUNT SCREEN ── */
+#account {
+    justify-content: center;
+    align-items: center;
+    padding: 24px;
+    overflow-y: auto;
+}
+.account-card {
+    width: 100%;
+    max-width: 380px;
+    background: rgba(13,13,26,0.97);
+    border: 1px solid rgba(0,212,255,0.22);
+    border-radius: 24px;
+    padding: 36px 28px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    box-shadow: 0 10px 60px rgba(0,212,255,0.09);
+    position: relative; z-index: 2;
+}
+.account-card .logo h1 { color: #00d4ff; }
+.acc-sub  { color: #4a5580; font-size: 12px; text-align: center; margin-top: -6px; }
+.acc-msg {
+    text-align: center; font-size: 12px; color: #ff3366; min-height: 18px;
+}
+.btn-secondary {
+    background: transparent;
+    border: 1px solid rgba(255,255,255,0.1);
+    color: #8892b0; font-size: 13px; padding: 12px;
+}
+/* Account info bar inside #login */
+#acc-info-bar {
+    background: rgba(0,212,255,0.05);
+    border: 1px solid rgba(0,212,255,0.14);
+    border-radius: 12px;
+    padding: 10px 16px;
+    display: none;
+    align-items: center;
+    gap: 10px;
+}
+#acc-info-bar .acc-uname { color: #00d4ff; font-size: 14px; font-weight: 700; flex: 1; }
+.btn-switch {
+    background: transparent;
+    border: 1px solid rgba(255,51,102,0.35);
+    color: #ff3366;
+    font-size: 12px; width: auto; padding: 7px 13px; border-radius: 8px;
+}
+/* Logout confirm modal */
+#logout-modal {
+    position: fixed; inset: 0;
+    background: rgba(7,7,26,0.93);
+    z-index: 30;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+#logout-status { text-align: center; font-size: 12px; color: #ff3366; min-height: 18px; }
+
+/* ── ADMIN BUTTON ── */
+.btn-admin {
+    background: transparent;
+    border: none;
+    font-size: 20px;
+    color: #4a5580;
+    padding: 4px 8px;
+    width: auto;
+    cursor: pointer;
+    transition: color 0.2s;
+}
+.btn-admin:active { color: #ff3366; transform: scale(0.9); }
+
+/* ── ADMIN OVERLAY ── */
+#admin {
+    background: #07071a;
+    justify-content: center;
+    align-items: center;
+}
+.admin-card {
+    width: 100%;
+    max-width: 400px;
+    background: rgba(13,13,30,0.97);
+    border: 1px solid rgba(255,51,102,0.35);
+    border-radius: 24px;
+    padding: 36px 28px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    margin: 0 20px;
+    box-shadow: 0 10px 60px rgba(255,51,102,0.12);
+}
+.admin-card .logo h1 { color: #ff3366; font-size: 20px; letter-spacing: 6px; }
+.admin-card .logo p  { color: #4a5580; font-size: 11px; letter-spacing: 2px; }
+#admin-login-status {
+    text-align: center;
+    font-size: 12px;
+    color: #ff3366;
+    min-height: 18px;
+}
+#admin input:focus { border-color: rgba(255,51,102,0.6); background: rgba(255,51,102,0.05); }
+.btn-admin-login {
+    background: rgba(255,51,102,0.13);
+    border: 1px solid rgba(255,51,102,0.5);
+    color: #ff3366;
+}
+.btn-cancel {
+    background: transparent;
+    border: none;
+    color: #4a5580;
+    font-size: 13px;
+    padding: 8px 0;
+}
+
+/* ── ADMIN PANEL ── */
+#admin-panel-view {
+    width: 100%;
+    max-width: 400px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin: 0 20px;
+}
+.admin-panel-hdr {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 0 4px;
+}
+.admin-panel-hdr span { color: #ff3366; font-size: 14px; font-weight: 700; letter-spacing: 3px; flex: 1; }
+.admin-panel-hdr .badge { color: #00ff9f; font-size: 11px; letter-spacing: 1px; }
+.btn-big-admin {
+    width: 100%;
+    padding: 22px 20px;
+    border-radius: 18px;
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    transition: opacity 0.15s, transform 0.1s;
+}
+.btn-big-admin:active { transform: scale(0.97); opacity: 0.85; }
+#toggle-btn.on  { background: rgba(0,255,159,0.1);  border: 1px solid rgba(0,255,159,0.4);  color: #00ff9f; }
+#toggle-btn.off { background: rgba(255,51,102,0.1); border: 1px solid rgba(255,51,102,0.45); color: #ff3366; }
+.btn-room1488 {
+    background: rgba(0,212,255,0.1);
+    border: 1px solid rgba(0,212,255,0.4);
+    color: #00d4ff;
+}
+
+/* ── FILE ATTACH ── */
+.btn-attach {
+    background: rgba(139,92,246,0.12);
+    border: 1px solid rgba(139,92,246,0.35);
+    color: #8b5cf6;
+    width: 46px; height: 46px; border-radius: 50%;
+    flex-shrink: 0; font-size: 20px; padding: 0;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+}
+.bubble img {
+    max-width: 200px; border-radius: 10px;
+    display: block; margin-top: 6px; cursor: pointer;
+    transition: max-width 0.2s;
+}
+.bubble img.full { max-width: 90vw; }
+
+/* ── CALL UI ── */
+#call-banner {
+    background: rgba(0,212,255,0.1);
+    border-bottom: 1px solid rgba(0,212,255,0.25);
+    padding: 10px 14px;
+    display: none;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+    animation: slideDown 0.25s ease;
+}
+@keyframes slideDown { from { transform: translateY(-100%); opacity:0; } to { transform: translateY(0); opacity:1; } }
+#call-banner-name { flex: 1; color: #e8eaf6; font-size: 14px; font-weight: 600; }
+.btn-call-accept {
+    background: rgba(0,255,159,0.18); border: 1px solid rgba(0,255,159,0.5);
+    color: #00ff9f; border-radius: 50%; width: 40px; height: 40px;
+    font-size: 18px; padding: 0; flex-shrink: 0;
+}
+.btn-call-reject {
+    background: rgba(255,51,102,0.18); border: 1px solid rgba(255,51,102,0.5);
+    color: #ff3366; border-radius: 50%; width: 40px; height: 40px;
+    font-size: 18px; padding: 0; flex-shrink: 0;
+}
+#call-active {
+    background: rgba(0,255,159,0.07);
+    border-bottom: 1px solid rgba(0,255,159,0.18);
+    padding: 8px 14px;
+    display: none;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+}
+#call-timer { flex: 1; color: #00ff9f; font-size: 13px; font-weight: 600; }
+.btn-hangup {
+    background: rgba(255,51,102,0.18); border: 1px solid rgba(255,51,102,0.5);
+    color: #ff3366; border-radius: 50%; width: 36px; height: 36px;
+    font-size: 16px; padding: 0; flex-shrink: 0;
+}
+.btn-call-hdr {
+    background: none; border: none; color: #4a5580;
+    font-size: 22px; width: 38px; height: 38px; padding: 0;
+    border-radius: 50%; flex-shrink: 0; transition: color 0.2s;
+}
+.btn-call-hdr.calling { color: #ffaa00; }
+.btn-call-hdr.active  { color: #00ff9f; }
+
+/* ── USERS DRAWER ── */
+#drawer-overlay {
+    position: fixed; inset: 0;
+    background: rgba(7,7,26,0.72);
+    z-index: 49; display: none;
+}
+#drawer-overlay.open { display: block; }
+#users-drawer {
+    position: fixed; left: 0; top: 0; height: 100%;
+    width: 78%; max-width: 260px;
+    background: #03030f;
+    border-right: 1px solid rgba(0,212,255,0.18);
+    z-index: 50;
+    display: flex; flex-direction: column;
+    transform: translateX(-100%);
+    transition: transform 0.25s ease;
+}
+#users-drawer.open { transform: translateX(0); }
+.drawer-hdr {
+    background: #020210;
+    border-bottom: 1px solid rgba(0,212,255,0.12);
+    padding: 12px 14px;
+    padding-top: max(12px, env(safe-area-inset-top));
+    display: flex; align-items: center; gap: 10px; flex-shrink: 0;
+}
+.drawer-hdr-title { color: #00d4ff; font-size: 12px; font-weight: 700; letter-spacing: 2.5px; flex: 1; }
+.btn-drawer-close {
+    background: none; border: none; color: #4a5580;
+    font-size: 18px; width: 30px; height: 30px; padding: 0;
+    border-radius: 50%; cursor: pointer;
+}
+#users-list { flex: 1; overflow-y: auto; padding: 6px 0; }
+#users-list::-webkit-scrollbar { display: none; }
+.no-users-msg { color: #4a5580; font-size: 12px; text-align: center; padding: 28px 16px; line-height: 1.6; }
+.user-item {
+    display: flex; align-items: center;
+    padding: 10px 14px; gap: 10px;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+.user-item-name { flex: 1; color: #e8eaf6; font-size: 13px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.btn-user-dm {
+    background: rgba(139,92,246,0.14); border: 1px solid rgba(139,92,246,0.32);
+    color: #8b5cf6; border-radius: 9px;
+    width: 32px; height: 32px; font-size: 15px; padding: 0; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+}
+.btn-user-call {
+    background: rgba(0,212,255,0.11); border: 1px solid rgba(0,212,255,0.32);
+    color: #00d4ff; border-radius: 9px;
+    width: 32px; height: 32px; font-size: 15px; padding: 0; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+}
+
+/* ── DM BOTTOM SHEET ── */
+#dm-modal {
+    position: fixed; inset: 0;
+    background: rgba(7,7,26,0.85);
+    z-index: 60; display: none; align-items: flex-end;
+}
+#dm-modal.open { display: flex; }
+.dm-sheet {
+    width: 100%; background: #03030f;
+    border-top: 1px solid rgba(139,92,246,0.3);
+    border-radius: 20px 20px 0 0;
+    padding: 20px 16px;
+    padding-bottom: max(20px, env(safe-area-inset-bottom));
+    display: flex; flex-direction: column; gap: 12px;
+}
+.dm-sheet-title { color: #8b5cf6; font-size: 12px; font-weight: 700; letter-spacing: 1.5px; }
+.dm-row { display: flex; gap: 10px; align-items: center; }
+.dm-row input { flex: 1; border-radius: 22px; padding: 12px 16px; font-size: 14px; margin: 0; }
+.btn-dm-send {
+    background: rgba(139,92,246,0.15); border: 1px solid rgba(139,92,246,0.4);
+    color: #8b5cf6; border-radius: 50%;
+    width: 46px; height: 46px; font-size: 20px; padding: 0; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+}
+.btn-dm-cancel {
+    background: transparent; border: none; color: #4a5580;
+    font-size: 13px; padding: 4px 0; text-align: center;
+}
+/* DM bubbles */
+.bubble.dm-out { align-self: flex-end;   background: rgba(255,170,0,0.09); border: 1px solid rgba(255,170,0,0.28); }
+.bubble.dm-in  { align-self: flex-start; background: rgba(255,170,0,0.06); border: 1px solid rgba(255,170,0,0.2); }
+.bubble.dm-out .b-name, .bubble.dm-in .b-name { color: #ffaa00; }
+</style>
+</head>
+<body>
+
+<canvas id="cyber-bg"></canvas>
+
+<!-- ACCOUNT SETUP / SIGN IN -->
+<div class="screen" id="account">
+    <!-- Register view (no account exists) -->
+    <div class="account-card" id="acc-reg">
+        <div class="logo"><h1>NeoChat</h1><p>Create your account</p></div>
+        <div>
+            <span class="field-label">Your name</span>
+            <input id="acc-name" type="text" placeholder="e.g. Alice" autocomplete="off"
+                   autocorrect="off" maxlength="24">
+        </div>
+        <div>
+            <span class="field-label">Password</span>
+            <input id="acc-pw" type="password" placeholder="Create a password (min 4 chars)">
+        </div>
+        <div>
+            <span class="field-label">Confirm password</span>
+            <input id="acc-pw2" type="password" placeholder="Repeat your password"
+                   onkeydown="if(event.key==='Enter')doRegister()">
+        </div>
+        <div id="acc-reg-status" class="acc-msg"></div>
+        <button class="btn-connect" onclick="doRegister()">Create Account →</button>
+    </div>
+    <!-- Sign-in view (account exists, session cleared) -->
+    <div class="account-card" id="acc-in" style="display:none;">
+        <div class="logo"><h1>Welcome back!</h1></div>
+        <p class="acc-sub" id="acc-in-name"></p>
+        <div>
+            <span class="field-label">Password</span>
+            <input id="acc-in-pw" type="password" placeholder="Enter your password"
+                   onkeydown="if(event.key==='Enter')doSignIn()">
+        </div>
+        <div id="acc-in-status" class="acc-msg"></div>
+        <button class="btn-connect" onclick="doSignIn()">Sign In →</button>
+        <button class="btn-secondary" onclick="showNewAccount()">Create new account instead</button>
+    </div>
+</div>
+
+<!-- Logout confirmation modal -->
+<div id="logout-modal">
+    <div class="account-card" style="max-width:340px; gap:14px;">
+        <div class="logo"><h1 style="font-size:22px; letter-spacing:3px;">Switch Account</h1><p>Confirm with your password</p></div>
+        <div>
+            <span class="field-label">Current password</span>
+            <input id="logout-pw" type="password" placeholder="Password"
+                   onkeydown="if(event.key==='Enter')confirmSwitch()">
+        </div>
+        <div id="logout-status"></div>
+        <button class="btn-connect" onclick="confirmSwitch()">Confirm →</button>
+        <button class="btn-cancel" onclick="hideLogoutModal()">Cancel</button>
+    </div>
+</div>
+
+<!-- LOGIN -->
+<div class="screen hidden" id="login">
+    <!-- Account info bar (shown when logged in) -->
+    <div id="acc-info-bar">
+        <span>👤</span>
+        <span class="acc-uname" id="acc-info-name"></span>
+        <button class="btn-switch" onclick="showLogoutModal()">Switch Account</button>
+    </div>
+
+    <div class="logo">
+        <h1>NeoChat</h1>
+        <p>Real-time Internet Messenger</p>
+    </div>
+
+    <div>
+        <span class="field-label">Room code</span>
+        <div class="code-row">
+            <input id="code-in" type="text" placeholder="e.g. CHAT01" autocomplete="off"
+                   autocorrect="off" autocapitalize="characters" maxlength="20">
+            <button class="btn-dice" onclick="genCode()" title="Random room code">🎲</button>
+        </div>
+    </div>
+
+    <div id="login-status">Enter a room code, then tap Connect.</div>
+    <button class="btn-connect" onclick="doConnect()">Connect →</button>
+    <div style="display:flex; justify-content:flex-end; gap:2px; margin-top:-8px;">
+        <button class="btn-admin" onclick="openOperator()">💻</button>
+        <button class="btn-admin" onclick="openAdmin()">🔐</button>
+    </div>
+</div>
+
+<!-- CHAT -->
+<div class="screen hidden" id="chat">
+    <div class="chat-header">
+        <button class="btn-back" onclick="doDisconnect()">←</button>
+        <div class="hdr-info">
+            <div class="hdr-room" id="hdr-room">Room</div>
+            <div class="hdr-dot"  id="hdr-dot">● connecting</div>
+        </div>
+        <button class="btn-call-hdr" id="call-btn" onclick="startCall()" title="Voice call">📞</button>
+        <button class="btn-call-hdr" onclick="openDrawer()" title="Active users">👥</button>
+    </div>
+
+    <!-- Incoming call banner -->
+    <div id="call-banner">
+        <span id="call-banner-name">📞 Incoming call…</span>
+        <button class="btn-call-accept" onclick="acceptCall()" title="Accept">✓</button>
+        <button class="btn-call-reject" onclick="rejectCall()" title="Decline">✕</button>
+    </div>
+
+    <!-- Active call bar -->
+    <div id="call-active">
+        <span id="call-timer">📞 00:00</span>
+        <button class="btn-hangup" onclick="endCall()" title="Hang up">📵</button>
+    </div>
+
+    <div class="messages" id="messages"></div>
+
+    <div class="input-bar">
+        <label class="btn-attach" title="Send image">
+            📎<input type="file" id="file-in" accept="image/*" style="display:none"
+                     onchange="handleFile(this)">
+        </label>
+        <input id="msg-in" type="text" placeholder="Type a message…" autocomplete="off" autocorrect="off"
+               onkeydown="if(event.key==='Enter')sendMsg()">
+        <button class="btn-send" onclick="sendMsg()">➤</button>
+    </div>
+
+    <audio id="remote-audio" autoplay playsinline></audio>
+
+    <!-- Users drawer -->
+    <div id="drawer-overlay" onclick="closeDrawer()"></div>
+    <div id="users-drawer">
+        <div class="drawer-hdr">
+            <span class="drawer-hdr-title">CALLS</span>
+            <button class="btn-drawer-close" onclick="closeDrawer()">✕</button>
+        </div>
+        <div id="users-list">
+            <div class="no-users-msg" id="no-users-msg">No one else here yet.<br>Active users appear here when they send a message.</div>
+        </div>
+    </div>
+
+    <!-- DM bottom sheet -->
+    <div id="dm-modal" onclick="if(event.target===this)closeDM()">
+        <div class="dm-sheet">
+            <div class="dm-sheet-title" id="dm-title">PRIVATE MESSAGE</div>
+            <div class="dm-row">
+                <input id="dm-input" type="text" placeholder="Type a private message…"
+                       autocomplete="off" autocorrect="off"
+                       onkeydown="if(event.key==='Enter')sendDM()">
+                <button class="btn-dm-send" onclick="sendDM()">➤</button>
+            </div>
+            <button class="btn-dm-cancel" onclick="closeDM()">Cancel</button>
+        </div>
+    </div>
+</div>
+
+<!-- OPERATOR -->
+<div class="screen hidden" id="operator">
+    <!-- Login view -->
+    <div class="admin-card" id="op-login-view" style="border-color:rgba(0,212,255,0.35);box-shadow:0 10px 60px rgba(0,212,255,0.12);">
+        <div class="logo">
+            <h1 style="color:#00d4ff;font-size:20px;letter-spacing:6px;">💻 K1ssq</h1>
+            <p>NeoChat · Operator Access</p>
+        </div>
+        <div>
+            <span class="field-label">Username</span>
+            <input id="op-user" type="text" autocomplete="off" autocorrect="off" autocapitalize="off"
+                   placeholder="Username" onkeydown="if(event.key==='Enter')doOperatorLogin()">
+        </div>
+        <div>
+            <span class="field-label">Password</span>
+            <input id="op-pass" type="password" placeholder="Password"
+                   onkeydown="if(event.key==='Enter')doOperatorLogin()">
+        </div>
+        <div id="op-login-status" style="text-align:center;font-size:12px;color:#ff3366;min-height:18px;"></div>
+        <button class="btn-big-admin" style="background:rgba(0,212,255,0.13);border:1px solid rgba(0,212,255,0.5);color:#00d4ff;" onclick="doOperatorLogin()">Enter →</button>
+        <button class="btn-cancel" onclick="closeOperator()">✕  Cancel</button>
+    </div>
+    <!-- Panel view -->
+    <div id="op-panel-view" style="display:none;width:100%;max-width:400px;flex-direction:column;gap:16px;margin:0 20px;">
+        <div class="admin-panel-hdr">
+            <span style="color:#00d4ff;">💻 K1ssq PANEL</span>
+            <span class="badge">● K1ssq</span>
+            <button class="btn-cancel" style="width:auto;padding:0;" onclick="logoutOperator()">✕ Logout</button>
+        </div>
+        <div>
+            <span class="field-label">Room code</span>
+            <div class="code-row">
+                <input id="op-code" type="text" placeholder="Enter room code…" autocomplete="off"
+                       autocorrect="off" onkeydown="if(event.key==='Enter')joinAsOperator()">
+                <button class="btn-dice" onclick="genOpCode()">🎲</button>
+            </div>
+        </div>
+        <button class="btn-big-admin" style="background:rgba(0,212,255,0.1);border:1px solid rgba(0,212,255,0.4);color:#00d4ff;" onclick="joinAsOperator()">Connect as K1ssq →</button>
+        <button class="btn-big-admin btn-room1488" onclick="joinRoom1488AsOperator()">🚪  Enter Room 1488</button>
+    </div>
+</div>
+
+<!-- ADMIN -->
+<div class="screen hidden" id="admin">
+
+    <!-- Login view -->
+    <div class="admin-card" id="admin-login-view">
+        <div class="logo">
+            <h1>🔐 ADMIN</h1>
+            <p>NeoChat · Restricted Access</p>
+        </div>
+        <div>
+            <span class="field-label">Username</span>
+            <input id="admin-user" type="text" autocomplete="off" autocorrect="off" autocapitalize="off"
+                   placeholder="Username" onkeydown="if(event.key==='Enter')doAdminLogin()">
+        </div>
+        <div>
+            <span class="field-label">Password</span>
+            <input id="admin-pass" type="password" placeholder="Password"
+                   onkeydown="if(event.key==='Enter')doAdminLogin()">
+        </div>
+        <div id="admin-login-status"></div>
+        <button class="btn-big-admin btn-admin-login" onclick="doAdminLogin()">Enter →</button>
+        <button class="btn-cancel" onclick="logoutAdmin()">✕  Cancel</button>
+    </div>
+
+    <!-- Panel view (shown after login) -->
+    <div id="admin-panel-view" style="display:none;">
+        <div class="admin-panel-hdr">
+            <span>🔐 ADMIN PANEL</span>
+            <span class="badge">● MrMiner</span>
+            <button class="btn-cancel" style="width:auto;padding:0;" onclick="logoutAdmin()">✕ Logout</button>
+        </div>
+        <button id="toggle-btn" class="btn-big-admin on" onclick="toggleMessenger()"></button>
+        <button class="btn-big-admin btn-room1488" onclick="joinRoom1488()">🚪  Enter Room 1488</button>
+        <div style="height:1px;background:rgba(255,51,102,0.15);margin:4px 0;"></div>
+        <div style="color:#ff3366;font-size:10px;font-weight:700;letter-spacing:3px;padding:0 4px;">MODERATION</div>
+        <input id="mod-input" type="text" placeholder="Username to ban or mute…"
+               autocomplete="off" autocorrect="off" autocapitalize="off"
+               style="font-size:13px;"
+               onkeydown="if(event.key==='Enter')banUser()">
+        <div style="display:flex;gap:10px;">
+            <button class="btn-big-admin" style="background:rgba(255,51,102,0.13);border:1px solid rgba(255,51,102,0.5);color:#ff3366;padding:12px;font-size:13px;flex:1;" onclick="banUser()">🚫 Ban</button>
+            <button class="btn-big-admin" style="background:rgba(255,170,0,0.12);border:1px solid rgba(255,170,0,0.45);color:#ffaa00;padding:12px;font-size:13px;flex:1;" onclick="muteUser()">🔇 Mute</button>
+        </div>
+        <div id="mod-list" style="display:flex;flex-direction:column;gap:6px;"></div>
+    </div>
+
+</div>
+
+<!-- MQTT.js (loaded from CDN, requires internet) -->
+<script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+<script>
+let myName        = '';
+let topic         = '';
+let callTopic     = '';
+let MESSENGER_ON  = true;
+
+const REGISTRY_PREFIX  = 'neochat/__registry__/v1/';
+const CALL_TOPIC_PREFIX = 'neochat/__call__/';
+
+// ── Account management ────────────────────────────────────────────────────────
+const ACC_KEY = 'neochat_v1_account';
+
+function getAccount(){ try{ return JSON.parse(localStorage.getItem(ACC_KEY)); }catch(e){ return null; } }
+function saveAccount(obj){ localStorage.setItem(ACC_KEY, JSON.stringify(obj)); }
+
+async function hashPw(pw){
+    const buf = await crypto.subtle.digest('SHA-256',
+        new TextEncoder().encode('neochat_v1::' + pw));
+    return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+
+function accStatus(msg){
+    ['acc-reg-status','acc-in-status'].forEach(id=>{
+        const el=document.getElementById(id);
+        if(el) el.textContent=msg;
+    });
+}
+
+async function doSignIn(){
+    const pw  = document.getElementById('acc-in-pw').value;
+    const acc = getAccount();
+    if(!pw) { accStatus('⚠  Enter your password.'); return; }
+    const hash = await hashPw(pw);
+    if(hash !== acc.pwHash){ accStatus('⚠  Wrong password.'); return; }
+    accStatus('');
+    document.getElementById('acc-in-pw').value = '';
+    applyAccount();
+    show('login');
+}
+
+function showNewAccount(){
+    localStorage.removeItem(ACC_KEY);
+    document.getElementById('acc-reg').style.display = '';
+    document.getElementById('acc-in').style.display  = 'none';
+    accStatus('');
+}
+
+function applyAccount(){
+    const acc = getAccount();
+    if(!acc) return;
+    myName = acc.username;
+    document.getElementById('acc-info-bar').style.display  = 'flex';
+    document.getElementById('acc-info-name').textContent   = acc.username;
+    loginStatus('Enter a room code, then tap Connect.');
+}
+
+function showLogoutModal(){
+    const acc = getAccount();
+    localStorage.removeItem(ACC_KEY);
+    myName = '';
+    document.getElementById('acc-info-bar').style.display = 'none';
+    document.getElementById('acc-reg').style.display = 'none';
+    document.getElementById('acc-in').style.display  = '';
+    document.getElementById('acc-in-name').textContent = acc ? acc.username : '';
+    accStatus('');
+    show('account');
+}
+function hideLogoutModal(){ /* kept for compatibility */ }
+function confirmSwitch(){ /* kept for compatibility */ }
+
+// Initialise on page load
+(function initAccount(){
+    const acc = getAccount();
+    if(acc){
+        applyAccount();
+        show('login');
+    } else {
+        show('account');
+    }
+})();
+
+// ── Cyber background ──────────────────────────────────────────────────────────
+(function(){
+    const cv = document.getElementById('cyber-bg');
+    const cx = cv.getContext('2d');
+    let angle = 0;
+    function resize(){ cv.width = innerWidth; cv.height = innerHeight; }
+    resize(); window.addEventListener('resize', resize);
+    function draw(){
+        const w=cv.width, h=cv.height;
+        cx.clearRect(0,0,w,h);
+        cx.strokeStyle='rgba(255,255,255,0.06)'; cx.lineWidth=1;
+        for(let x=0;x<w;x+=48){cx.beginPath();cx.moveTo(x,0);cx.lineTo(x,h);cx.stroke();}
+        for(let y=0;y<h;y+=48){cx.beginPath();cx.moveTo(0,y);cx.lineTo(w,y);cx.stroke();}
+        angle+=0.4;
+        const r=angle*Math.PI/180;
+        [[w*.8+Math.sin(r)*60, h*.2+Math.cos(r*.7)*40, 260, 'rgba(0,212,255,0.1)'],
+         [w*.2+Math.cos(r*1.2)*50, h*.75+Math.sin(r*.9)*55, 220, 'rgba(139,92,246,0.08)']
+        ].forEach(([cx2,cy2,rad,col])=>{
+            const g=cx.createRadialGradient(cx2,cy2,0,cx2,cy2,rad);
+            g.addColorStop(0,col); g.addColorStop(1,'rgba(0,0,0,0)');
+            cx.fillStyle=g; cx.fillRect(0,0,w,h);
+        });
+        requestAnimationFrame(draw);
+    }
+    draw();
+})();
+
+// ── Admin ─────────────────────────────────────────────────────────────────────
+const ADMIN_SESSION_KEY = 'neochat_admin_session';
+
+function openAdmin(){
+    const sessionOk = localStorage.getItem(ADMIN_SESSION_KEY) === 'true';
+    if(sessionOk){
+        document.getElementById('admin-login-view').style.display='none';
+        document.getElementById('admin-panel-view').style.display='';
+        MESSENGER_ON=true;
+        updateToggleBtn();
+        refreshModList();
+        // Republish 'on' to clear any stale retained 'off' on brokers
+        const _p=JSON.stringify({action:'on'});
+        BROKER_URLS.forEach((url,i)=>{
+            const _c=mqtt.connect(url,{clientId:'admin_sync_'+i+'_'+Math.random().toString(36).slice(2,8),keepalive:10,connectTimeout:5000,reconnectPeriod:0});
+            _c.on('connect',()=>{_c.publish('neochat/__admin__/control',_p,{retain:true,qos:1},()=>_c.end(true));});
+            _c.on('error',()=>{});
+        });
+    } else {
+        document.getElementById('admin-login-view').style.display='';
+        document.getElementById('admin-panel-view').style.display='none';
+        document.getElementById('admin-user').value='';
+        document.getElementById('admin-pass').value='';
+        document.getElementById('admin-login-status').textContent='';
+    }
+    show('admin');
+}
+function closeAdmin(){ show('login'); }
+function logoutAdmin(){
+    localStorage.removeItem(ADMIN_SESSION_KEY);
+    show('login');
+}
+
+function doAdminLogin(){
+    const u=document.getElementById('admin-user').value.trim();
+    const p=document.getElementById('admin-pass').value;
+    if(u==='MrMiner' && p==='FunLand2014'){
+        localStorage.setItem(ADMIN_SESSION_KEY,'true');
+        document.getElementById('admin-login-view').style.display='none';
+        document.getElementById('admin-panel-view').style.display='';
+        updateToggleBtn();
+        refreshModList();
+    } else {
+        document.getElementById('admin-login-status').textContent='⚠  Invalid credentials';
+        document.getElementById('admin-pass').value='';
+    }
+}
+
+function updateToggleBtn(){
+    const btn=document.getElementById('toggle-btn');
+    if(MESSENGER_ON){
+        btn.textContent='🟢  Messenger is ON — tap to turn OFF';
+        btn.className='btn-big-admin on';
+    } else {
+        btn.textContent='🔴  Messenger is OFF — tap to turn ON';
+        btn.className='btn-big-admin off';
+    }
+}
+function toggleMessenger(){
+    MESSENGER_ON=!MESSENGER_ON;
+    updateToggleBtn();
+    const payload=JSON.stringify({action: MESSENGER_ON ? 'on' : 'off'});
+    // Publish to ALL known brokers so every connected client receives it
+    BROKER_URLS.forEach((url,i)=>{
+        const c=mqtt.connect(url,{clientId:'admin_'+i+'_'+Math.random().toString(36).slice(2,8),keepalive:10,connectTimeout:5000,reconnectPeriod:0});
+        c.on('connect',()=>{ c.publish('neochat/__admin__/control',payload,{retain:true,qos:1},()=>c.end(true)); });
+        c.on('error',()=>{});
+    });
+}
+
+function joinRoom1488(){
+    // Republish 'on' to fix any stale retained 'off' on brokers
+    const payload=JSON.stringify({action:'on'});
+    BROKER_URLS.forEach((url,i)=>{
+        const c=mqtt.connect(url,{clientId:'admin_on_'+i+'_'+Math.random().toString(36).slice(2,8),keepalive:10,connectTimeout:5000,reconnectPeriod:0});
+        c.on('connect',()=>{ c.publish('neochat/__admin__/control',payload,{retain:true,qos:1},()=>c.end(true)); });
+        c.on('error',()=>{});
+    });
+    MESSENGER_ON=true;
+    // Connect as MrMiner
+    myName='MrMiner';
+    document.getElementById('acc-info-name').textContent='MrMiner';
+    document.getElementById('acc-info-bar').style.display='flex';
+    closeAdmin();
+    document.getElementById('code-in').value='1488';
+    doConnect();
+}
+
+// All four brokers tried simultaneously; messages published to ALL that connect.
+// This way, two users on different brokers still see each other.
+const BROKER_URLS = [
+    'wss://broker.emqx.io:8084/mqtt',
+    'wss://mqtt.eclipseprojects.io:443/mqtt',
+    'wss://test.mosquitto.org:8081/mqtt',
+    'wss://broker.hivemq.com:8884/mqtt',
+];
+
+let clients = [];          // all currently connected mqtt clients
+const _seen = new Set();   // dedup: sender|ts|text_prefix
+
+function _dedupKey(d){
+    return `${d.sender||''}|${d.ts||''}|${(d.text||'').slice(0,40)}`;
+}
+
+// onEach  — called for every broker client as it connects (subscribe + attach handlers here)
+// onFirst — called once when the FIRST broker connects (show UI, publish join message)
+// onFail  — called if NONE of the brokers connected
+function connectAll(baseId, onEach, onFirst, onFail){
+    let connected=0, failed=0;
+    const total=BROKER_URLS.length;
+    let firstFired=false;
+
+    BROKER_URLS.forEach((url,i)=>{
+        const c=mqtt.connect(url,{
+            clientId: baseId+'_'+i,
+            keepalive: 60,
+            connectTimeout: 10000,
+            reconnectPeriod: 0,
+        });
+        const timer=setTimeout(()=>{
+            failed++;
+            try{ c.end(true); }catch(e){}
+            if(failed+connected===total && connected===0) onFail();
+        }, 12000);
+
+        c.on('connect',()=>{
+            clearTimeout(timer);
+            clients.push(c);
+            connected++;
+            onEach(c);
+            if(!firstFired){ firstFired=true; onFirst(); }
+        });
+        c.on('error',()=>{
+            clearTimeout(timer);
+            failed++;
+            try{ c.end(true); }catch(e){}
+            if(failed+connected===total && connected===0) onFail();
+        });
+    });
+}
+
+function pubAll(topicName, payload, opts){
+    clients.forEach(c=>{ try{ c.publish(topicName,payload,opts||{}); }catch(e){} });
+}
+function subAll(topicName, opts){
+    clients.forEach(c=>{ try{ c.subscribe(topicName,opts||{}); }catch(e){} });
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function san(s){ return s.replace(/[#\+\/]/g,'').trim().slice(0,40); }
+function esc(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function genCode(){
+    const abc='ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    let c='';for(let i=0;i<6;i++)c+=abc[Math.floor(Math.random()*abc.length)];
+    document.getElementById('code-in').value=c;
+}
+
+function showLogin(){ show('login'); }
+function showChat() { show('chat');  }
+function show(id){
+    document.querySelectorAll('.screen').forEach(s=>s.classList.add('hidden'));
+    document.getElementById(id).classList.remove('hidden');
+}
+
+function loginStatus(msg, color){
+    const el=document.getElementById('login-status');
+    el.textContent=msg; el.style.color=color||'#4a5580';
+}
+
+function setDot(state){
+    const d=document.getElementById('hdr-dot');
+    d.className='hdr-dot'+(state==='on'?' on':state==='off'?' off':'');
+    d.textContent=state==='on'?'● online':state==='off'?'● offline':'● connecting';
+}
+
+// ── Connect ───────────────────────────────────────────────────────────────────
+function doConnect(){
+    if(!MESSENGER_ON){ loginStatus('Sorry! Messenger is turned off.','#ff3366'); return; }
+    if(!myName){ loginStatus('⚠  No account. Please restart.','#ff3366'); return; }
+    const name=myName;
+    let   code=document.getElementById('code-in').value.trim();
+    if(!code){ genCode(); code=document.getElementById('code-in').value; }
+
+    myName=name;
+    const safeCode=san(code);
+    topic     =`neochat/v1/${safeCode}`;
+    callTopic = CALL_TOPIC_PREFIX + safeCode;
+    document.getElementById('hdr-room').textContent=`Room: ${code}`;
+    setDot('');
+    clearMsgs();
+    _seen.clear();
+    _seenCalls.clear();
+    clients=[];
+    activeUsers.clear(); renderUsers();
+    showChat();
+    loginStatus('Connecting…','#00d4ff');
+
+    const baseId='neo_'+Math.random().toString(36).slice(2,10);
+    connectAll(baseId,
+        (c) => {
+            // Called for EACH broker that connects — subscribe + attach handlers
+            c.subscribe(topic);
+            c.subscribe(callTopic);
+            c.subscribe('neochat/__admin__/control',{qos:1});
+            _subscribeModTopic(c);
+            c.on('message',(_t,buf)=>{
+                if(_t===MOD_TOPIC) return; // handled inside _subscribeModTopic
+                if(_t==='neochat/__admin__/control'){
+                    try{
+                        const ctrl=JSON.parse(buf.toString());
+                        if(ctrl.action==='off'){
+                            if(myName.toLowerCase()==='mrminer') return; // admin is never kicked
+                            MESSENGER_ON=false;
+                            doDisconnect();
+                            loginStatus('Sorry! Messenger is turned off.','#ff3366');
+                        } else if(ctrl.action==='on'){
+                            MESSENGER_ON=true;
+                        }
+                    }catch(e){}
+                    return;
+                }
+                if(_t===callTopic){
+                    try{
+                        const d=JSON.parse(buf.toString());
+                        // ICE candidates must use candidate string as key — they can all share the same ts
+                        const ck = d.type==='call_ice'
+                            ? `ice|${d.from||''}|${d.candidate&&d.candidate.candidate||''}`
+                            : `${d.type||''}|${d.from||''}|${d.ts||''}`;
+                        if(_seenCalls.has(ck))return;
+                        _seenCalls.add(ck);
+                        if(_seenCalls.size>300)_seenCalls.clear();
+                        handleCallSignal(d);
+                    }catch(e){}
+                    return;
+                }
+                try{
+                    const d=JSON.parse(buf.toString());
+                    const msgType=d.type||'text';
+                    // Filter banned/muted senders
+                    const _sndr=((d.sender||d.from||'').toLowerCase());
+                    if(_sndr && _sndr!==myName.toLowerCase() &&
+                       (_bannedUsers.has(_sndr)||_mutedUsers.has(_sndr))) return;
+                    if(msgType==='image'){
+                        const key=`${d.sender||''}|${d.ts||''}|image`;
+                        if(_seen.has(key))return;
+                        _seen.add(key);
+                        if(_seen.size>300)_seen.clear();
+                        addActiveUser(d.sender);
+                        addImageBubble(d.sender||'?',d.data||'',d.mime||'jpeg',d.ts||'',d.sender===myName);
+                        return;
+                    }
+                    if(msgType==='dm'){
+                        const key=`dm|${d.from||''}|${d.to||''}|${d.ts||''}|${(d.text||'').slice(0,20)}`;
+                        if(_seen.has(key))return;
+                        _seen.add(key);
+                        if(_seen.size>300)_seen.clear();
+                        if(d.to===myName||d.from===myName){
+                            addActiveUser(d.from);
+                            addDMBubble(d.from,d.to,d.text||'',d.ts||'',d.from===myName);
+                        }
+                        return;
+                    }
+                    const key=_dedupKey(d);
+                    if(_seen.has(key))return;
+                    _seen.add(key);
+                    if(_seen.size>300)_seen.clear();
+                    if(d.system){
+                        sysMsg(d.text);
+                        const jm=d.text&&d.text.match(/^(.+) joined the chat/);
+                        const lm=d.text&&d.text.match(/^(.+) left the chat/);
+                        if(jm)addActiveUser(jm[1]);
+                        if(lm)removeActiveUser(lm[1]);
+                        return;
+                    }
+                    addActiveUser(d.sender);
+                    addBubble(d.sender,d.text,d.ts,d.sender===myName);
+                }catch(e){}
+            });
+            c.on('error',()=>{ setDot('off'); });
+            c.on('close',()=>{ setDot('off'); });
+        },
+        () => {
+            // Called once when first broker connects — update UI
+            setDot('on');
+            pubSystem(`${name} joined the chat 👋`);
+        },
+        () => {
+            showLogin();
+            loginStatus('⚠  Could not connect. Try again.', '#ff3366');
+        }
+    );
+}
+
+function doDisconnect(){
+    if(callState!=='idle') endCall(false); // silent end, no pubCall
+    if(clients.length){
+        pubSystem(`${myName} left the chat 👋`);
+        clients.forEach(c=>{ try{ c.end(true); }catch(e){} });
+        clients=[];
+    }
+    activeUsers.clear(); renderUsers();
+    closeDrawer();
+    showLogin();
+    loginStatus('Enter a room code, then tap Connect.');
+}
+
+// ── Messages ──────────────────────────────────────────────────────────────────
+function now(){ const d=new Date(); return d.getHours().toString().padStart(2,'0')+':'+d.getMinutes().toString().padStart(2,'0'); }
+
+function pubSystem(text){
+    if(!clients.length)return;
+    pubAll(topic,JSON.stringify({sender:'__system__',text,ts:now(),system:true}),{qos:1});
+}
+
+function sendMsg(){
+    const inp=document.getElementById('msg-in');
+    const txt=inp.value.trim();
+    if(!txt||!clients.length)return;
+    if(_mutedUsers.has(myName.toLowerCase())){ sysMsg('🔇 You are muted and cannot send messages.'); return; }
+    inp.value='';
+    pubAll(topic,JSON.stringify({sender:myName,text:txt,ts:now(),system:false}),{qos:1});
+}
+
+function addBubble(sender, text, ts, mine){
+    const d=document.createElement('div');
+    d.className='bubble '+(mine?'mine':'theirs');
+    const badge=sender.toLowerCase()==='mrminer'
+        ? ' <span style="color:#ff3366;font-size:9px;font-weight:700;">[Admin NeoNext]</span>' : '';
+    d.innerHTML=`<div class="b-name">${esc(sender)}${badge}</div><div class="b-text">${esc(text)}</div><div class="b-ts">${esc(ts)}</div>`;
+    appendEl(d);
+}
+function sysMsg(text){
+    const d=document.createElement('div');
+    d.className='bubble sys';
+    d.innerHTML=`<div class="b-text">— ${esc(text)} —</div>`;
+    appendEl(d);
+}
+function appendEl(el){
+    const box=document.getElementById('messages');
+    box.appendChild(el);
+    box.scrollTop=box.scrollHeight;
+}
+function clearMsgs(){ document.getElementById('messages').innerHTML=''; }
+
+// ── Username uniqueness (MQTT retained registry) ──────────────────────────────
+function checkUsernameAvailable(name){
+    return new Promise(resolve=>{
+        const regTopic=REGISTRY_PREFIX+name.toLowerCase();
+        let settled=false;
+        const settle=v=>{ if(settled)return; settled=true; try{c.end(true);}catch(e){} resolve(v); };
+        let c;
+        try{
+            c=mqtt.connect(BROKER_URLS[0],{
+                clientId:'reg_chk_'+Math.random().toString(36).slice(2,10),
+                keepalive:10, connectTimeout:6000, reconnectPeriod:0,
+            });
+        }catch(e){ resolve(null); return; }
+        const timer=setTimeout(()=>settle(true),5000); // no retained msg = free
+        c.on('error',()=>{ clearTimeout(timer); settle(null); });
+        c.on('connect',()=>{ c.subscribe(regTopic,{qos:1}); });
+        c.on('message',(_t,buf)=>{ clearTimeout(timer); settle(false); }); // retained = taken
+    });
+}
+function claimUsername(name){
+    const regTopic=REGISTRY_PREFIX+name.toLowerCase();
+    const payload=JSON.stringify({claimed_by:name,ts:new Date().toISOString()});
+    BROKER_URLS.forEach((url,i)=>{
+        const c=mqtt.connect(url,{
+            clientId:'reg_claim_'+i+'_'+Math.random().toString(36).slice(2,6),
+            keepalive:10, connectTimeout:8000, reconnectPeriod:0,
+        });
+        c.on('connect',()=>{ c.publish(regTopic,payload,{retain:true,qos:1},()=>c.end(true)); });
+        c.on('error',()=>{});
+    });
+}
+
+async function doRegister(){
+    const name=document.getElementById('acc-name').value.trim();
+    const pw  =document.getElementById('acc-pw').value;
+    const pw2 =document.getElementById('acc-pw2').value;
+    if(!name)         { accStatus('⚠  Enter a username.'); return; }
+    if(name.length<2) { accStatus('⚠  Name too short (min 2 chars).'); return; }
+    if(['mrminer','k1ssq'].includes(name.toLowerCase())) { accStatus('⚠  This username is reserved.'); return; }
+    if(!pw)           { accStatus('⚠  Enter a password.'); return; }
+    if(pw.length<4)   { accStatus('⚠  Password too short (min 4 chars).'); return; }
+    if(pw!==pw2)      { accStatus('⚠  Passwords don\'t match.'); return; }
+    accStatus('Checking username…');
+    const available=await checkUsernameAvailable(name);
+    if(available===false){ accStatus('⚠  Username already taken. Choose another.'); return; }
+    accStatus('');
+    const hash=await hashPw(pw);
+    saveAccount({username:name,pwHash:hash});
+    claimUsername(name);
+    applyAccount();
+    show('login');
+}
+
+// ── File / image sending ──────────────────────────────────────────────────────
+function handleFile(input){
+    const file=input.files[0];
+    if(!file||!clients.length){ input.value=''; return; }
+    input.value='';
+    const reader=new FileReader();
+    reader.onload=e=>{
+        const img=new Image();
+        img.onload=()=>{
+            const MAX=800;
+            let w=img.width, h=img.height;
+            if(w>MAX||h>MAX){
+                if(w>h){ h=Math.round(h*MAX/w); w=MAX; }
+                else   { w=Math.round(w*MAX/h); h=MAX; }
+            }
+            const cv=document.createElement('canvas');
+            cv.width=w; cv.height=h;
+            cv.getContext('2d').drawImage(img,0,0,w,h);
+            const b64=cv.toDataURL('image/jpeg',0.70).split(',')[1];
+            pubAll(topic,JSON.stringify({
+                type:'image', sender:myName, data:b64, mime:'jpeg',
+                ts:now(), system:false,
+            }),{qos:0});
+        };
+        img.src=e.target.result;
+    };
+    reader.readAsDataURL(file);
+}
+function addImageBubble(sender,b64,mime,ts,mine){
+    const d=document.createElement('div');
+    d.className='bubble '+(mine?'mine':'theirs');
+    const src=`data:image/${mime||'jpeg'};base64,${b64}`;
+    d.innerHTML=`<div class="b-name">${esc(sender)}</div>`+
+        `<img src="${src}" onclick="this.classList.toggle('full')">`+
+        `<div class="b-ts">${esc(ts)}</div>`;
+    appendEl(d);
+}
+
+// ── Active users & drawer ─────────────────────────────────────────────────────
+const activeUsers = new Set();
+
+function addActiveUser(name){
+    if(!name||name==='__system__'||name===myName)return;
+    activeUsers.add(name);
+    renderUsers();
+}
+function removeActiveUser(name){
+    activeUsers.delete(name);
+    renderUsers();
+}
+function renderUsers(){
+    const list=document.getElementById('users-list');
+    const noMsg=document.getElementById('no-users-msg');
+    list.querySelectorAll('.user-item').forEach(el=>el.remove());
+    if(activeUsers.size===0){ noMsg.style.display=''; return; }
+    noMsg.style.display='none';
+    activeUsers.forEach(name=>{
+        const item=document.createElement('div');
+        item.className='user-item';
+        const nameEl=document.createElement('span');
+        nameEl.className='user-item-name';
+        nameEl.textContent=name;
+        const dmBtn=document.createElement('button');
+        dmBtn.className='btn-user-dm'; dmBtn.textContent='💬'; dmBtn.title='Private message';
+        dmBtn.onclick=()=>openDM(name);
+        const callBtn=document.createElement('button');
+        callBtn.className='btn-user-call'; callBtn.textContent='📞'; callBtn.title='Call';
+        callBtn.onclick=()=>callUser(name);
+        item.append(nameEl,dmBtn,callBtn);
+        list.appendChild(item);
+    });
+}
+
+function openDrawer(){ document.getElementById('users-drawer').classList.add('open'); document.getElementById('drawer-overlay').classList.add('open'); }
+function closeDrawer(){ document.getElementById('users-drawer').classList.remove('open'); document.getElementById('drawer-overlay').classList.remove('open'); }
+
+// ── Private messages (DM) ─────────────────────────────────────────────────────
+let dmTarget='';
+
+function openDM(name){
+    dmTarget=name;
+    document.getElementById('dm-title').textContent='DM → '+name.toUpperCase();
+    document.getElementById('dm-input').value='';
+    document.getElementById('dm-modal').classList.add('open');
+    closeDrawer();
+    setTimeout(()=>document.getElementById('dm-input').focus(),100);
+}
+function closeDM(){
+    document.getElementById('dm-modal').classList.remove('open');
+    dmTarget='';
+}
+function sendDM(){
+    const text=document.getElementById('dm-input').value.trim();
+    if(!text||!dmTarget||!clients.length)return;
+    document.getElementById('dm-input').value='';
+    const msg={type:'dm',to:dmTarget,from:myName,text,ts:now()};
+    pubAll(topic,JSON.stringify(msg),{qos:1});
+    addDMBubble(myName,dmTarget,text,msg.ts,true);
+}
+function addDMBubble(from,to,text,ts,mine){
+    const d=document.createElement('div');
+    d.className='bubble '+(mine?'dm-out':'dm-in');
+    const label=mine?`🔒 DM → ${esc(to)}`:`🔒 DM from ${esc(from)}`;
+    d.innerHTML=`<div class="b-name">${label}</div><div class="b-text">${esc(text)}</div><div class="b-ts">${esc(ts)}</div>`;
+    appendEl(d);
+}
+
+// ── WebRTC Voice Calls ────────────────────────────────────────────────────────
+const _seenCalls=new Set();
+let pc=null, localStream=null;
+let callState='idle'; // idle | calling | incoming | waiting_offer | active
+let callPeer='', callOffer=null;
+let callTimerID=null, callSecs=0, _callTimeout=null;
+
+// STUN + free public TURN servers for NAT traversal
+const ICE_CONFIG = {
+    iceServers: [
+        {urls:'stun:stun.l.google.com:19302'},
+        {urls:'stun:stun1.l.google.com:19302'},
+        {urls:'stun:stun2.l.google.com:19302'},
+        {urls:'stun:stun.cloudflare.com:3478'},
+        {
+            urls:['turn:numb.viagenie.ca'],
+            username:'webrtc@live.com',
+            credential:'muazkh'
+        },
+        {
+            urls:[
+                'turn:openrelay.metered.ca:80',
+                'turn:openrelay.metered.ca:443',
+                'turn:openrelay.metered.ca:443?transport=tcp'
+            ],
+            username:'openrelayproject',
+            credential:'openrelayproject'
+        }
+    ],
+    iceCandidatePoolSize: 10,
+};
+
+function pubCall(msg){
+    const q=(['call_request','call_accepted','call_hangup'].includes(msg.type))?1:0;
+    pubAll(callTopic,JSON.stringify(msg),{qos:q});
+}
+
+function _setupPC(){
+    const p = new RTCPeerConnection(ICE_CONFIG);
+    p.ontrack = e => { document.getElementById('remote-audio').srcObject = e.streams[0]; };
+    p.onicecandidate = e => {
+        if(e.candidate) pubCall({type:'call_ice',from:myName,candidate:e.candidate,ts:now()});
+    };
+    p.oniceconnectionstatechange = () => {
+        if(!p) return;
+        const s = p.iceConnectionState;
+        if(s==='checking')  document.getElementById('call-timer').textContent='📡 Connecting…';
+        if(s==='connected'||s==='completed'){
+            document.getElementById('call-timer').textContent='📞 00:00';
+            if(callSecs===0) _startCallTimer(); // start timer on first connected
+        }
+        if(s==='failed'){
+            sysMsg('⚠  Call connection failed — try moving to a different network.');
+            endCall();
+        }
+        if(s==='disconnected') sysMsg('⚠  Call audio disconnected.');
+    };
+    return p;
+}
+
+function startCall(){
+    if(callState==='calling'){ endCall(); return; } // tap again to cancel
+    if(callState!=='idle'||!clients.length)return;
+    callState='calling';
+    document.getElementById('call-btn').className='btn-call-hdr calling';
+    sysMsg('Calling… tap 📞 to cancel');
+    pubCall({type:'call_request',from:myName,ts:now()});
+    _callTimeout=setTimeout(()=>{ if(callState==='calling'){ endCall(); sysMsg('No answer.'); } },30000);
+}
+function callUser(name){
+    closeDrawer();
+    if(callState==='calling'){ endCall(); return; }
+    if(callState!=='idle'||!clients.length)return;
+    callState='calling'; callPeer=name;
+    document.getElementById('call-btn').className='btn-call-hdr calling';
+    sysMsg(`Calling ${esc(name)}… 📞 tap 📞 to cancel`);
+    pubCall({type:'call_request',from:myName,to:name,ts:now()});
+    _callTimeout=setTimeout(()=>{ if(callState==='calling'){ endCall(); sysMsg('No answer.'); } },30000);
+}
+
+async function acceptCall(){
+    if(callState!=='incoming')return;
+    document.getElementById('call-banner').style.display='none';
+    pubCall({type:'call_accepted',from:myName,ts:now()});
+    callState='waiting_offer';
+    try{
+        localStream=await navigator.mediaDevices.getUserMedia({audio:true,video:false});
+        if(callOffer) await _finalizeAccept(); // offer already arrived before mic was ready
+    }catch(err){
+        _cleanupCall();
+        const msg=err.name==='NotAllowedError'?'Microphone permission denied.':err.message||err;
+        sysMsg('Could not accept call: '+msg);
+    }
+}
+
+async function _finalizeAccept(){
+    try{
+        pc=_setupPC();
+        localStream.getTracks().forEach(t=>pc.addTrack(t,localStream));
+        await pc.setRemoteDescription(new RTCSessionDescription(callOffer));
+        _flushICE();
+        const answer=await pc.createAnswer();
+        await pc.setLocalDescription(answer);
+        pubCall({type:'call_answer',from:myName,sdp:answer,ts:now()});
+        callState='active';
+        document.getElementById('call-timer').textContent='📡 Connecting…';
+        document.getElementById('call-active').style.display='flex';
+        document.getElementById('call-btn').className='btn-call-hdr active';
+    }catch(err){
+        _cleanupCall();
+        sysMsg('Call setup error: '+(err.message||err));
+    }
+}
+
+function rejectCall(){
+    document.getElementById('call-banner').style.display='none';
+    pubCall({type:'call_hangup',from:myName,ts:now()});
+    sysMsg(callPeer+'\'s call was declined');
+    callState='idle'; callPeer=''; callOffer=null;
+}
+
+function endCall(publish=true){
+    if(publish&&callState!=='idle') pubCall({type:'call_hangup',from:myName,ts:now()});
+    clearTimeout(_callTimeout); _callTimeout=null;
+    _cleanupCall();
+}
+
+function _cleanupCall(){
+    clearTimeout(_callTimeout); _callTimeout=null;
+    if(localStream){localStream.getTracks().forEach(t=>t.stop());localStream=null;}
+    if(pc){pc.close();pc=null;}
+    _stopCallTimer();
+    callState='idle'; callPeer=''; callOffer=null; _pendingICE=[];
+    document.getElementById('call-banner').style.display='none';
+    document.getElementById('call-active').style.display='none';
+    document.getElementById('remote-audio').srcObject=null;
+    document.getElementById('call-btn').className='btn-call-hdr';
+}
+
+let _pendingICE=[];
+function _flushICE(){
+    if(!pc||!pc.remoteDescription)return;
+    _pendingICE.forEach(c=>{pc.addIceCandidate(new RTCIceCandidate(c)).catch(()=>{});});
+    _pendingICE=[];
+}
+
+function handleCallSignal(d){
+    const type=d.type;
+    if(d.from===myName)return; // ignore our own reflected messages
+
+    if(type==='call_ring'){
+        // Python desktop app can't do WebRTC — it rings to prompt the HTML user to call back
+        if(callState!=='idle') return;
+        sysMsg('📞 '+d.from+' wants to talk — tap the 📞 button to call them');
+        return;
+    }
+    if(type==='call_request'){
+        if(d.to && d.to.toLowerCase()!==myName.toLowerCase()) return; // targeted at someone else
+        if(callState==='calling'){
+            // someone called us while we were calling — cancel our outgoing call and accept theirs
+            clearTimeout(_callTimeout); _callTimeout=null;
+            callState='idle';
+            document.getElementById('call-btn').className='btn-call-hdr';
+        }
+        if(callState!=='idle'){
+            pubCall({type:'call_hangup',from:myName,reason:'busy',ts:now()});
+            return;
+        }
+        callState='incoming'; callPeer=d.from;
+        document.getElementById('call-banner-name').textContent='📞 '+d.from+' wants to start a call';
+        document.getElementById('call-banner').style.display='flex';
+        return;
+    }
+    if(type==='call_accepted'){
+        if(callState!=='calling')return;
+        callPeer=d.from;
+        sysMsg(d.from+' accepted the call 📞');
+        (async()=>{
+            try{
+                localStream=await navigator.mediaDevices.getUserMedia({audio:true,video:false});
+                pc=_setupPC();
+                localStream.getTracks().forEach(t=>pc.addTrack(t,localStream));
+                const offer=await pc.createOffer();
+                await pc.setLocalDescription(offer);
+                pubCall({type:'call_offer',from:myName,sdp:offer,ts:now()});
+            }catch(err){
+                _cleanupCall();
+                const msg=err.name==='NotAllowedError'?'Microphone permission denied.':err.message||err;
+                sysMsg('Could not start call: '+msg);
+            }
+        })();
+        return;
+    }
+    if(type==='call_offer'){
+        if(callState==='waiting_offer'){
+            // callee already accepted — store SDP and finalize as soon as mic is ready
+            callOffer=d.sdp;
+            if(localStream) _finalizeAccept();
+            return;
+        }
+        if(callState!=='idle'){
+            pubCall({type:'call_hangup',from:myName,reason:'busy',ts:now()});
+            return;
+        }
+        // fallback: direct offer without prior call_request (older client)
+        callState='incoming'; callPeer=d.from; callOffer=d.sdp;
+        document.getElementById('call-banner-name').textContent='📞 '+d.from+' wants to start a call';
+        document.getElementById('call-banner').style.display='flex';
+    }
+    else if(type==='call_answer'){
+        if(callState!=='calling')return;
+        callPeer=d.from;
+        if(pc){
+            pc.setRemoteDescription(new RTCSessionDescription(d.sdp))
+            .then(()=>{
+                _flushICE();
+                callState='active';
+                document.getElementById('call-timer').textContent='📡 Connecting…';
+                document.getElementById('call-active').style.display='flex';
+                document.getElementById('call-btn').className='btn-call-hdr active';
+            })
+            .catch(err=>{ sysMsg('Call setup error: '+(err.message||err)); _cleanupCall(); });
+        }
+    }
+    else if(type==='call_ice'){
+        if(d.candidate){
+            if(pc&&pc.remoteDescription){
+                pc.addIceCandidate(new RTCIceCandidate(d.candidate)).catch(()=>{});
+            } else {
+                _pendingICE.push(d.candidate);
+            }
+        }
+    }
+    else if(type==='call_hangup'){
+        if(callState!=='idle'){
+            const who=d.from;
+            _cleanupCall();
+            sysMsg(who+' ended the call');
+        }
+    }
+}
+
+function _startCallTimer(){
+    if(callTimerID) return; // already running
+    callSecs=0; _updateTimer();
+    callTimerID=setInterval(()=>{callSecs++;_updateTimer();},1000);
+}
+function _stopCallTimer(){ if(callTimerID){clearInterval(callTimerID);callTimerID=null;} }
+function _updateTimer(){
+    const m=String(Math.floor(callSecs/60)).padStart(2,'0');
+    const s=String(callSecs%60).padStart(2,'0');
+    document.getElementById('call-timer').textContent=`📞 ${m}:${s}`;
+}
+
+// ── Operator panel (K1ssq) ───────────────────────────────────────────────────
+const OP_SESSION_KEY = 'neochat_operator_session';
+const OP_USER  = 'K1ssq';
+const OP_PASS  = 'karim';
+
+function openOperator(){
+    const sessionOk = localStorage.getItem(OP_SESSION_KEY) === 'true';
+    if(sessionOk){
+        document.getElementById('op-login-view').style.display='none';
+        document.getElementById('op-panel-view').style.display='flex';
+    } else {
+        document.getElementById('op-login-view').style.display='';
+        document.getElementById('op-panel-view').style.display='none';
+        document.getElementById('op-user').value='';
+        document.getElementById('op-pass').value='';
+        document.getElementById('op-login-status').textContent='';
+    }
+    show('operator');
+}
+function closeOperator(){ show('login'); }
+function logoutOperator(){
+    localStorage.removeItem(OP_SESSION_KEY);
+    show('login');
+}
+function doOperatorLogin(){
+    const u=document.getElementById('op-user').value.trim();
+    const p=document.getElementById('op-pass').value;
+    if(u===OP_USER && p===OP_PASS){
+        localStorage.setItem(OP_SESSION_KEY,'true');
+        document.getElementById('op-login-view').style.display='none';
+        document.getElementById('op-panel-view').style.display='flex';
+    } else {
+        document.getElementById('op-login-status').textContent='⚠  Invalid credentials';
+        document.getElementById('op-pass').value='';
+    }
+}
+function genOpCode(){
+    const abc='ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    let c=''; for(let i=0;i<6;i++) c+=abc[Math.floor(Math.random()*abc.length)];
+    document.getElementById('op-code').value=c;
+}
+function joinAsOperator(){
+    let code=document.getElementById('op-code').value.trim();
+    if(!code){ genOpCode(); code=document.getElementById('op-code').value; }
+    myName=OP_USER;
+    document.getElementById('acc-info-name').textContent=OP_USER;
+    document.getElementById('acc-info-bar').style.display='flex';
+    MESSENGER_ON=true;
+    closeOperator();
+    document.getElementById('code-in').value=code;
+    doConnect();
+}
+function joinRoom1488AsOperator(){
+    myName=OP_USER;
+    document.getElementById('acc-info-name').textContent=OP_USER;
+    document.getElementById('acc-info-bar').style.display='flex';
+    MESSENGER_ON=true;
+    closeOperator();
+    document.getElementById('code-in').value='1488';
+    doConnect();
+}
+
+// ── Moderation (ban / mute) ───────────────────────────────────────────────────
+const MOD_TOPIC = 'neochat/__admin__/moderation';
+let _bannedUsers = new Set();
+let _mutedUsers  = new Set();
+
+function _applyModPayload(payload){
+    try{
+        const d=JSON.parse(payload);
+        _bannedUsers=new Set((d.banned||[]).map(n=>n.toLowerCase()));
+        _mutedUsers =new Set((d.muted ||[]).map(n=>n.toLowerCase()));
+        // Disconnect self if banned
+        if(myName && _bannedUsers.has(myName.toLowerCase())){
+            doDisconnect();
+            loginStatus('⛔  You have been banned from NeoChat.','#ff3366');
+        }
+        if(myName && _mutedUsers.has(myName.toLowerCase())){
+            sysMsg&&sysMsg('🔇 You have been muted by an admin.');
+        }
+    }catch(e){}
+}
+
+function banUser(){
+    const name=document.getElementById('mod-input').value.trim();
+    if(!name)return;
+    _bannedUsers.add(name.toLowerCase());
+    _mutedUsers.delete(name.toLowerCase());
+    document.getElementById('mod-input').value='';
+    _publishMod();
+    refreshModList();
+}
+function muteUser(){
+    const name=document.getElementById('mod-input').value.trim();
+    if(!name)return;
+    _mutedUsers.add(name.toLowerCase());
+    _bannedUsers.delete(name.toLowerCase());
+    document.getElementById('mod-input').value='';
+    _publishMod();
+    refreshModList();
+}
+function unmodUser(name){
+    _bannedUsers.delete(name.toLowerCase());
+    _mutedUsers.delete(name.toLowerCase());
+    _publishMod();
+    refreshModList();
+}
+function _publishMod(){
+    const payload=JSON.stringify({banned:[..._bannedUsers],muted:[..._mutedUsers]});
+    BROKER_URLS.forEach((url,i)=>{
+        const c=mqtt.connect(url,{clientId:'mod_'+i+'_'+Math.random().toString(36).slice(2,8),keepalive:10,connectTimeout:5000,reconnectPeriod:0});
+        c.on('connect',()=>{ c.publish(MOD_TOPIC,payload,{retain:true,qos:1},()=>c.end(true)); });
+        c.on('error',()=>{});
+    });
+}
+function refreshModList(){
+    const list=document.getElementById('mod-list');
+    if(!list)return;
+    list.innerHTML='';
+    _bannedUsers.forEach(name=>list.appendChild(_makeModRow(name,'#ff3366','🚫 Banned')));
+    _mutedUsers.forEach(name=>list.appendChild(_makeModRow(name,'#ffaa00','🔇 Muted')));
+}
+function _makeModRow(name,color,label){
+    const row=document.createElement('div');
+    row.style.cssText='display:flex;align-items:center;gap:8px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:10px;padding:8px 12px;';
+    const lbl=document.createElement('span');
+    lbl.style.cssText='flex:1;font-size:12px;color:#8892b0;';
+    lbl.innerHTML=`${label}: <b style="color:${color}">${esc(name)}</b>`;
+    const btn=document.createElement('button');
+    btn.textContent='Remove';
+    btn.style.cssText='background:transparent;border:1px solid rgba(255,255,255,0.15);border-radius:6px;color:#4a5580;font-size:10px;padding:3px 8px;width:auto;cursor:pointer;';
+    btn.onclick=()=>unmodUser(name);
+    row.append(lbl,btn);
+    return row;
+}
+
+// Subscribe MOD_TOPIC on each connected broker (called inside connectAll onEach)
+function _subscribeModTopic(c){
+    c.subscribe(MOD_TOPIC,{qos:1});
+    c.on('message',(_t,buf)=>{
+        if(_t===MOD_TOPIC){ _applyModPayload(buf.toString()); }
+    });
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+genCode();
+</script>
+</body>
+</html>
