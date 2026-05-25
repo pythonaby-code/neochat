@@ -156,6 +156,7 @@ button:active { transform: scale(0.96); opacity: 0.85; }
     padding: 2px 0;
 }
 .bubble.sys .b-text { color: #4a5580; font-size: 11px; text-align: center; }
+.date-sep { text-align: center; color: #4a5580; font-size: 10px; margin: 12px 0 4px; }
 
 .input-bar {
     background: #03030f;
@@ -695,6 +696,9 @@ button:active { transform: scale(0.96); opacity: 0.85; }
                      onchange="handleFile(this)">
         </label>
         <button class="btn-voice-rec" id="voice-rec-btn" onclick="toggleVoiceRec()" title="Voice message">🎤</button>
+        <label class="btn-attach" title="Send file" style="background:rgba(0,212,255,0.09);border-color:rgba(0,212,255,0.3);color:#00d4ff;">
+            📁<input type="file" id="file-any-in" style="display:none" onchange="handleAnyFile(this)">
+        </label>
         <input id="msg-in" type="text" placeholder="Type a message…" autocomplete="off" autocorrect="off"
                oninput="onMsgKey()" onkeydown="if(event.key==='Enter')sendMsg()">
         <button class="btn-send" onclick="sendMsg()">➤</button>
@@ -849,7 +853,10 @@ button:active { transform: scale(0.96); opacity: 0.85; }
 let myName        = '';
 let topic         = '';
 let callTopic     = '';
+let safeRoom      = '';
 let MESSENGER_ON  = true;
+let _e2eKey       = null;
+let _lastDate     = '';
 
 const REGISTRY_PREFIX  = 'neochat/__registry__/v1/';
 const CALL_TOPIC_PREFIX = 'neochat/__call__/';
@@ -865,6 +872,91 @@ async function hashPw(pw){
         new TextEncoder().encode('neochat_v1::' + pw));
     return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
 }
+
+// ── E2E encryption (AES-GCM, key derived from room code) ─────────────────────
+async function deriveE2EKey(roomCode){
+    try{
+        const km = await crypto.subtle.importKey('raw',
+            new TextEncoder().encode(roomCode), 'PBKDF2', false, ['deriveKey']);
+        return crypto.subtle.deriveKey(
+            {name:'PBKDF2', salt:new TextEncoder().encode('neochat_e2e_v1'),
+             iterations:100000, hash:'SHA-256'},
+            km, {name:'AES-GCM',length:256}, false, ['encrypt','decrypt']);
+    }catch(e){ return null; }
+}
+async function e2eEncrypt(key, plaintext){
+    if(!key) return plaintext;
+    try{
+        const iv = crypto.getRandomValues(new Uint8Array(12));
+        const ct = await crypto.subtle.encrypt({name:'AES-GCM',iv}, key,
+            new TextEncoder().encode(plaintext));
+        const out = new Uint8Array(12 + ct.byteLength);
+        out.set(iv); out.set(new Uint8Array(ct), 12);
+        return JSON.stringify({e: btoa(String.fromCharCode(...out))});
+    }catch(e){ return plaintext; }
+}
+async function e2eDecrypt(key, payload){
+    if(!key) return payload;
+    try{
+        const d = JSON.parse(payload);
+        if(!d.e) return payload;
+        const raw = Uint8Array.from(atob(d.e), c=>c.charCodeAt(0));
+        const pt  = await crypto.subtle.decrypt({name:'AES-GCM',iv:raw.slice(0,12)},
+            key, raw.slice(12));
+        return new TextDecoder().decode(pt);
+    }catch(e){ return null; }
+}
+// Publish to chat topic with optional E2E encryption
+async function e2ePub(topicName, payload, opts){
+    const enc = await e2eEncrypt(_e2eKey, payload);
+    pubAll(topicName, enc, opts);
+}
+
+// ── URL linkify ───────────────────────────────────────────────────────────────
+function linkify(rawText){
+    const re = /https?:\/\/[^\s<>"']+/g;
+    let result='', last=0, m;
+    re.lastIndex=0;
+    while((m=re.exec(rawText))!==null){
+        result += esc(rawText.slice(last, m.index));
+        const url = m[0];
+        result += `<a href="${esc(url)}" target="_blank" rel="noopener" style="color:#00d4ff">${esc(url)}</a>`;
+        last = m.index + url.length;
+    }
+    return result + esc(rawText.slice(last));
+}
+
+// ── Date separator ────────────────────────────────────────────────────────────
+function _maybeDateSep(forDate){
+    const date = forDate || new Date().toISOString().slice(0,10);
+    if(date === _lastDate) return;
+    _lastDate = date;
+    const el = document.createElement('div');
+    el.className = 'date-sep';
+    try{
+        const dt = new Date(date + 'T12:00:00');
+        el.textContent = '── ' + dt.toLocaleDateString(undefined,
+            {weekday:'long',year:'numeric',month:'long',day:'numeric'}) + ' ──';
+    }catch(e){ el.textContent = '── ' + date + ' ──'; }
+    appendEl(el);
+}
+
+// ── Chat history (localStorage) ──────────────────────────────────────────────
+function _histKey(room){ return 'neochat_hist_' + room; }
+function _saveHist(room, entry){
+    try{
+        const k = _histKey(room);
+        let h = JSON.parse(localStorage.getItem(k)||'[]');
+        h.push(entry);
+        if(h.length > 100) h = h.slice(-100);
+        localStorage.setItem(k, JSON.stringify(h));
+    }catch(e){}
+}
+function _loadHist(room){
+    try{ return JSON.parse(localStorage.getItem(_histKey(room))||'[]'); }
+    catch(e){ return []; }
+}
+function _clearHist(room){ try{ localStorage.removeItem(_histKey(room)); }catch(e){} }
 
 function accStatus(msg){
     ['acc-reg-status','acc-in-status'].forEach(id=>{
@@ -1130,7 +1222,7 @@ function setDot(state){
 }
 
 // ── Connect ───────────────────────────────────────────────────────────────────
-function doConnect(){
+async function doConnect(){
     if(!MESSENGER_ON){ loginStatus('Sorry! Messenger is turned off.','#ff3366'); return; }
     if(!myName){ loginStatus('⚠  No account. Please restart.','#ff3366'); return; }
     const name=myName;
@@ -1139,6 +1231,7 @@ function doConnect(){
 
     myName=name;
     const safeCode=san(code);
+    safeRoom=safeCode;
     topic     =`neochat/v1/${safeCode}`;
     callTopic = CALL_TOPIC_PREFIX + safeCode;
     document.getElementById('hdr-room').textContent=`Room: ${code}`;
@@ -1151,6 +1244,9 @@ function doConnect(){
     showChat();
     loginStatus('Connecting…','#00d4ff');
 
+    _e2eKey = null;
+    try { _e2eKey = await deriveE2EKey(code); } catch(e) {}
+
     const baseId='neo_'+Math.random().toString(36).slice(2,10);
     connectAll(baseId,
         (c) => {
@@ -1159,13 +1255,13 @@ function doConnect(){
             c.subscribe(callTopic);
             c.subscribe('neochat/__admin__/control',{qos:1});
             _subscribeModTopic(c);
-            c.on('message',(_t,buf)=>{
-                if(_t===MOD_TOPIC) return; // handled inside _subscribeModTopic
+            c.on('message',async (_t,buf)=>{
+                if(_t===MOD_TOPIC) return;
                 if(_t==='neochat/__admin__/control'){
                     try{
                         const ctrl=JSON.parse(buf.toString());
                         if(ctrl.action==='off'){
-                            if(myName.toLowerCase()==='mrminer') return; // admin is never kicked
+                            if(myName.toLowerCase()==='mrminer') return;
                             MESSENGER_ON=false;
                             doDisconnect();
                             loginStatus('Sorry! Messenger is turned off.','#ff3366');
@@ -1178,7 +1274,6 @@ function doConnect(){
                 if(_t===callTopic){
                     try{
                         const d=JSON.parse(buf.toString());
-                        // ICE candidates must use candidate string as key — they can all share the same ts
                         const ck = d.type==='call_ice'
                             ? `ice|${d.from||''}|${d.candidate&&d.candidate.candidate||''}`
                             : `${d.type||''}|${d.from||''}|${d.ts||''}`;
@@ -1190,9 +1285,10 @@ function doConnect(){
                     return;
                 }
                 try{
-                    const d=JSON.parse(buf.toString());
+                    let rawStr=buf.toString();
+                    if(_e2eKey){ const dec=await e2eDecrypt(_e2eKey,rawStr); if(dec!==null) rawStr=dec; }
+                    const d=JSON.parse(rawStr);
                     const msgType=d.type||'text';
-                    // Filter banned/muted senders
                     const _sndr=((d.sender||d.from||'').toLowerCase());
                     if(_sndr && _sndr!==myName.toLowerCase() &&
                        (_bannedUsers.has(_sndr)||_mutedUsers.has(_sndr))) return;
@@ -1217,7 +1313,9 @@ function doConnect(){
                         _seen.add(key);
                         if(_seen.size>300)_seen.clear();
                         addActiveUser(d.sender);
+                        _maybeDateSep();
                         addVoiceBubble(d.sender||'?',d.data||'',d.mime||'audio/webm',d.duration||0,d.ts||'',d.sender===myName);
+                        _saveHist(safeCode,{type:'voice',sender:d.sender,mime:d.mime,duration:d.duration,ts:d.ts,date:new Date().toISOString().slice(0,10)});
                         if(d.sender!==myName) _showNotif(d.sender,'🎤 Voice message');
                         return;
                     }
@@ -1227,8 +1325,22 @@ function doConnect(){
                         _seen.add(key);
                         if(_seen.size>300)_seen.clear();
                         addActiveUser(d.sender);
+                        _maybeDateSep();
                         addImageBubble(d.sender||'?',d.data||'',d.mime||'jpeg',d.ts||'',d.sender===myName);
+                        _saveHist(safeCode,{type:'image',sender:d.sender,mime:d.mime,ts:d.ts,date:new Date().toISOString().slice(0,10)});
                         if(d.sender!==myName) _showNotif(d.sender,'📎 Image');
+                        return;
+                    }
+                    if(msgType==='file'){
+                        const key=`${d.sender||''}|${d.ts||''}|file|${(d.name||'').slice(0,40)}`;
+                        if(_seen.has(key))return;
+                        _seen.add(key);
+                        if(_seen.size>300)_seen.clear();
+                        addActiveUser(d.sender);
+                        _maybeDateSep();
+                        addFileBubble(d.sender||'?',d.name||'file',d.data||'',d.ts||'',d.size||0,d.sender===myName);
+                        _saveHist(safeCode,{type:'file',sender:d.sender,name:d.name,size:d.size,ts:d.ts,date:new Date().toISOString().slice(0,10)});
+                        if(d.sender!==myName) _showNotif(d.sender,'📁 '+(d.name||'file'));
                         return;
                     }
                     if(msgType==='dm'){
@@ -1247,7 +1359,9 @@ function doConnect(){
                     _seen.add(key);
                     if(_seen.size>300)_seen.clear();
                     if(d.system){
+                        _maybeDateSep();
                         sysMsg(d.text);
+                        _saveHist(safeCode,{type:'sys',text:d.text,date:new Date().toISOString().slice(0,10)});
                         const jm=d.text&&d.text.match(/^(.+) joined the chat/);
                         const lm=d.text&&d.text.match(/^(.+) left the chat/);
                         if(jm)addActiveUser(jm[1]);
@@ -1255,15 +1369,31 @@ function doConnect(){
                         return;
                     }
                     addActiveUser(d.sender);
+                    _maybeDateSep();
                     addBubble(d.sender,d.text,d.ts,d.sender===myName,d.quote||null);
+                    _saveHist(safeCode,{type:'msg',sender:d.sender,text:d.text,ts:d.ts,quote:d.quote||null,date:new Date().toISOString().slice(0,10)});
                 }catch(e){}
             });
             c.on('error',()=>{ setDot('off'); });
             c.on('close',()=>{ setDot('off'); });
         },
         () => {
-            // Called once when first broker connects — update UI
+            // Called once when first broker connects — load history, update UI
             setDot('on');
+            const hist=_loadHist(safeCode);
+            hist.forEach(entry=>{
+                _maybeDateSep(entry.date);
+                if(entry.type==='msg')
+                    addBubble(entry.sender,entry.text||'',entry.ts||'',entry.sender===myName,entry.quote||null);
+                else if(entry.type==='sys')
+                    sysMsg(entry.text||'');
+                else if(entry.type==='image')
+                    addImageBubble(entry.sender,'','jpeg',entry.ts||'',entry.sender===myName);
+                else if(entry.type==='voice')
+                    addVoiceBubble(entry.sender,'',entry.mime||'audio/webm',entry.duration||0,entry.ts||'',entry.sender===myName);
+                else if(entry.type==='file')
+                    addFileBubble(entry.sender,entry.name||'file','',entry.ts||'',entry.size||0,entry.sender===myName);
+            });
             pubSystem(`${name} joined the chat 👋`);
             startHeartbeat();
             if(typeof Notification!=='undefined'&&Notification.permission==='default')
@@ -1301,7 +1431,7 @@ function now(){ const d=new Date(); return d.getHours().toString().padStart(2,'0
 
 function pubSystem(text){
     if(!clients.length)return;
-    pubAll(topic,JSON.stringify({sender:'__system__',text,ts:now(),system:true}),{qos:1});
+    e2ePub(topic,JSON.stringify({sender:'__system__',text,ts:now(),system:true}),{qos:1});
 }
 
 function sendMsg(){
@@ -1312,7 +1442,7 @@ function sendMsg(){
     inp.value='';
     const msg={sender:myName,text:txt,ts:now(),system:false};
     if(_replyTo){ msg.quote=_replyTo; clearReply(); }
-    pubAll(topic,JSON.stringify(msg),{qos:1});
+    e2ePub(topic,JSON.stringify(msg),{qos:1});
 }
 
 function addBubble(sender, text, ts, mine, quote){
@@ -1338,7 +1468,7 @@ function addBubble(sender, text, ts, mine, quote){
 
     d.innerHTML=`<div class="b-name">${esc(sender)}${badge}</div>`+
         quoteHtml+
-        `<div class="b-text">${esc(text)}</div>`+
+        `<div class="b-text">${linkify(text)}</div>`+
         `<div class="b-ts">${esc(ts)} <button class="btn-react-add" title="Add reaction">+😊</button></div>`+
         `<div class="b-reactions" id="rc${bid}"></div>`;
 
@@ -1368,7 +1498,7 @@ function appendEl(el){
     box.appendChild(el);
     box.scrollTop=box.scrollHeight;
 }
-function clearMsgs(){ document.getElementById('messages').innerHTML=''; }
+function clearMsgs(){ document.getElementById('messages').innerHTML=''; _lastDate=''; }
 
 // ── Username uniqueness (MQTT retained registry) ──────────────────────────────
 function checkUsernameAvailable(name){
@@ -1442,7 +1572,7 @@ function handleFile(input){
             cv.width=w; cv.height=h;
             cv.getContext('2d').drawImage(img,0,0,w,h);
             const b64=cv.toDataURL('image/jpeg',0.70).split(',')[1];
-            pubAll(topic,JSON.stringify({
+            e2ePub(topic,JSON.stringify({
                 type:'image', sender:myName, data:b64, mime:'jpeg',
                 ts:now(), system:false,
             }),{qos:0});
@@ -1458,6 +1588,41 @@ function addImageBubble(sender,b64,mime,ts,mine){
     d.innerHTML=`<div class="b-name">${esc(sender)}</div>`+
         `<img src="${src}" onclick="this.classList.toggle('full')">`+
         `<div class="b-ts">${esc(ts)}</div>`;
+    appendEl(d);
+}
+
+function handleAnyFile(input){
+    const file=input.files[0];
+    if(!file||!clients.length){ input.value=''; return; }
+    input.value='';
+    if(file.size>250*1024){ alert('File too large (max 250 KB).'); return; }
+    const reader=new FileReader();
+    reader.onload=e=>{
+        const b64=e.target.result.split(',')[1];
+        e2ePub(topic,JSON.stringify({
+            type:'file', sender:myName, name:file.name, data:b64, size:file.size,
+            ts:now(), system:false,
+        }),{qos:0});
+    };
+    reader.readAsDataURL(file);
+}
+function addFileBubble(sender, name, b64, ts, size, mine){
+    const d=document.createElement('div');
+    d.className='bubble '+(mine?'mine':'theirs');
+    let sizeStr='';
+    if(size) sizeStr=size>=1024*1024?(size/1024/1024).toFixed(1)+'MB':Math.round(size/1024)+'KB';
+    let fileContent;
+    if(b64){
+        const bytes=Uint8Array.from(atob(b64),c=>c.charCodeAt(0));
+        const url=URL.createObjectURL(new Blob([bytes]));
+        fileContent=`<a href="${url}" download="${esc(name)}" style="color:#8b5cf6;">📁 ${esc(name)}</a>`;
+    } else {
+        fileContent=`<span style="color:#4a5580;">📁 ${esc(name)}</span>`;
+    }
+    d.innerHTML=`<div class="b-name">${esc(sender)}</div>`+
+        `<div class="b-text">${fileContent}`+
+        (sizeStr?` <span style="color:#4a5580;font-size:10px;">${sizeStr}</span>`:'')+
+        `</div><div class="b-ts">${esc(ts)}</div>`;
     appendEl(d);
 }
 
@@ -1519,7 +1684,7 @@ function sendDM(){
     if(!text||!dmTarget||!clients.length)return;
     document.getElementById('dm-input').value='';
     const msg={type:'dm',to:dmTarget,from:myName,text,ts:now()};
-    pubAll(topic,JSON.stringify(msg),{qos:1});
+    e2ePub(topic,JSON.stringify(msg),{qos:1});
     addDMBubble(myName,dmTarget,text,msg.ts,true);
 }
 function addDMBubble(from,to,text,ts,mine){
@@ -2005,7 +2170,7 @@ function handlePresence(name, status){
     if(status==='online') addActiveUser(name);
     else {
         activeUsers.delete(name);
-        renderActiveUsers();
+        renderUsers();
     }
 }
 
@@ -2100,8 +2265,7 @@ function startVoiceRec(){
             reader.onload=()=>{
                 const b64=reader.result.split(',')[1];
                 const msg={type:'voice',sender:myName,data:b64,mime:mime,duration:duration,ts:now(),system:false};
-                pubAll(topic,JSON.stringify(msg),{qos:1});
-                addVoiceBubble(myName,b64,mime,duration,msg.ts,true);
+                e2ePub(topic,JSON.stringify(msg),{qos:1});
             };
             reader.readAsDataURL(blob);
             _voiceRecording=false;
