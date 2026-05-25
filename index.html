@@ -494,6 +494,67 @@ button:active { transform: scale(0.96); opacity: 0.85; }
 .bubble.dm-out { align-self: flex-end;   background: rgba(255,170,0,0.09); border: 1px solid rgba(255,170,0,0.28); }
 .bubble.dm-in  { align-self: flex-start; background: rgba(255,170,0,0.06); border: 1px solid rgba(255,170,0,0.2); }
 .bubble.dm-out .b-name, .bubble.dm-in .b-name { color: #ffaa00; }
+
+/* ── TYPING INDICATOR ── */
+#typing-ind { padding:2px 16px 4px; font-size:11px; color:#4a5580; min-height:18px; flex-shrink:0; }
+
+/* ── REPLY BAR ── */
+#reply-bar { background:rgba(0,212,255,0.06); border-top:1px solid rgba(0,212,255,0.15); padding:5px 12px 5px 16px; display:none; align-items:center; gap:8px; flex-shrink:0; }
+#reply-bar.show { display:flex; }
+#reply-preview { flex:1; font-size:11px; color:#8892b0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+#reply-preview b { color:#00d4ff; }
+.btn-reply-cancel { background:none; border:none; color:#4a5580; font-size:16px; width:22px; height:22px; padding:0; flex-shrink:0; cursor:pointer; }
+
+/* ── QUOTE IN BUBBLE ── */
+.b-quote { border-left:2px solid rgba(0,212,255,0.5); padding:3px 8px; margin-bottom:5px; background:rgba(0,212,255,0.06); border-radius:0 6px 6px 0; cursor:pointer; }
+.bubble.theirs .b-quote { border-left-color:rgba(139,92,246,0.5); }
+.b-quote-name { font-size:9px; color:#00d4ff; font-weight:700; margin-bottom:1px; }
+.bubble.theirs .b-quote-name { color:#8b5cf6; }
+.b-quote-text { font-size:11px; color:#8892b0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+
+/* ── REACTIONS ── */
+.b-reactions { display:flex; flex-wrap:wrap; gap:3px; margin-top:4px; }
+.reaction-pill { background:rgba(255,255,255,0.07); border:1px solid rgba(255,255,255,0.12); border-radius:12px; padding:2px 7px; font-size:13px; cursor:pointer; transition:background 0.12s; display:inline-flex; align-items:center; gap:3px; }
+.reaction-pill:hover { background:rgba(255,255,255,0.13); }
+.reaction-pill.mine { background:rgba(0,212,255,0.1); border-color:rgba(0,212,255,0.3); }
+.reaction-pill .r-count { font-size:10px; color:#8892b0; }
+.btn-react-add { background:none; border:1px solid rgba(255,255,255,0.08); border-radius:12px; padding:1px 6px; font-size:13px; cursor:pointer; color:#4a5580; transition:all 0.12s; margin-top:3px; opacity:0; }
+.bubble:hover .btn-react-add, .bubble:focus-within .btn-react-add { opacity:1; }
+
+/* ── EMOJI PICKER ── */
+#emoji-picker { position:fixed; z-index:300; background:#03030f; border:1px solid rgba(0,212,255,0.22); border-radius:16px; padding:10px; gap:4px; display:none; flex-wrap:wrap; width:196px; box-shadow:0 8px 32px rgba(0,0,0,0.6); }
+#emoji-picker.show { display:flex; }
+.emoji-btn { background:none; border:none; font-size:22px; width:40px; height:40px; border-radius:9px; padding:0; cursor:pointer; transition:background 0.12s; }
+.emoji-btn:hover { background:rgba(255,255,255,0.1); }
+
+/* ── VIDEO CALL ── */
+#video-container { position:fixed; inset:0; z-index:150; background:#000; display:none; flex-direction:column; align-items:center; justify-content:center; }
+#video-container.active { display:flex; }
+#remote-video { width:100%; height:100%; object-fit:cover; background:#111; }
+#local-video { position:absolute; bottom:90px; right:16px; width:110px; border-radius:10px; border:2px solid rgba(0,212,255,0.4); background:#000; }
+#video-call-label { position:absolute; top:20px; left:50%; transform:translateX(-50%); color:rgba(255,255,255,0.85); font-size:13px; font-weight:600; text-shadow:0 1px 4px rgba(0,0,0,0.8); }
+#video-controls { position:absolute; bottom:24px; display:flex; gap:12px; align-items:center; }
+.btn-vcall-hangup { background:rgba(255,51,102,0.25); border:2px solid rgba(255,51,102,0.65); color:#ff3366; border-radius:50%; width:56px; height:56px; font-size:24px; padding:0; }
+.btn-vcall-ctrl { background:rgba(255,255,255,0.12); border:1px solid rgba(255,255,255,0.2); color:#e8eaf6; border-radius:50%; width:44px; height:44px; font-size:18px; padding:0; }
+.btn-vcall-ctrl.off { background:rgba(255,51,102,0.15); border-color:rgba(255,51,102,0.4); color:#ff3366; }
+
+/* ── VOICE MESSAGE ── */
+.voice-bubble { display:flex; align-items:center; gap:8px; padding:2px 0; margin-top:4px; min-width:160px; }
+.btn-vplay { background:rgba(0,212,255,0.12); border:1px solid rgba(0,212,255,0.3); color:#00d4ff; border-radius:50%; width:34px; height:34px; font-size:14px; padding:0; flex-shrink:0; cursor:pointer; }
+.btn-vplay:hover { background:rgba(0,212,255,0.22); }
+.voice-wave { flex:1; display:flex; align-items:center; gap:2px; height:22px; }
+.voice-wave span { display:inline-block; width:3px; border-radius:2px; background:rgba(0,212,255,0.45); min-height:3px; animation:vwave 1.4s ease-in-out infinite; }
+@keyframes vwave { 0%,100%{height:3px} 50%{height:18px} }
+.voice-dur { font-size:10px; color:#4a5580; flex-shrink:0; }
+.btn-voice-rec { background:rgba(255,51,102,0.1); border:1px solid rgba(255,51,102,0.3); color:#ff3366; width:46px; height:46px; border-radius:50%; flex-shrink:0; font-size:20px; padding:0; display:flex; align-items:center; justify-content:center; transition:background 0.15s; }
+.btn-voice-rec.recording { background:rgba(255,51,102,0.3); border-color:rgba(255,51,102,0.7); animation:pulse-r 0.8s ease-in-out infinite; }
+@keyframes pulse-r { 50%{transform:scale(1.1); box-shadow:0 0 10px rgba(255,51,102,0.4);} }
+
+/* ── NOTIFICATION BAR ── */
+#notif-bar { background:rgba(0,212,255,0.05); border-bottom:1px solid rgba(0,212,255,0.15); padding:7px 12px; display:none; align-items:center; gap:8px; flex-shrink:0; font-size:11px; color:#8892b0; }
+#notif-bar.show { display:flex; }
+.btn-notif-allow { background:rgba(0,212,255,0.12); border:1px solid rgba(0,212,255,0.35); color:#00d4ff; border-radius:7px; font-size:11px; padding:4px 11px; width:auto; flex-shrink:0; }
+.btn-notif-dismiss { background:none; border:none; color:#4a5580; font-size:15px; padding:0; width:22px; margin-left:auto; cursor:pointer; }
 </style>
 </head>
 <body>
@@ -592,6 +653,7 @@ button:active { transform: scale(0.96); opacity: 0.85; }
             <div class="hdr-dot"  id="hdr-dot">● connecting</div>
         </div>
         <button class="btn-call-hdr" id="call-btn" onclick="startCall()" title="Voice call">📞</button>
+        <button class="btn-call-hdr" id="video-call-btn" onclick="startVideoCall()" title="Video call">📹</button>
         <button class="btn-call-hdr" onclick="openDrawer()" title="Active users">👥</button>
     </div>
 
@@ -608,15 +670,33 @@ button:active { transform: scale(0.96); opacity: 0.85; }
         <button class="btn-hangup" onclick="endCall()" title="Hang up">📵</button>
     </div>
 
+    <!-- Notification permission bar -->
+    <div id="notif-bar">
+        🔔 Get notified when new messages arrive?
+        <button class="btn-notif-allow" onclick="requestNotifPerms()">Allow</button>
+        <button class="btn-notif-dismiss" onclick="dismissNotifBar()">✕</button>
+    </div>
+
     <div class="messages" id="messages"></div>
+
+    <!-- Typing indicator -->
+    <div id="typing-ind"></div>
+
+    <!-- Reply preview bar -->
+    <div id="reply-bar">
+        <span style="color:#00d4ff;font-size:15px;">↩</span>
+        <span id="reply-preview"></span>
+        <button class="btn-reply-cancel" onclick="clearReply()">✕</button>
+    </div>
 
     <div class="input-bar">
         <label class="btn-attach" title="Send image">
             📎<input type="file" id="file-in" accept="image/*" style="display:none"
                      onchange="handleFile(this)">
         </label>
+        <button class="btn-voice-rec" id="voice-rec-btn" onclick="toggleVoiceRec()" title="Voice message">🎤</button>
         <input id="msg-in" type="text" placeholder="Type a message…" autocomplete="off" autocorrect="off"
-               onkeydown="if(event.key==='Enter')sendMsg()">
+               oninput="onMsgKey()" onkeydown="if(event.key==='Enter')sendMsg()">
         <button class="btn-send" onclick="sendMsg()">➤</button>
     </div>
 
@@ -646,6 +726,30 @@ button:active { transform: scale(0.96); opacity: 0.85; }
             </div>
             <button class="btn-dm-cancel" onclick="closeDM()">Cancel</button>
         </div>
+    </div>
+</div>
+
+<!-- Emoji reaction picker (global, outside chat div) -->
+<div id="emoji-picker">
+    <button class="emoji-btn" onclick="pickReaction('👍')">👍</button>
+    <button class="emoji-btn" onclick="pickReaction('❤️')">❤️</button>
+    <button class="emoji-btn" onclick="pickReaction('😂')">😂</button>
+    <button class="emoji-btn" onclick="pickReaction('😮')">😮</button>
+    <button class="emoji-btn" onclick="pickReaction('😢')">😢</button>
+    <button class="emoji-btn" onclick="pickReaction('🔥')">🔥</button>
+    <button class="emoji-btn" onclick="pickReaction('✅')">✅</button>
+    <button class="emoji-btn" onclick="pickReaction('🎉')">🎉</button>
+</div>
+
+<!-- Video call overlay -->
+<div id="video-container">
+    <div id="video-call-label"></div>
+    <video id="remote-video" autoplay playsinline></video>
+    <video id="local-video" autoplay playsinline muted></video>
+    <div id="video-controls">
+        <button class="btn-vcall-ctrl" id="vmute-btn" onclick="toggleVMute()">🎤</button>
+        <button class="btn-vcall-hangup" onclick="endCall()">📵</button>
+        <button class="btn-vcall-ctrl" id="vcam-btn" onclick="toggleVCam()">📷</button>
     </div>
 </div>
 
@@ -1092,6 +1196,31 @@ function doConnect(){
                     const _sndr=((d.sender||d.from||'').toLowerCase());
                     if(_sndr && _sndr!==myName.toLowerCase() &&
                        (_bannedUsers.has(_sndr)||_mutedUsers.has(_sndr))) return;
+                    if(msgType==='typing'){
+                        if(_sndr&&_sndr!==myName.toLowerCase()) handleTyping(d.from||d.sender||'?');
+                        return;
+                    }
+                    if(msgType==='presence'){
+                        handlePresence(d.from||d.sender||'?', d.status||'online');
+                        return;
+                    }
+                    if(msgType==='reaction'){
+                        const rk=`reaction|${d.from||''}|${d.target_id||''}|${d.emoji||''}`;
+                        if(_seen.has(rk))return;
+                        _seen.add(rk);
+                        handleReaction(d);
+                        return;
+                    }
+                    if(msgType==='voice'){
+                        const key=`${d.sender||''}|${d.ts||''}|voice`;
+                        if(_seen.has(key))return;
+                        _seen.add(key);
+                        if(_seen.size>300)_seen.clear();
+                        addActiveUser(d.sender);
+                        addVoiceBubble(d.sender||'?',d.data||'',d.mime||'audio/webm',d.duration||0,d.ts||'',d.sender===myName);
+                        if(d.sender!==myName) _showNotif(d.sender,'🎤 Voice message');
+                        return;
+                    }
                     if(msgType==='image'){
                         const key=`${d.sender||''}|${d.ts||''}|image`;
                         if(_seen.has(key))return;
@@ -1099,6 +1228,7 @@ function doConnect(){
                         if(_seen.size>300)_seen.clear();
                         addActiveUser(d.sender);
                         addImageBubble(d.sender||'?',d.data||'',d.mime||'jpeg',d.ts||'',d.sender===myName);
+                        if(d.sender!==myName) _showNotif(d.sender,'📎 Image');
                         return;
                     }
                     if(msgType==='dm'){
@@ -1125,7 +1255,7 @@ function doConnect(){
                         return;
                     }
                     addActiveUser(d.sender);
-                    addBubble(d.sender,d.text,d.ts,d.sender===myName);
+                    addBubble(d.sender,d.text,d.ts,d.sender===myName,d.quote||null);
                 }catch(e){}
             });
             c.on('error',()=>{ setDot('off'); });
@@ -1135,6 +1265,9 @@ function doConnect(){
             // Called once when first broker connects — update UI
             setDot('on');
             pubSystem(`${name} joined the chat 👋`);
+            startHeartbeat();
+            if(typeof Notification!=='undefined'&&Notification.permission==='default')
+                document.getElementById('notif-bar').classList.add('show');
         },
         () => {
             showLogin();
@@ -1144,8 +1277,15 @@ function doConnect(){
 }
 
 function doDisconnect(){
-    if(callState!=='idle') endCall(false); // silent end, no pubCall
+    if(callState!=='idle') endCall(false);
+    stopHeartbeat();
+    if(_voiceRecording) stopVoiceRec();
+    Object.keys(_typingUsers).forEach(k=>clearTimeout(_typingUsers[k]));
+    _typingUsers={}; _renderTyping();
+    document.getElementById('notif-bar').classList.remove('show');
+    clearReply();
     if(clients.length){
+        sendPresence('offline');
         pubSystem(`${myName} left the chat 👋`);
         clients.forEach(c=>{ try{ c.end(true); }catch(e){} });
         clients=[];
@@ -1170,15 +1310,51 @@ function sendMsg(){
     if(!txt||!clients.length)return;
     if(_mutedUsers.has(myName.toLowerCase())){ sysMsg('🔇 You are muted and cannot send messages.'); return; }
     inp.value='';
-    pubAll(topic,JSON.stringify({sender:myName,text:txt,ts:now(),system:false}),{qos:1});
+    const msg={sender:myName,text:txt,ts:now(),system:false};
+    if(_replyTo){ msg.quote=_replyTo; clearReply(); }
+    pubAll(topic,JSON.stringify(msg),{qos:1});
 }
 
-function addBubble(sender, text, ts, mine){
+function addBubble(sender, text, ts, mine, quote){
+    const msgId=sender+'|'+ts;
+    const bid=_bubbleCounter++;
+    _bidMap[msgId]=bid;
+
     const d=document.createElement('div');
     d.className='bubble '+(mine?'mine':'theirs');
+    d.dataset.bid=String(bid);
+    d.dataset.msgid=msgId;
+    d.dataset.sender=sender;
+    d.dataset.text=text;
+
     const badge=sender.toLowerCase()==='mrminer'
         ? ' <span style="color:#ff3366;font-size:9px;font-weight:700;">[Admin NeoNext]</span>' : '';
-    d.innerHTML=`<div class="b-name">${esc(sender)}${badge}</div><div class="b-text">${esc(text)}</div><div class="b-ts">${esc(ts)}</div>`;
+
+    let quoteHtml='';
+    if(quote&&quote.sender){
+        quoteHtml=`<div class="b-quote"><div class="b-quote-name">${esc(quote.sender)}</div>`+
+                  `<div class="b-quote-text">${esc((quote.text||'').slice(0,80))}</div></div>`;
+    }
+
+    d.innerHTML=`<div class="b-name">${esc(sender)}${badge}</div>`+
+        quoteHtml+
+        `<div class="b-text">${esc(text)}</div>`+
+        `<div class="b-ts">${esc(ts)} <button class="btn-react-add" title="Add reaction">+😊</button></div>`+
+        `<div class="b-reactions" id="rc${bid}"></div>`;
+
+    d.querySelector('.btn-react-add').onclick=(e)=>{e.stopPropagation();showEmojiPicker(bid,msgId,e);};
+    if(quote&&quote.sender){
+        d.querySelector('.b-quote').onclick=()=>setReplyTo(quote.sender,quote.text||'');
+    }
+    d.addEventListener('click',e=>{
+        if(!e.target.closest('.btn-react-add')&&!e.target.closest('.b-quote')&&!e.target.closest('.reaction-pill'))
+            setReplyTo(sender,text);
+    });
+
+    if(!mine) _maybeShowNotifBar();
+    if(!mine && !document.hidden) {} // always show in-app
+    if(!mine) _showNotif(sender,text);
+
     appendEl(d);
 }
 function sysMsg(text){
@@ -1388,7 +1564,15 @@ function pubCall(msg){
 
 function _setupPC(){
     const p = new RTCPeerConnection(ICE_CONFIG);
-    p.ontrack = e => { document.getElementById('remote-audio').srcObject = e.streams[0]; };
+    p.ontrack = e => {
+        const stream=e.streams[0];
+        if(e.track.kind==='video'){
+            document.getElementById('remote-video').srcObject=stream;
+            if(_isVideo) _showVideoContainer(callPeer);
+        } else {
+            document.getElementById('remote-audio').srcObject=stream;
+        }
+    };
     p.onicecandidate = e => {
         if(e.candidate) pubCall({type:'call_ice',from:myName,candidate:e.candidate,ts:now()});
     };
@@ -1419,12 +1603,13 @@ function _setupPC(){
 }
 
 function startCall(){
-    if(callState==='calling'){ endCall(); return; } // tap again to cancel
+    if(callState==='calling'){ endCall(); return; }
     if(callState!=='idle'||!clients.length)return;
+    _isVideo=false;
     callState='calling';
     document.getElementById('call-btn').className='btn-call-hdr calling';
     sysMsg('Calling… tap 📞 to cancel');
-    pubCall({type:'call_request',from:myName,ts:now()});
+    pubCall({type:'call_request',from:myName,isVideo:false,ts:now()});
     _callTimeout=setTimeout(()=>{ if(callState==='calling'){ endCall(); sysMsg('No answer.'); } },30000);
 }
 function callUser(name){
@@ -1444,11 +1629,12 @@ async function acceptCall(){
     pubCall({type:'call_accepted',from:myName,ts:now()});
     callState='waiting_offer';
     try{
-        localStream=await navigator.mediaDevices.getUserMedia({audio:true,video:false});
-        if(callOffer) await _finalizeAccept(); // offer already arrived before mic was ready
+        localStream=await navigator.mediaDevices.getUserMedia({audio:true,video:_isVideo});
+        if(_isVideo){ document.getElementById('local-video').srcObject=localStream; }
+        if(callOffer) await _finalizeAccept();
     }catch(err){
         _cleanupCall();
-        const msg=err.name==='NotAllowedError'?'Microphone permission denied.':err.message||err;
+        const msg=err.name==='NotAllowedError'?'Microphone/camera permission denied.':err.message||err;
         sysMsg('Could not accept call: '+msg);
     }
 }
@@ -1491,6 +1677,7 @@ function _cleanupCall(){
     if(localStream){localStream.getTracks().forEach(t=>t.stop());localStream=null;}
     if(pc){pc.close();pc=null;}
     _stopCallTimer();
+    _hideVideoContainer(); _isVideo=false; _muteOn=false; _camOff=false;
     callState='idle'; callPeer=''; callOffer=null; _pendingICE=[];
     document.getElementById('call-banner').style.display='none';
     document.getElementById('call-active').style.display='none';
@@ -1516,19 +1703,21 @@ function handleCallSignal(d){
         return;
     }
     if(type==='call_request'){
-        if(d.to && d.to.toLowerCase()!==myName.toLowerCase()) return; // targeted at someone else
+        if(d.to && d.to.toLowerCase()!==myName.toLowerCase()) return;
         if(callState==='calling'){
-            // someone called us while we were calling — cancel our outgoing call and accept theirs
             clearTimeout(_callTimeout); _callTimeout=null;
             callState='idle';
             document.getElementById('call-btn').className='btn-call-hdr';
+            document.getElementById('video-call-btn').className='btn-call-hdr';
         }
         if(callState!=='idle'){
             pubCall({type:'call_hangup',from:myName,reason:'busy',ts:now()});
             return;
         }
+        _isVideo=d.isVideo||false;
         callState='incoming'; callPeer=d.from;
-        document.getElementById('call-banner-name').textContent='📞 '+d.from+' wants to start a call';
+        const icon=_isVideo?'📹':'📞';
+        document.getElementById('call-banner-name').textContent=icon+' '+d.from+' wants to start a '+(d.isVideo?'video ':'')+'call';
         document.getElementById('call-banner').style.display='flex';
         return;
     }
@@ -1538,7 +1727,8 @@ function handleCallSignal(d){
         sysMsg(d.from+' accepted the call 📞');
         (async()=>{
             try{
-                localStream=await navigator.mediaDevices.getUserMedia({audio:true,video:false});
+                localStream=await navigator.mediaDevices.getUserMedia({audio:true,video:_isVideo});
+                if(_isVideo){ document.getElementById('local-video').srcObject=localStream; }
                 pc=_setupPC();
                 localStream.getTracks().forEach(t=>pc.addTrack(t,localStream));
                 const offer=await pc.createOffer();
@@ -1546,7 +1736,7 @@ function handleCallSignal(d){
                 pubCall({type:'call_offer',from:myName,sdp:offer,ts:now()});
             }catch(err){
                 _cleanupCall();
-                const msg=err.name==='NotAllowedError'?'Microphone permission denied.':err.message||err;
+                const msg=err.name==='NotAllowedError'?'Microphone/camera permission denied.':err.message||err;
                 sysMsg('Could not start call: '+msg);
             }
         })();
@@ -1755,6 +1945,252 @@ function _subscribeModTopic(c){
     c.on('message',(_t,buf)=>{
         if(_t===MOD_TOPIC){ _applyModPayload(buf.toString()); }
     });
+}
+
+// ── New feature state ─────────────────────────────────────────────────────────
+let _typingUsers   = {};   // name → timeout id
+let _typingTimer   = null; // local debounce for sending typing
+let _presenceTimer = null;
+let _replyTo       = null; // {sender,text} or null
+let _reactions     = {};   // msgId → [{from,emoji}]
+let _emojiMsgId    = null;
+let _emojiBid      = null;
+let _bubbleCounter = 0;
+let _bidMap        = {};   // msgId → bid
+let _isVideo       = false;
+let _mediaRecorder = null;
+let _voiceChunks   = [];
+let _voiceRecording= false;
+let _voiceStart    = 0;
+let _notifShown    = false;
+let _muteOn        = false;
+let _camOff        = false;
+
+// ── Typing indicator ──────────────────────────────────────────────────────────
+function onMsgKey(){
+    if(!clients.length) return;
+    clearTimeout(_typingTimer);
+    pubAll(topic, JSON.stringify({type:'typing',from:myName,ts:now()}), {qos:0});
+    _typingTimer = setTimeout(()=>{ _typingTimer=null; }, 3000);
+}
+function handleTyping(name){
+    if(_typingUsers[name]) clearTimeout(_typingUsers[name]);
+    _typingUsers[name] = setTimeout(()=>{ delete _typingUsers[name]; _renderTyping(); }, 4000);
+    _renderTyping();
+}
+function _renderTyping(){
+    const names = Object.keys(_typingUsers);
+    const el = document.getElementById('typing-ind');
+    if(!el) return;
+    if(!names.length){ el.textContent=''; return; }
+    el.textContent = names.length===1
+        ? names[0]+' is typing…'
+        : names.slice(0,-1).join(', ')+' and '+names[names.length-1]+' are typing…';
+}
+
+// ── Presence heartbeat ────────────────────────────────────────────────────────
+function sendPresence(status){
+    if(!clients.length) return;
+    pubAll(topic, JSON.stringify({type:'presence',from:myName,status:status,ts:now()}), {qos:0});
+}
+function startHeartbeat(){
+    sendPresence('online');
+    _presenceTimer = setInterval(()=>sendPresence('online'), 20000);
+}
+function stopHeartbeat(){
+    if(_presenceTimer){ clearInterval(_presenceTimer); _presenceTimer=null; }
+}
+function handlePresence(name, status){
+    if(name===myName) return;
+    if(status==='online') addActiveUser(name);
+    else {
+        activeUsers.delete(name);
+        renderActiveUsers();
+    }
+}
+
+// ── Reply / quote ─────────────────────────────────────────────────────────────
+function setReplyTo(sender, text){
+    _replyTo = {sender, text};
+    const bar = document.getElementById('reply-bar');
+    const prev = document.getElementById('reply-preview');
+    if(bar){ bar.classList.add('show'); }
+    if(prev){ prev.textContent = sender+': '+text.slice(0,80); }
+    document.getElementById('msg-in').focus();
+}
+function clearReply(){
+    _replyTo = null;
+    const bar = document.getElementById('reply-bar');
+    if(bar) bar.classList.remove('show');
+}
+
+// ── Emoji picker / reactions ──────────────────────────────────────────────────
+function showEmojiPicker(bid, msgId, e){
+    _emojiBid  = bid;
+    _emojiMsgId = msgId;
+    const pk = document.getElementById('emoji-picker');
+    if(!pk) return;
+    pk.classList.add('show');
+    const r = e.target.getBoundingClientRect();
+    pk.style.left = Math.min(r.left, window.innerWidth-180)+'px';
+    pk.style.top  = (r.top-60)+'px';
+    e.stopPropagation();
+}
+function hideEmojiPicker(){
+    const pk = document.getElementById('emoji-picker');
+    if(pk) pk.classList.remove('show');
+    _emojiBid = null; _emojiMsgId = null;
+}
+function pickReaction(emoji){
+    if(!_emojiMsgId || !clients.length){ hideEmojiPicker(); return; }
+    const msg = {type:'reaction',from:myName,target_id:_emojiMsgId,emoji:emoji,ts:now()};
+    pubAll(topic, JSON.stringify(msg), {qos:1});
+    applyReaction(msg);
+    hideEmojiPicker();
+}
+function handleReaction(d){
+    applyReaction({from:d.from||'?', target_id:d.target_id||'', emoji:d.emoji||'?'});
+}
+function applyReaction({from, target_id, emoji}){
+    if(!_reactions[target_id]) _reactions[target_id]=[];
+    const already = _reactions[target_id].find(r=>r.from===from&&r.emoji===emoji);
+    if(already){ return; }
+    _reactions[target_id].push({from,emoji});
+    _renderReactions(target_id);
+}
+function _renderReactions(msgId){
+    const bid = _bidMap[msgId];
+    if(bid===undefined) return;
+    const container = document.getElementById('rc'+bid);
+    if(!container) return;
+    container.innerHTML='';
+    const reacts = _reactions[msgId]||[];
+    const counts = {};
+    reacts.forEach(r=>{ const k=r.emoji; counts[k]=(counts[k]||[]); counts[k].push(r.from); });
+    Object.entries(counts).forEach(([emoji,users])=>{
+        const pill = document.createElement('button');
+        pill.className = 'reaction-pill'+(users.includes(myName)?' mine':'');
+        pill.title = users.join(', ');
+        pill.textContent = emoji+' '+users.length;
+        pill.onclick = ()=>{
+            const msg={type:'reaction',from:myName,target_id:msgId,emoji:emoji,ts:now()};
+            pubAll(topic,JSON.stringify(msg),{qos:1});
+            applyReaction(msg);
+        };
+        container.appendChild(pill);
+    });
+}
+
+// ── Voice messages ────────────────────────────────────────────────────────────
+function toggleVoiceRec(){
+    if(_voiceRecording) stopVoiceRec();
+    else startVoiceRec();
+}
+function startVoiceRec(){
+    navigator.mediaDevices.getUserMedia({audio:true}).then(stream=>{
+        _voiceChunks=[];
+        _mediaRecorder=new MediaRecorder(stream);
+        _mediaRecorder.ondataavailable=e=>{ if(e.data.size>0) _voiceChunks.push(e.data); };
+        _mediaRecorder.onstop=()=>{
+            const mime=_mediaRecorder.mimeType||'audio/webm';
+            const blob=new Blob(_voiceChunks,{type:mime});
+            const duration=Math.round((Date.now()-_voiceStart)/1000);
+            stream.getTracks().forEach(t=>t.stop());
+            const reader=new FileReader();
+            reader.onload=()=>{
+                const b64=reader.result.split(',')[1];
+                const msg={type:'voice',sender:myName,data:b64,mime:mime,duration:duration,ts:now(),system:false};
+                pubAll(topic,JSON.stringify(msg),{qos:1});
+                addVoiceBubble(myName,b64,mime,duration,msg.ts,true);
+            };
+            reader.readAsDataURL(blob);
+            _voiceRecording=false;
+            const btn=document.getElementById('voice-rec-btn');
+            if(btn){ btn.classList.remove('recording'); btn.textContent='🎤'; }
+        };
+        _mediaRecorder.start();
+        _voiceRecording=true;
+        _voiceStart=Date.now();
+        const btn=document.getElementById('voice-rec-btn');
+        if(btn){ btn.classList.add('recording'); btn.textContent='⏹'; }
+    }).catch(err=>{ sysMsg('Microphone error: '+(err.message||err)); });
+}
+function stopVoiceRec(){
+    if(_mediaRecorder&&_mediaRecorder.state!=='inactive') _mediaRecorder.stop();
+}
+function addVoiceBubble(sender, b64, mime, duration, ts, mine){
+    const url = 'data:'+mime+';base64,'+b64;
+    const d = document.createElement('div');
+    d.className = 'bubble '+(mine?'mine':'theirs');
+    const badge = sender.toLowerCase()==='mrminer'?' 🔐':'';
+    d.innerHTML =
+        `<div class="b-name">${esc(sender)}${badge}</div>`+
+        `<div class="voice-bubble">`+
+        `<button class="btn-vplay" onclick="this.nextElementSibling.paused?this.nextElementSibling.play():this.nextElementSibling.pause();this.textContent=this.nextElementSibling.paused?'▶':'⏸'">▶</button>`+
+        `<audio src="${url}" style="display:none" onended="this.previousElementSibling.textContent='▶'"></audio>`+
+        `<div class="voice-wave"><span></span><span></span><span></span><span></span><span></span></div>`+
+        `<span style="font-size:11px;color:#4a5580">${duration}s</span>`+
+        `</div>`+
+        `<div class="b-ts">${esc(ts)}</div>`;
+    appendEl(d);
+}
+
+// ── Video call ────────────────────────────────────────────────────────────────
+function startVideoCall(){
+    if(callState==='calling'||callState==='active') return;
+    if(!clients.length) return;
+    _isVideo=true;
+    callState='calling';
+    document.getElementById('call-btn').className='btn-call-hdr calling';
+    sysMsg('Starting video call… tap 📹 to cancel');
+    pubCall({type:'call_request',from:myName,isVideo:true,ts:now()});
+    _callTimeout=setTimeout(()=>{ if(callState==='calling'){ endCall(); sysMsg('No answer.'); } },30000);
+}
+function _showVideoContainer(peerName){
+    const c=document.getElementById('video-container');
+    if(c) c.classList.add('active');
+}
+function _hideVideoContainer(){
+    const c=document.getElementById('video-container');
+    if(c) c.classList.remove('active');
+    const rv=document.getElementById('remote-video');
+    if(rv) rv.srcObject=null;
+    const lv=document.getElementById('local-video');
+    if(lv) lv.srcObject=null;
+}
+function toggleVMute(){
+    _muteOn=!_muteOn;
+    if(localStream) localStream.getAudioTracks().forEach(t=>t.enabled=!_muteOn);
+    const btn=document.getElementById('vmute-btn');
+    if(btn){ btn.textContent=_muteOn?'🔇':'🎤'; btn.style.background=_muteOn?'rgba(255,51,102,0.3)':'rgba(255,255,255,0.1)'; }
+}
+function toggleVCam(){
+    _camOff=!_camOff;
+    if(localStream) localStream.getVideoTracks().forEach(t=>t.enabled=!_camOff);
+    const btn=document.getElementById('vcam-btn');
+    if(btn){ btn.textContent=_camOff?'📷':'📹'; btn.style.background=_camOff?'rgba(255,51,102,0.3)':'rgba(255,255,255,0.1)'; }
+}
+
+// ── Desktop notifications ─────────────────────────────────────────────────────
+function _maybeShowNotifBar(){
+    if(_notifShown) return;
+    if(typeof Notification==='undefined') return;
+    if(Notification.permission!=='default') return;
+    _notifShown=true;
+    document.getElementById('notif-bar').classList.add('show');
+}
+function requestNotifPerms(){
+    document.getElementById('notif-bar').classList.remove('show');
+    Notification.requestPermission();
+}
+function dismissNotifBar(){
+    _notifShown=true;
+    document.getElementById('notif-bar').classList.remove('show');
+}
+function _showNotif(sender, text){
+    if(document.hasFocus()) return;
+    if(typeof Notification==='undefined'||Notification.permission!=='granted') return;
+    try{ new Notification('NeoChat — '+sender,{body:text,icon:''}); }catch(e){}
 }
 
 // ── Init ──────────────────────────────────────────────────────────────────────
