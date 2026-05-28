@@ -556,6 +556,41 @@ button:active { transform: scale(0.96); opacity: 0.85; }
 #notif-bar.show { display:flex; }
 .btn-notif-allow { background:rgba(0,212,255,0.12); border:1px solid rgba(0,212,255,0.35); color:#00d4ff; border-radius:7px; font-size:11px; padding:4px 11px; width:auto; flex-shrink:0; }
 .btn-notif-dismiss { background:none; border:none; color:#4a5580; font-size:15px; padding:0; width:22px; margin-left:auto; cursor:pointer; }
+
+/* ── BUBBLE ACTIONS (edit/delete) ── */
+.bubble-actions { display:none; gap:4px; margin-top:3px; }
+.bubble:hover .bubble-actions { display:flex; }
+.btn-bubble-act { background:rgba(255,255,255,0.07); border:1px solid rgba(255,255,255,0.12); border-radius:7px; font-size:10px; color:#8892b0; padding:2px 7px; cursor:pointer; width:auto; }
+.btn-bubble-act:hover { background:rgba(255,255,255,0.14); color:#e8eaf6; }
+.bubble-edit-input { background:rgba(0,212,255,0.06); border:1px solid rgba(0,212,255,0.3); border-radius:10px; color:#e8eaf6; font-size:13px; padding:5px 10px; width:100%; margin-top:4px; outline:none; }
+.b-seen { color:#00d4ff; font-size:10px; margin-left:4px; }
+.b-deleted { color:#4a5580; font-style:italic; font-size:13px; }
+
+/* ── FILE PROGRESS ── */
+#file-progress { display:none; height:3px; background:rgba(0,212,255,0.15); flex-shrink:0; }
+#file-progress-bar { height:100%; background:#00d4ff; width:0%; transition:width 0.1s; }
+
+/* ── SEARCH BAR ── */
+#search-bar { display:none; background:#03030f; border-bottom:1px solid rgba(0,212,255,0.1); padding:6px 12px; align-items:center; gap:8px; flex-shrink:0; }
+#search-bar.show { display:flex; }
+#search-in { flex:1; border-radius:18px; padding:8px 14px; font-size:13px; margin:0; }
+.btn-search-close { background:none; border:none; color:#4a5580; font-size:16px; padding:0; width:22px; cursor:pointer; }
+.msg-match { background:rgba(255,170,0,0.18) !important; border-color:rgba(255,170,0,0.5) !important; }
+
+/* ── ROOM TABS ── */
+#room-tabs { background:#020210; border-bottom:1px solid rgba(0,212,255,0.1); display:flex; align-items:center; gap:0; overflow-x:auto; flex-shrink:0; min-height:34px; }
+#room-tabs::-webkit-scrollbar { display:none; }
+.room-tab { background:transparent; border:none; border-right:1px solid rgba(0,212,255,0.1); color:#4a5580; font-size:11px; padding:6px 12px; cursor:pointer; white-space:nowrap; display:flex; align-items:center; gap:6px; flex-shrink:0; transition:color 0.15s, background 0.15s; }
+.room-tab.active { color:#00d4ff; background:rgba(0,212,255,0.07); }
+.room-tab:hover { color:#e8eaf6; background:rgba(255,255,255,0.04); }
+.room-tab-close { font-size:12px; color:#4a5580; margin-left:2px; line-height:1; }
+.btn-add-room { background:transparent; border:none; color:#4a5580; font-size:18px; padding:4px 10px; cursor:pointer; flex-shrink:0; }
+.btn-add-room:hover { color:#00d4ff; }
+
+/* ── TEXT EMOJI PICKER ── */
+#text-emoji-picker { position:fixed; z-index:400; background:#03030f; border:1px solid rgba(0,212,255,0.22); border-radius:16px; padding:10px; gap:4px; display:none; flex-wrap:wrap; width:196px; box-shadow:0 8px 32px rgba(0,0,0,0.6); }
+#text-emoji-picker.show { display:flex; }
+.btn-emoji-txt { background:none; border:none; color:#00d4ff; font-size:18px; padding:4px 8px; border-radius:8px; cursor:pointer; width:auto; flex-shrink:0; }
 </style>
 </head>
 <body>
@@ -653,10 +688,24 @@ button:active { transform: scale(0.96); opacity: 0.85; }
             <div class="hdr-room" id="hdr-room">Room</div>
             <div class="hdr-dot"  id="hdr-dot">● connecting</div>
         </div>
+        <button class="btn-call-hdr" onclick="toggleSearch()" title="Search messages">🔍</button>
         <button class="btn-call-hdr" id="call-btn" onclick="startCall()" title="Voice call">📞</button>
         <button class="btn-call-hdr" id="video-call-btn" onclick="startVideoCall()" title="Video call">📹</button>
         <button class="btn-call-hdr" onclick="openDrawer()" title="Active users">👥</button>
     </div>
+
+    <!-- Search bar -->
+    <div id="search-bar">
+        <input id="search-in" type="text" placeholder="Search messages…" autocomplete="off"
+               oninput="doSearch(this.value)" onkeydown="if(event.key==='Escape')toggleSearch()">
+        <button class="btn-search-close" onclick="toggleSearch()">✕</button>
+    </div>
+
+    <!-- Room tabs -->
+    <div id="room-tabs"></div>
+
+    <!-- File transfer progress -->
+    <div id="file-progress"><div id="file-progress-bar"></div></div>
 
     <!-- Incoming call banner -->
     <div id="call-banner">
@@ -690,15 +739,40 @@ button:active { transform: scale(0.96); opacity: 0.85; }
         <button class="btn-reply-cancel" onclick="clearReply()">✕</button>
     </div>
 
+    <!-- Text emoji picker -->
+    <div id="text-emoji-picker">
+        <button class="emoji-btn" onclick="insertTextEmoji('😀')">😀</button>
+        <button class="emoji-btn" onclick="insertTextEmoji('😂')">😂</button>
+        <button class="emoji-btn" onclick="insertTextEmoji('😍')">😍</button>
+        <button class="emoji-btn" onclick="insertTextEmoji('😎')">😎</button>
+        <button class="emoji-btn" onclick="insertTextEmoji('🥰')">🥰</button>
+        <button class="emoji-btn" onclick="insertTextEmoji('😊')">😊</button>
+        <button class="emoji-btn" onclick="insertTextEmoji('🤔')">🤔</button>
+        <button class="emoji-btn" onclick="insertTextEmoji('😭')">😭</button>
+        <button class="emoji-btn" onclick="insertTextEmoji('👍')">👍</button>
+        <button class="emoji-btn" onclick="insertTextEmoji('👎')">👎</button>
+        <button class="emoji-btn" onclick="insertTextEmoji('❤️')">❤️</button>
+        <button class="emoji-btn" onclick="insertTextEmoji('🔥')">🔥</button>
+        <button class="emoji-btn" onclick="insertTextEmoji('🎉')">🎉</button>
+        <button class="emoji-btn" onclick="insertTextEmoji('✅')">✅</button>
+        <button class="emoji-btn" onclick="insertTextEmoji('💀')">💀</button>
+        <button class="emoji-btn" onclick="insertTextEmoji('🤝')">🤝</button>
+        <button class="emoji-btn" onclick="insertTextEmoji('💯')">💯</button>
+        <button class="emoji-btn" onclick="insertTextEmoji('🙏')">🙏</button>
+        <button class="emoji-btn" onclick="insertTextEmoji('😴')">😴</button>
+        <button class="emoji-btn" onclick="insertTextEmoji('🤣')">🤣</button>
+    </div>
+
     <div class="input-bar">
         <label class="btn-attach" title="Send image">
             📎<input type="file" id="file-in" accept="image/*" style="display:none"
                      onchange="handleFile(this)">
         </label>
         <button class="btn-voice-rec" id="voice-rec-btn" onclick="toggleVoiceRec()" title="Voice message">🎤</button>
-        <label class="btn-attach" title="Send file" style="background:rgba(0,212,255,0.09);border-color:rgba(0,212,255,0.3);color:#00d4ff;">
+        <label class="btn-attach" title="Send file (up to 250 MB)" style="background:rgba(0,212,255,0.09);border-color:rgba(0,212,255,0.3);color:#00d4ff;">
             📁<input type="file" id="file-any-in" style="display:none" onchange="handleAnyFile(this)">
         </label>
+        <button class="btn-emoji-txt" id="text-emoji-btn" onclick="toggleTextEmojiPicker(event)" title="Emoji">😊</button>
         <input id="msg-in" type="text" placeholder="Type a message…" autocomplete="off" autocorrect="off"
                oninput="onMsgKey()" onkeydown="if(event.key==='Enter')sendMsg()">
         <button class="btn-send" onclick="sendMsg()">➤</button>
@@ -752,6 +826,7 @@ button:active { transform: scale(0.96); opacity: 0.85; }
     <video id="local-video" autoplay playsinline muted></video>
     <div id="video-controls">
         <button class="btn-vcall-ctrl" id="vmute-btn" onclick="toggleVMute()">🎤</button>
+        <button class="btn-vcall-ctrl" id="vscreen-btn" onclick="toggleScreenShare()" title="Share screen">🖥</button>
         <button class="btn-vcall-hangup" onclick="endCall()">📵</button>
         <button class="btn-vcall-ctrl" id="vcam-btn" onclick="toggleVCam()">📷</button>
     </div>
@@ -924,6 +999,41 @@ function linkify(rawText){
         last = m.index + url.length;
     }
     return result + esc(rawText.slice(last));
+}
+
+// ── Markdown renderer ─────────────────────────────────────────────────────────
+function renderMD(raw){
+    const blocks = [];
+    let s = raw;
+    // 1. Extract triple-backtick code blocks
+    s = s.replace(/```([\s\S]*?)```/g, (_, code) => {
+        const i = blocks.length;
+        blocks.push(`<pre style="background:rgba(0,212,255,0.07);border:1px solid rgba(0,212,255,0.2);border-radius:8px;padding:8px 12px;font-size:12px;overflow-x:auto;white-space:pre-wrap;"><code>${esc(code.trim())}</code></pre>`);
+        return '\x00block'+i+'\x00';
+    });
+    // 2. Extract inline backtick code
+    s = s.replace(/`([^`]+)`/g, (_, code) => {
+        const i = blocks.length;
+        blocks.push(`<code style="background:rgba(0,212,255,0.1);border-radius:4px;padding:1px 5px;font-size:12px;">${esc(code)}</code>`);
+        return '\x00block'+i+'\x00';
+    });
+    // 3. Extract URLs
+    s = s.replace(/https?:\/\/[^\s<>"']+/g, url => {
+        const i = blocks.length;
+        blocks.push(`<a href="${esc(url)}" target="_blank" rel="noopener" style="color:#00d4ff">${esc(url)}</a>`);
+        return '\x00block'+i+'\x00';
+    });
+    // 4. Escape remaining HTML
+    s = s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    // 5. Apply inline formatting
+    s = s.replace(/\*\*(.+?)\*\*/g,'<b>$1</b>');
+    s = s.replace(/\*(.+?)\*/g,'<i>$1</i>');
+    s = s.replace(/~~(.+?)~~/g,'<s>$1</s>');
+    // 6. Restore blocks
+    s = s.replace(/\x00block(\d+)\x00/g, (_,i) => blocks[parseInt(i)]);
+    // 7. Newlines
+    s = s.replace(/\n/g,'<br>');
+    return s;
 }
 
 // ── Date separator ────────────────────────────────────────────────────────────
@@ -1244,6 +1354,13 @@ async function doConnect(){
     showChat();
     loginStatus('Connecting…','#00d4ff');
 
+    // Initialize room tabs on first connect
+    if(_curRoomIdx===-1){
+        _rooms=[{name:code,code:code,safe:safeCode}];
+        _curRoomIdx=0;
+        renderRoomTabs();
+    }
+
     _e2eKey = null;
     try { _e2eKey = await deriveE2EKey(code); } catch(e) {}
 
@@ -1305,6 +1422,25 @@ async function doConnect(){
                         if(_seen.has(rk))return;
                         _seen.add(rk);
                         handleReaction(d);
+                        return;
+                    }
+                    if(msgType==='edit'){
+                        if(d.sender&&d.sender!==myName) _applyEdit(d.sender,d.target_ts||'',d.new_text||'');
+                        return;
+                    }
+                    if(msgType==='delete'){
+                        if(d.sender&&d.sender!==myName) _applyDelete(d.sender,d.target_ts||'');
+                        return;
+                    }
+                    if(msgType==='seen'){
+                        if(d.from&&d.from!==myName) _applySeen();
+                        return;
+                    }
+                    if(msgType==='file_chunk'){
+                        const ck=`fchunk|${d.transfer_id||''}|${d.chunk_idx}`;
+                        if(_seen.has(ck))return;
+                        _seen.add(ck);
+                        _handleFileChunk(d);
                         return;
                     }
                     if(msgType==='voice'){
@@ -1449,13 +1585,16 @@ function addBubble(sender, text, ts, mine, quote){
     const msgId=sender+'|'+ts;
     const bid=_bubbleCounter++;
     _bidMap[msgId]=bid;
+    if(mine) _lastMyBid=bid;
 
     const d=document.createElement('div');
     d.className='bubble '+(mine?'mine':'theirs');
+    d.id='b'+bid;
     d.dataset.bid=String(bid);
     d.dataset.msgid=msgId;
     d.dataset.sender=sender;
     d.dataset.text=text;
+    d.dataset.ts=ts;
 
     const badge=sender.toLowerCase()==='mrminer'
         ? ' <span style="color:#ff3366;font-size:9px;font-weight:700;">[Admin NeoNext]</span>' : '';
@@ -1466,18 +1605,25 @@ function addBubble(sender, text, ts, mine, quote){
                   `<div class="b-quote-text">${esc((quote.text||'').slice(0,80))}</div></div>`;
     }
 
+    const actionsHtml = mine
+        ? `<div class="bubble-actions">`+
+          `<button class="btn-bubble-act" onclick="startEdit(${bid})">✎ Edit</button>`+
+          `<button class="btn-bubble-act" onclick="sendDeleteMsg('${esc(ts)}')">🗑 Delete</button>`+
+          `</div>` : '';
+
     d.innerHTML=`<div class="b-name">${esc(sender)}${badge}</div>`+
         quoteHtml+
-        `<div class="b-text">${linkify(text)}</div>`+
+        `<div class="b-text">${renderMD(text)}</div>`+
         `<div class="b-ts">${esc(ts)} <button class="btn-react-add" title="Add reaction">+😊</button></div>`+
-        `<div class="b-reactions" id="rc${bid}"></div>`;
+        `<div class="b-reactions" id="rc${bid}"></div>`+
+        actionsHtml;
 
     d.querySelector('.btn-react-add').onclick=(e)=>{e.stopPropagation();showEmojiPicker(bid,msgId,e);};
     if(quote&&quote.sender){
         d.querySelector('.b-quote').onclick=()=>setReplyTo(quote.sender,quote.text||'');
     }
     d.addEventListener('click',e=>{
-        if(!e.target.closest('.btn-react-add')&&!e.target.closest('.b-quote')&&!e.target.closest('.reaction-pill'))
+        if(!e.target.closest('.btn-react-add')&&!e.target.closest('.b-quote')&&!e.target.closest('.reaction-pill')&&!e.target.closest('.bubble-actions'))
             setReplyTo(sender,text);
     });
 
@@ -1487,6 +1633,79 @@ function addBubble(sender, text, ts, mine, quote){
 
     appendEl(d);
 }
+
+// ── Edit / Delete ──────────────────────────────────────────────────────────────
+function startEdit(bid){
+    const el=document.getElementById('b'+bid);
+    if(!el) return;
+    const textDiv=el.querySelector('.b-text');
+    const currentText=el.dataset.text||'';
+    const ts=el.dataset.ts||'';
+    textDiv.innerHTML=`<input class="bubble-edit-input" id="edit-in-${bid}" value="${esc(currentText)}" placeholder="Edit message…">`;
+    const inp=document.getElementById('edit-in-'+bid);
+    if(inp){
+        inp.focus(); inp.select();
+        inp.onkeydown=e=>{
+            if(e.key==='Enter'){
+                const newText=inp.value.trim();
+                if(newText&&clients.length){
+                    const msg={type:'edit',sender:myName,target_ts:ts,new_text:newText,ts:now()};
+                    e2ePub(topic,JSON.stringify(msg),{qos:1});
+                    textDiv.innerHTML=renderMD(newText);
+                    el.dataset.text=newText;
+                }
+            } else if(e.key==='Escape'){
+                textDiv.innerHTML=renderMD(currentText);
+            }
+        };
+    }
+}
+function sendDeleteMsg(targetTs){
+    if(!clients.length) return;
+    const msg={type:'delete',sender:myName,target_ts:targetTs,ts:now()};
+    e2ePub(topic,JSON.stringify(msg),{qos:1});
+    // mark locally
+    _applyDelete(myName,targetTs);
+}
+function _applyEdit(sender,targetTs,newText){
+    const msgId=sender+'|'+targetTs;
+    const bid=_bidMap[msgId];
+    if(bid===undefined) return;
+    const el=document.getElementById('b'+bid);
+    if(!el) return;
+    const textDiv=el.querySelector('.b-text');
+    if(textDiv) textDiv.innerHTML=renderMD(newText);
+    el.dataset.text=newText;
+}
+function _applyDelete(sender,targetTs){
+    const msgId=sender+'|'+targetTs;
+    const bid=_bidMap[msgId];
+    if(bid===undefined) return;
+    const el=document.getElementById('b'+bid);
+    if(!el) return;
+    const textDiv=el.querySelector('.b-text');
+    if(textDiv) textDiv.innerHTML='<span class="b-deleted">Message deleted</span>';
+    const acts=el.querySelector('.bubble-actions');
+    if(acts) acts.style.display='none';
+}
+
+// ── Read receipts ─────────────────────────────────────────────────────────────
+function sendSeen(){
+    if(!clients.length||!myName) return;
+    e2ePub(topic,JSON.stringify({type:'seen',from:myName,ts:now()}),{qos:0});
+}
+function _applySeen(){
+    if(_lastMyBid===null) return;
+    const el=document.getElementById('b'+_lastMyBid);
+    if(!el) return;
+    const tsDiv=el.querySelector('.b-ts');
+    if(tsDiv&&!tsDiv.querySelector('.b-seen')){
+        const s=document.createElement('span');
+        s.className='b-seen'; s.textContent='✓✓';
+        tsDiv.appendChild(s);
+    }
+}
+window.addEventListener('focus',()=>{ if(clients.length) sendSeen(); });
 function sysMsg(text){
     const d=document.createElement('div');
     d.className='bubble sys';
@@ -1595,7 +1814,43 @@ function handleAnyFile(input){
     const file=input.files[0];
     if(!file||!clients.length){ input.value=''; return; }
     input.value='';
-    if(file.size>250*1024){ alert('File too large (max 250 KB).'); return; }
+    const CHUNK=100*1024; // 100 KB
+    if(file.size>1*1024*1024){
+        // chunked sending
+        const transferId=Math.random().toString(36).slice(2,12);
+        const totalChunks=Math.ceil(file.size/CHUNK);
+        const ts=now();
+        let chunkIdx=0;
+        const progressBar=document.getElementById('file-progress');
+        const progressFill=document.getElementById('file-progress-bar');
+        if(progressBar) progressBar.style.display='block';
+        function sendNextChunk(){
+            if(chunkIdx>=totalChunks){
+                if(progressBar) progressBar.style.display='none';
+                if(progressFill) progressFill.style.width='0%';
+                return;
+            }
+            const start=chunkIdx*CHUNK;
+            const slice=file.slice(start,start+CHUNK);
+            const reader=new FileReader();
+            reader.onload=ev=>{
+                const b64=ev.target.result.split(',')[1];
+                const msg={
+                    type:'file_chunk',transfer_id:transferId,
+                    chunk_idx:chunkIdx,total_chunks:totalChunks,
+                    name:file.name,size:file.size,sender:myName,ts:ts,data:b64
+                };
+                e2ePub(topic,JSON.stringify(msg),{qos:0});
+                if(progressFill) progressFill.style.width=Math.round((chunkIdx+1)/totalChunks*100)+'%';
+                chunkIdx++;
+                setTimeout(sendNextChunk,15);
+            };
+            reader.readAsDataURL(slice);
+        }
+        sendNextChunk();
+        return;
+    }
+    // small file — send whole
     const reader=new FileReader();
     reader.onload=e=>{
         const b64=e.target.result.split(',')[1];
@@ -1605,6 +1860,24 @@ function handleAnyFile(input){
         }),{qos:0});
     };
     reader.readAsDataURL(file);
+}
+function _handleFileChunk(d){
+    const tid=d.transfer_id;
+    if(!_fileChunks[tid]){
+        _fileChunks[tid]={chunks:[],total:d.total_chunks,name:d.name,sender:d.sender,size:d.size,ts:d.ts};
+    }
+    _fileChunks[tid].chunks[d.chunk_idx]=d.data;
+    if(_fileChunks[tid].chunks.filter(Boolean).length===_fileChunks[tid].total){
+        // reassemble
+        const info=_fileChunks[tid];
+        delete _fileChunks[tid];
+        const allB64=info.chunks.join('');
+        const mine=info.sender===myName;
+        addActiveUser(info.sender);
+        _maybeDateSep();
+        addFileBubble(info.sender,info.name,allB64,info.ts,info.size,mine);
+        if(!mine) _showNotif(info.sender,'📁 '+info.name);
+    }
 }
 function addFileBubble(sender, name, b64, ts, size, mine){
     const d=document.createElement('div');
@@ -2130,6 +2403,12 @@ let _voiceStart    = 0;
 let _notifShown    = false;
 let _muteOn        = false;
 let _camOff        = false;
+let _lastMyBid     = null;   // bid of last bubble sent by me (for read receipts)
+let _screenStream  = null;   // screen share stream
+let _fileChunks    = {};     // transfer_id → {chunks:[],total,name,sender,size,ts}
+// room tabs state
+let _rooms         = [];     // [{name,code,msgs:[],date,bubbles}]
+let _curRoomIdx    = -1;
 
 // ── Typing indicator ──────────────────────────────────────────────────────────
 function onMsgKey(){
@@ -2355,6 +2634,130 @@ function _showNotif(sender, text){
     if(document.hasFocus()) return;
     if(typeof Notification==='undefined'||Notification.permission!=='granted') return;
     try{ new Notification('NeoChat — '+sender,{body:text,icon:''}); }catch(e){}
+}
+
+// ── Screen sharing ────────────────────────────────────────────────────────────
+let _screenOn=false;
+async function toggleScreenShare(){
+    const btn=document.getElementById('vscreen-btn');
+    if(_screenOn){
+        if(_screenStream){ _screenStream.getTracks().forEach(t=>t.stop()); _screenStream=null; }
+        _screenOn=false;
+        if(btn){ btn.textContent='🖥'; btn.classList.remove('off'); }
+        return;
+    }
+    try{
+        _screenStream=await navigator.mediaDevices.getDisplayMedia({video:true,audio:false});
+        _screenOn=true;
+        if(btn){ btn.textContent='🖥'; btn.classList.add('off'); }
+        // Replace video track in peer connection if active
+        if(pc&&localStream){
+            const screenTrack=_screenStream.getVideoTracks()[0];
+            const sender=pc.getSenders().find(s=>s.track&&s.track.kind==='video');
+            if(sender) sender.replaceTrack(screenTrack);
+            document.getElementById('local-video').srcObject=_screenStream;
+        }
+        _screenStream.getVideoTracks()[0].onended=()=>{
+            _screenOn=false;
+            if(btn){ btn.textContent='🖥'; btn.classList.remove('off'); }
+        };
+    }catch(e){ sysMsg&&sysMsg('Screen share error: '+(e.message||e)); }
+}
+
+// ── Room tabs ─────────────────────────────────────────────────────────────────
+function renderRoomTabs(){
+    const bar=document.getElementById('room-tabs');
+    if(!bar) return;
+    bar.innerHTML='';
+    _rooms.forEach((r,i)=>{
+        const tab=document.createElement('button');
+        tab.className='room-tab'+(i===_curRoomIdx?' active':'');
+        tab.innerHTML=esc(r.name)+
+            (i>0?`<span class="room-tab-close" onclick="event.stopPropagation();closeRoom(${i})">✕</span>`:'');
+        tab.onclick=()=>switchRoom(i);
+        bar.appendChild(tab);
+    });
+    const addBtn=document.createElement('button');
+    addBtn.className='btn-add-room';
+    addBtn.title='New room';
+    addBtn.textContent='+';
+    addBtn.onclick=addRoom;
+    bar.appendChild(addBtn);
+}
+function addRoom(){
+    const code=prompt('Enter room code for new tab:');
+    if(!code||!code.trim()) return;
+    _rooms.push({name:code.trim(),code:code.trim(),safe:san(code.trim())});
+    renderRoomTabs();
+}
+function switchRoom(idx){
+    if(idx===_curRoomIdx||idx<0||idx>=_rooms.length) return;
+    _curRoomIdx=idx;
+    const r=_rooms[idx];
+    // Reconnect to new room
+    document.getElementById('code-in').value=r.code;
+    renderRoomTabs();
+    doConnect();
+}
+function closeRoom(idx){
+    if(idx<=0||idx>=_rooms.length) return;
+    _rooms.splice(idx,1);
+    if(_curRoomIdx>=_rooms.length) _curRoomIdx=_rooms.length-1;
+    renderRoomTabs();
+}
+
+// ── Text emoji picker ─────────────────────────────────────────────────────────
+function toggleTextEmojiPicker(e){
+    const pk=document.getElementById('text-emoji-picker');
+    if(!pk) return;
+    if(pk.classList.contains('show')){ pk.classList.remove('show'); return; }
+    const r=e.target.getBoundingClientRect();
+    pk.style.left=Math.min(r.left,window.innerWidth-200)+'px';
+    pk.style.top=(r.top-pk.offsetHeight-6)+'px';
+    pk.classList.add('show');
+    e.stopPropagation();
+}
+function insertTextEmoji(emoji){
+    const inp=document.getElementById('msg-in');
+    if(!inp) return;
+    const start=inp.selectionStart||0;
+    const end=inp.selectionEnd||0;
+    const val=inp.value;
+    inp.value=val.slice(0,start)+emoji+val.slice(end);
+    inp.selectionStart=inp.selectionEnd=start+emoji.length;
+    inp.focus();
+    document.getElementById('text-emoji-picker').classList.remove('show');
+}
+document.addEventListener('click',e=>{
+    const pk=document.getElementById('text-emoji-picker');
+    if(pk&&pk.classList.contains('show')&&!e.target.closest('#text-emoji-picker')&&!e.target.closest('#text-emoji-btn')){
+        pk.classList.remove('show');
+    }
+});
+
+// ── Message search ────────────────────────────────────────────────────────────
+function toggleSearch(){
+    const bar=document.getElementById('search-bar');
+    if(!bar) return;
+    if(bar.classList.contains('show')){
+        bar.classList.remove('show');
+        doSearch('');
+    } else {
+        bar.classList.add('show');
+        setTimeout(()=>document.getElementById('search-in').focus(),50);
+    }
+}
+function doSearch(q){
+    const bubbles=document.querySelectorAll('#messages .bubble');
+    if(!q){
+        bubbles.forEach(b=>b.classList.remove('msg-match'));
+        return;
+    }
+    const lq=q.toLowerCase();
+    bubbles.forEach(b=>{
+        const txt=(b.dataset.text||'').toLowerCase();
+        b.classList.toggle('msg-match', txt.includes(lq));
+    });
 }
 
 // ── Init ──────────────────────────────────────────────────────────────────────
