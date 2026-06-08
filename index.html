@@ -1621,7 +1621,7 @@ function subAll(topicName, opts){
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
-function san(s){ return s.replace(/[#\+\/]/g,'').trim().slice(0,40); }
+function san(s){ return s.replace(/[#\+\/]/g,'_').trim().slice(0,40); }
 function esc(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
 function genCode(){
