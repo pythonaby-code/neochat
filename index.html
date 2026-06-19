@@ -432,8 +432,30 @@ button:active{transform:scale(0.96);opacity:0.9;}
 #op-panel-view{display:none;width:100%;max-width:400px;flex-direction:column;gap:16px;margin:0 20px;}
 
 /* ── Contacts & Profile ── */
-#contacts-screen,#profile-screen{position:fixed;inset:0;z-index:10;background:var(--space);display:none;flex-direction:column;}
-#contacts-screen.open,#profile-screen.open{display:flex;}
+#contacts-screen,#profile-screen,#groups-screen{position:fixed;inset:0;z-index:10;background:var(--space);display:none;flex-direction:column;}
+#contacts-screen.open,#profile-screen.open,#groups-screen.open{display:flex;}
+/* Group manager */
+.grp-card{display:flex;align-items:center;gap:11px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.09);border-radius:14px;padding:11px 12px;}
+.grp-avatar{width:42px;height:42px;border-radius:21px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:18px;flex-shrink:0;}
+.grp-name{color:#e8eaf6;font-size:14px;font-weight:700;}
+.grp-sub{color:#4a6080;font-size:11px;margin-top:2px;}
+.grp-open-btn{background:var(--teal,#8b5cf6);border:none;border-radius:9px;color:#0d0a1e;font-weight:700;font-size:12px;padding:7px 14px;cursor:pointer;}
+.grp-gear{background:transparent;border:none;color:#7a90b0;font-size:16px;cursor:pointer;padding:4px 6px;}
+.grp-primary{width:100%;background:linear-gradient(90deg,#7c3aed,#8b5cf6,#c026d3);border:none;border-radius:12px;color:#fff;font-size:13px;font-weight:800;padding:13px;cursor:pointer;}
+.grp-ghost{background:rgba(139,92,246,0.10);border:1px solid rgba(139,92,246,0.32);border-radius:10px;color:#c4b5fd;font-size:12px;font-weight:700;padding:9px 14px;cursor:pointer;}
+.grp-back{background:transparent;border:none;color:#8b5cf6;font-size:13px;font-weight:700;text-align:left;cursor:pointer;padding:0;}
+.grp-chip{display:flex;align-items:center;gap:8px;background:rgba(139,92,246,0.08);border:1px solid rgba(139,92,246,0.22);border-radius:9px;padding:4px 6px 4px 8px;}
+.grp-chip-x{background:transparent;border:none;color:#7a90b0;font-size:12px;cursor:pointer;}
+.grp-member{display:flex;align-items:center;gap:10px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:11px;padding:7px 10px;}
+.grp-remove{background:transparent;border:1px solid rgba(255,51,102,0.25);border-radius:8px;color:#ff6b8a;font-size:11px;padding:4px 10px;cursor:pointer;}
+.grp-owner-tag{color:#8b5cf6;font-size:9px;font-weight:800;letter-spacing:1px;background:rgba(139,92,246,0.12);border-radius:6px;padding:3px 7px;}
+/* Login chooser */
+.login-action{display:flex;align-items:center;gap:14px;width:100%;background:rgba(139,92,246,0.06);border:1px solid rgba(139,92,246,0.18);border-radius:16px;padding:14px 16px;cursor:pointer;text-align:left;transition:all .16s;}
+.login-action:hover{background:rgba(139,92,246,0.13);border-color:rgba(168,85,247,0.5);}
+.login-action-ico{font-size:28px;width:40px;text-align:center;flex-shrink:0;}
+.login-action-title{color:#e8eaf6;font-size:15px;font-weight:800;}
+.login-action-sub{color:#8892b0;font-size:11px;margin-top:2px;}
+.login-action-arrow{color:#8b5cf6;font-size:22px;font-weight:800;margin-left:auto;}
 .contacts-header{background:var(--glass-1);border-bottom:1px solid var(--b1);padding:14px 14px 12px;padding-top:max(14px,env(safe-area-inset-top));display:flex;align-items:center;gap:10px;flex-shrink:0;backdrop-filter:blur(24px);}
 .contacts-title{flex:1;color:var(--t1);font-size:18px;font-weight:700;}
 .contacts-body{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px;}
@@ -665,22 +687,63 @@ input::placeholder{color:var(--t4);font-weight:400;}
         <p>Real-time Internet Messenger</p>
     </div>
 
-    <div>
-        <span class="field-label">Room code</span>
-        <div class="code-row">
-            <input id="code-in" type="text" placeholder="e.g. CHAT01" autocomplete="off"
-                   autocorrect="off" autocapitalize="characters" maxlength="20">
-            <button class="btn-dice" onclick="genCode()" title="Random room code">🎲</button>
+    <!-- Chooser: 3 ways to start -->
+    <div id="login-chooser" style="display:flex;flex-direction:column;gap:10px;">
+        <button class="login-action" onclick="loginShow('join')">
+            <span class="login-action-ico">🔑</span>
+            <span><span class="login-action-title">Join a chat with a code</span><br>
+            <span class="login-action-sub">Enter a room code someone shared with you</span></span>
+            <span class="login-action-arrow">›</span>
+        </button>
+        <button class="login-action" onclick="loginShow('dm')">
+            <span class="login-action-ico">✉️</span>
+            <span><span class="login-action-title">Send a private message</span><br>
+            <span class="login-action-sub">Message someone directly by their @username</span></span>
+            <span class="login-action-arrow">›</span>
+        </button>
+        <button class="login-action" onclick="openGroupsScreen()">
+            <span class="login-action-ico">👥</span>
+            <span><span class="login-action-title">Create a group</span><br>
+            <span class="login-action-sub">Make a group and invite your friends</span></span>
+            <span class="login-action-arrow">›</span>
+        </button>
+    </div>
+
+    <!-- Join with code panel -->
+    <div id="login-join-panel" style="display:none;flex-direction:column;gap:14px;">
+        <button class="grp-back" onclick="loginShow('chooser')">←  Back</button>
+        <div>
+            <span class="field-label">Room code</span>
+            <div class="code-row">
+                <input id="code-in" type="text" placeholder="e.g. CHAT01" autocomplete="off"
+                       autocorrect="off" autocapitalize="characters" maxlength="20">
+                <button class="btn-dice" onclick="genCode()" title="Random room code">🎲</button>
+            </div>
         </div>
+        <div>
+            <span class="field-label">Room password (optional)</span>
+            <input id="room-pw-in" type="password" placeholder="Leave blank for no password" autocomplete="off">
+        </div>
+        <div id="login-status">Enter a room code, then tap Connect.</div>
+        <button class="btn-connect" onclick="doConnect()">Connect →</button>
     </div>
 
-    <div>
-        <span class="field-label">Room password (optional)</span>
-        <input id="room-pw-in" type="password" placeholder="Leave blank for no password" autocomplete="off">
+    <!-- Send private message panel -->
+    <div id="login-dm-panel" style="display:none;flex-direction:column;gap:14px;">
+        <button class="grp-back" onclick="loginShow('chooser')">←  Back</button>
+        <div>
+            <span class="field-label">Send a private message</span>
+            <div class="code-row">
+                <input id="login-dm-in" type="text" placeholder="@username — find someone to message"
+                       autocomplete="off" autocorrect="off" autocapitalize="off" maxlength="30"
+                       onkeydown="if(event.key==='Enter')loginStartDM()">
+                <button class="btn-contact-search" onclick="loginStartDM()">Find →</button>
+            </div>
+        </div>
+        <div style="color:#8892b0;font-size:11px;">Type a friend’s username and we’ll open a private,
+            end-to-end encrypted chat — only the two of you can read it.</div>
     </div>
 
-    <div id="login-status">Enter a room code, then tap Connect.</div>
-    <button class="btn-connect" onclick="doConnect()">Connect →</button>
     <div style="display:flex; justify-content:flex-end; gap:2px; margin-top:-8px;">
         <button class="btn-admin" onclick="openOperator()">💻</button>
         <button class="btn-admin" onclick="openAdmin()">🔐</button>
@@ -1084,6 +1147,78 @@ input::placeholder{color:var(--t4);font-weight:400;}
     </div>
 </div>
 
+<!-- GROUPS MANAGER -->
+<div id="groups-screen">
+    <div class="contacts-header">
+        <button class="btn-hdr-ico" onclick="grpBack()">←</button>
+        <div class="contacts-title" id="grp-hdr-title">Groups</div>
+    </div>
+    <div class="contacts-body">
+        <!-- LIST view -->
+        <div id="grp-view-list" style="display:flex;flex-direction:column;gap:12px;">
+            <button class="grp-primary" onclick="grpShowCreate()">➕  New Group</button>
+            <span class="field-label">Your groups</span>
+            <div id="grp-list" style="display:flex;flex-direction:column;gap:8px;"></div>
+        </div>
+        <!-- CREATE view -->
+        <div id="grp-view-create" style="display:none;flex-direction:column;gap:12px;">
+            <button class="grp-back" onclick="grpShowList()">←  Back</button>
+            <div>
+                <span class="field-label">Group name</span>
+                <input id="grp-name-in" type="text" placeholder="e.g. Best Friends" autocomplete="off" maxlength="40">
+            </div>
+            <div>
+                <span class="field-label">Group code — friends join with this</span>
+                <div class="code-row">
+                    <input id="grp-code-in" type="text" autocomplete="off" autocapitalize="characters" maxlength="40">
+                    <button class="btn-dice" onclick="grpGenCode()" title="Random code">🎲</button>
+                </div>
+            </div>
+            <div>
+                <span class="field-label">Invite friends — add @usernames</span>
+                <div class="code-row">
+                    <input id="grp-invite-in" type="text" placeholder="@username" autocomplete="off"
+                           autocapitalize="off" maxlength="30"
+                           onkeydown="if(event.key==='Enter'){event.preventDefault();grpAddChip();}">
+                    <button class="btn-contact-search" onclick="grpAddChip()">Add</button>
+                </div>
+            </div>
+            <div id="grp-chips" style="display:flex;flex-direction:column;gap:5px;"></div>
+            <button class="grp-primary" onclick="grpCreate()">Create Group &amp; Invite</button>
+        </div>
+        <!-- DETAIL view -->
+        <div id="grp-view-detail" style="display:none;flex-direction:column;gap:12px;">
+            <button class="grp-back" onclick="grpShowList()">←  Back</button>
+            <div style="display:flex;align-items:center;gap:11px;">
+                <div class="grp-avatar" id="grp-d-avatar" style="width:48px;height:48px;border-radius:24px;font-size:22px;"></div>
+                <div>
+                    <div class="grp-name" id="grp-d-name" style="font-size:17px;"></div>
+                    <div class="grp-sub" id="grp-d-code"></div>
+                </div>
+            </div>
+            <button class="grp-primary" onclick="grpOpenCurrent()">Open Group Chat  →</button>
+            <span class="field-label">Members</span>
+            <div id="grp-members" style="display:flex;flex-direction:column;gap:6px;"></div>
+            <span class="field-label">Add member</span>
+            <div class="code-row">
+                <input id="grp-add-in" type="text" placeholder="@username" autocomplete="off"
+                       autocapitalize="off" maxlength="30"
+                       onkeydown="if(event.key==='Enter')grpAddMember()">
+                <button class="btn-contact-search" onclick="grpAddMember()">Invite</button>
+            </div>
+            <button id="grp-delete-btn" class="grp-remove" style="width:100%;padding:11px;border-radius:10px;"
+                    onclick="grpDeleteCurrent()">🗑  Delete group</button>
+        </div>
+    </div>
+    <div class="bottom-nav">
+        <button class="nav-tab" onclick="closeGroupsScreen()"><span class="nav-icon">💬</span><span class="nav-label">Chats</span></button>
+        <button class="nav-tab" onclick="closeGroupsScreen();openContactsScreen()"><span class="nav-icon">👥</span><span class="nav-label">Contacts</span></button>
+        <button class="nav-tab active"><span class="nav-icon">🏠</span><span class="nav-label">Groups</span></button>
+        <button class="nav-tab" onclick="closeGroupsScreen();openProfileScreen()"><span class="nav-icon">👤</span><span class="nav-label">Profile</span></button>
+        <button class="nav-tab" onclick="closeGroupsScreen();openSettingsSheet()"><span class="nav-icon">⚙️</span><span class="nav-label">Settings</span></button>
+    </div>
+</div>
+
 <!-- Gallery modal -->
 <div id="gallery-modal">
     <div class="gallery-hdr">
@@ -1412,11 +1547,13 @@ function applyAccount(){
     document.getElementById('acc-info-bar').style.display  = 'flex';
     document.getElementById('acc-info-name').textContent   = acc.username;
     loginStatus('Enter a room code, then tap Connect.');
+    try{ startGlobalNotify(); }catch(e){}   // receive invites even on the home screen
 }
 
 function showLogoutModal(){
     const acc = getAccount();
     localStorage.removeItem(ACC_KEY);
+    try{ stopGlobalNotify(); }catch(e){}
     myName = '';
     document.getElementById('acc-info-bar').style.display = 'none';
     document.getElementById('acc-reg').style.display = 'none';
@@ -1729,7 +1866,7 @@ function genCode(){
     document.getElementById('code-in').value=c;
 }
 
-function showLogin(){ show('login'); }
+function showLogin(){ show('login'); try{ loginShow('chooser'); }catch(e){} }
 function showChat() { show('chat');  }
 function show(id){
     document.querySelectorAll('.screen').forEach(s=>s.classList.add('hidden'));
@@ -2427,6 +2564,10 @@ function handleAnyFile(input){
     const file=input.files[0];
     if(!file||!clients.length){ input.value=''; return; }
     input.value='';
+    if(file.size>100*1024*1024){
+        alert('This file is '+(file.size/1024/1024).toFixed(0)+' MB. The limit is 100 MB — please choose a smaller file or video.');
+        return;
+    }
     const CHUNK=100*1024; // 100 KB
     if(file.size>1*1024*1024){
         // chunked sending
@@ -2492,11 +2633,32 @@ function _handleFileChunk(d){
         if(!mine) _showNotif(info.sender,'📁 '+info.name);
     }
 }
+const VIDEO_EXTS={mp4:'video/mp4',webm:'video/webm',mov:'video/quicktime',m4v:'video/mp4',mkv:'video/x-matroska',avi:'video/x-msvideo',ogv:'video/ogg','3gp':'video/3gpp'};
+function _videoMime(name){
+    const ext=(name||'').split('.').pop().toLowerCase();
+    return VIDEO_EXTS[ext]||'';
+}
 function addFileBubble(sender, name, b64, ts, size, mine){
     const d=document.createElement('div');
     d.className='bubble '+(mine?'mine':'theirs');
     let sizeStr='';
     if(size) sizeStr=size>=1024*1024?(size/1024/1024).toFixed(1)+'MB':Math.round(size/1024)+'KB';
+    const vmime=_videoMime(name);
+    if(b64 && vmime){
+        // Inline video player
+        const bytes=Uint8Array.from(atob(b64),c=>c.charCodeAt(0));
+        const fileUrl=URL.createObjectURL(new Blob([bytes],{type:vmime}));
+        const fileId=_fileCacheId++;
+        _fileCache[fileId]={name,url:fileUrl};
+        d.innerHTML=`<div class="b-name">${esc(sender)}</div>`+
+            `<video controls preload="metadata" style="max-width:230px;border-radius:10px;display:block;" src="${fileUrl}"></video>`+
+            `<div class="b-text" style="margin-top:4px;">🎬 ${esc(name)}`+
+            (sizeStr?` <span style="color:#4a5580;font-size:10px;">${sizeStr}</span>`:'')+
+            ` · <a href="${fileUrl}" download="${esc(name)}" style="color:#1e90ff;">Save</a></div>`+
+            `<div class="b-ts">${esc(ts)}</div>`;
+        appendEl(d);
+        return;
+    }
     let fileContent, fileUrl='';
     if(b64){
         const bytes=Uint8Array.from(atob(b64),c=>c.charCodeAt(0));
@@ -3735,28 +3897,11 @@ function openSearchFromSettings(){
 }
 
 // ── Groups / Rooms sheet ──────────────────────────────────────────────────────
-function openGroupsSheet(){
-    const sheet = document.getElementById('groups-sheet');
-    if(!sheet) return;
-    // Show current rooms
-    const preview = document.getElementById('groups-room-tabs-preview');
-    if(preview){
-        if(_rooms.length){
-            preview.innerHTML = _rooms.map((r,i)=>
-                `<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.06);">`+
-                `<span style="color:#22d3ee;font-size:13px;font-weight:600;flex:1;">${esc(r.name||r.code)}</span>`+
-                (i===_curRoomIdx ? `<span style="font-size:10px;color:#22d3ee;border:1px solid rgba(139,92,246,0.4);border-radius:8px;padding:2px 8px;">active</span>` :
-                    `<button onclick="switchRoom(${i});closeGroupsSheet()" style="background:rgba(139,92,246,0.1);border:1px solid rgba(139,92,246,0.3);border-radius:8px;color:#22d3ee;font-size:11px;padding:3px 10px;cursor:pointer;">Switch</button>`)
-                +`</div>`
-            ).join('');
-        } else {
-            preview.innerHTML = '<div style="color:#4a6080;font-size:12px;padding:8px 0;">No rooms yet.</div>';
-        }
-    }
-    sheet.classList.add('open');
-}
+// The old bottom-sheet is superseded by the full group manager (#groups-screen).
+function openGroupsSheet(){ openGroupsScreen(); }
 function closeGroupsSheet(){
-    document.getElementById('groups-sheet').classList.remove('open');
+    const s=document.getElementById('groups-sheet');
+    if(s) s.classList.remove('open');
 }
 function joinRoomFromSheet(){
     const inp = document.getElementById('groups-room-in');
@@ -3937,8 +4082,14 @@ function _subscribePersonalNotify(c){
     const notifyTopic = 'neochat/__notify__/' + myName.toLowerCase();
     c.subscribe(notifyTopic, {qos:1});
 }
+let _notifySeen=new Set();
 function _handleNotifyMessage(raw){
     try{
+        // Fed by both the room connection and the always-on listener — dedupe
+        // (retained invites also re-deliver on every reconnect).
+        const k=raw.slice(0,200);
+        if(_notifySeen.has(k)) return;
+        _notifySeen.add(k); if(_notifySeen.size>200) _notifySeen.clear();
         const d=JSON.parse(raw);
         if(d.type==='dm_invite' && d.from && d.from.toLowerCase()!==myName.toLowerCase()){
             // Save to contacts so user can see it in contacts screen
@@ -3952,10 +4103,286 @@ function _handleNotifyMessage(raw){
                 nb.classList.add('show');
             }
         }
+        else if(d.type==='group_invite' && d.code && d.from && d.from.toLowerCase()!==myName.toLowerCase()){
+            const me=(myName||'').toLowerCase();
+            const existing=_loadGroups().find(x=>x.code===d.code);
+            if(existing){
+                if(me && !(existing.members||[]).map(m=>m.toLowerCase()).includes(me)){
+                    existing.members=(existing.members||[]).concat(me); _upsertGroup(existing);
+                }
+            } else {
+                _upsertGroup({id:_genId(), name:d.group_name||'Group', code:d.code, owner:d.from,
+                    members: me?[d.from.toLowerCase(), me]:[d.from.toLowerCase()],
+                    created:new Date().toISOString().slice(0,10)});
+            }
+            const nb=document.getElementById('notif-bar');
+            if(nb){
+                const sc=d.code.replace(/'/g,"\\'");
+                nb.innerHTML=`👥 <b>${esc(d.from)}</b> invited you to join “${esc(d.group_name||'a group')}”`+
+                    `<button class="btn-notif-allow" onclick="acceptGroupInvite('${sc}')">Accept</button>`+
+                    `<button class="btn-notif-dismiss" onclick="declineGroupInvite('${sc}')">Decline</button>`;
+                nb.classList.add('show');
+            }
+        }
     }catch(e){}
 }
 
+function acceptGroupInvite(code){
+    const nb=document.getElementById('notif-bar'); if(nb) nb.classList.remove('show');
+    const g=_loadGroups().find(x=>x.code===code);
+    if(g){ _grpOpen(g); return; }
+    // fall back to joining by code directly
+    _dmMode=false; _dmPeer='';
+    document.getElementById('code-in').value=code;
+    const pw=document.getElementById('room-pw-in'); if(pw) pw.value='';
+    doConnect();
+}
+function declineGroupInvite(code){
+    const nb=document.getElementById('notif-bar'); if(nb) nb.classList.remove('show');
+    _saveGroups(_loadGroups().filter(x=>x.code!==code));
+    // clear the retained invite so it doesn't keep reappearing
+    if(typeof mqtt!=='undefined' && myName){
+        const topicN='neochat/__notify__/'+myName.toLowerCase();
+        try{ pubAll(topicN, '', {qos:1, retain:true}); }catch(e){}
+        _oneShotPublish(topicN, '', true);
+    }
+}
+
+// ── Login chooser (3 ways to start) ──────────────────────────────────────────
+function loginShow(view){
+    const ch=document.getElementById('login-chooser');
+    const jp=document.getElementById('login-join-panel');
+    const dp=document.getElementById('login-dm-panel');
+    if(ch) ch.style.display = view==='chooser' ? 'flex' : 'none';
+    if(jp) jp.style.display = view==='join' ? 'flex' : 'none';
+    if(dp) dp.style.display = view==='dm' ? 'flex' : 'none';
+    if(view==='join'){ const e=document.getElementById('code-in'); if(e) setTimeout(()=>e.focus(),50); }
+    if(view==='dm'){ const e=document.getElementById('login-dm-in'); if(e) setTimeout(()=>e.focus(),50); }
+}
+function loginStartDM(){
+    const inp=document.getElementById('login-dm-in');
+    if(!inp) return;
+    const name=inp.value.trim().replace(/^@/,'');
+    if(!name) return;
+    inp.value='';
+    startDM(name);
+}
+
+// ── Groups (full manager) ────────────────────────────────────────────────────
+const GROUPS_KEY='neochat_groups';
+let _grpEditId=null;
+let _grpInvites=[];
+
+function _loadGroups(){ try{ return JSON.parse(localStorage.getItem(GROUPS_KEY)||'[]'); }catch(e){ return []; } }
+function _saveGroups(g){ try{ localStorage.setItem(GROUPS_KEY, JSON.stringify(g)); }catch(e){} }
+function _upsertGroup(grp){
+    const g=_loadGroups();
+    const i=g.findIndex(x=> (grp.id && x.id===grp.id) || x.code===grp.code);
+    if(i>=0) g[i]=grp; else g.unshift(grp);
+    _saveGroups(g);
+}
+function _deleteGroupById(id){ _saveGroups(_loadGroups().filter(x=>x.id!==id)); }
+function _genId(){ return Math.random().toString(36).slice(2,14); }
+
+// One-shot publish (works even when not joined to a room), mirrors Python's invite.
+function _oneShotPublish(topicName, payload, retain){
+    if(typeof mqtt==='undefined') return;
+    const urls=(typeof BROKER_URLS!=='undefined' && BROKER_URLS.length)
+        ? BROKER_URLS : ['wss://broker.emqx.io:8084/mqtt'];
+    urls.forEach(url=>{
+        let c;
+        try{ c=mqtt.connect(url,{clientId:'inv_'+Math.random().toString(36).slice(2,10),
+            keepalive:10, connectTimeout:8000, reconnectPeriod:0}); }catch(e){ return; }
+        c.on('connect',()=>{ try{ c.publish(topicName,payload,{qos:1,retain:!!retain},()=>
+            setTimeout(()=>{ try{c.end(true);}catch(e){} },300)); }catch(e){ try{c.end(true);}catch(e){} } });
+        c.on('error',()=>{ try{c.end(true);}catch(e){} });
+        setTimeout(()=>{ try{c.end(true);}catch(e){} }, 9000);
+    });
+}
+function _sendGroupInvite(user, grp){
+    if(!user) return;
+    const topicName='neochat/__notify__/'+user.toLowerCase();
+    const payload=JSON.stringify({type:'group_invite', from:myName,
+        group_name:grp.name, code:grp.code});
+    // retain:true so an offline invitee still gets it when they next open the app.
+    try{ pubAll(topicName, payload, {qos:1, retain:true}); }catch(e){}   // current connections
+    _oneShotPublish(topicName, payload, true);                           // + fresh connection
+}
+
+// ── Always-on personal notify listener ───────────────────────────────────────
+// The room connection only subscribes to the notify inbox while you're in a
+// chat, so invites to someone sitting on the home screen were dropped. This
+// keeps a lightweight connection open from app load so invites always arrive.
+let _notifyClients=[];
+function startGlobalNotify(){
+    if(typeof mqtt==='undefined' || !myName) return;
+    stopGlobalNotify();
+    const topicN='neochat/__notify__/'+myName.toLowerCase();
+    const urls=(typeof BROKER_URLS!=='undefined' && BROKER_URLS.length)
+        ? BROKER_URLS : ['wss://broker.emqx.io:8084/mqtt'];
+    urls.forEach(url=>{
+        let c;
+        try{ c=mqtt.connect(url,{clientId:'gn_'+Math.random().toString(36).slice(2,10),
+            keepalive:30, connectTimeout:8000, reconnectPeriod:5000}); }catch(e){ return; }
+        c.on('connect',()=>{ try{ c.subscribe(topicN,{qos:1}); }catch(e){} });
+        c.on('message',(_t,buf)=>{ try{ _handleNotifyMessage(buf.toString()); }catch(e){} });
+        c.on('error',()=>{});
+        _notifyClients.push(c);
+    });
+}
+function stopGlobalNotify(){
+    _notifyClients.forEach(c=>{ try{ c.end(true); }catch(e){} });
+    _notifyClients=[];
+}
+
+function grpGenCode(){
+    const abc='ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    let c=''; for(let i=0;i<6;i++) c+=abc[Math.floor(Math.random()*abc.length)];
+    document.getElementById('grp-code-in').value=c;
+}
+
+function openGroupsScreen(){
+    const s=document.getElementById('groups-screen');
+    if(s) s.classList.add('open');
+    grpShowList();
+}
+function closeGroupsScreen(){
+    const s=document.getElementById('groups-screen');
+    if(s) s.classList.remove('open');
+}
+function grpBack(){
+    const list=document.getElementById('grp-view-list');
+    if(list && list.style.display==='none') grpShowList();
+    else closeGroupsScreen();
+}
+function _grpSetView(v){
+    document.getElementById('grp-view-list').style.display   = v==='list'?'flex':'none';
+    document.getElementById('grp-view-create').style.display = v==='create'?'flex':'none';
+    document.getElementById('grp-view-detail').style.display = v==='detail'?'flex':'none';
+    const t=document.getElementById('grp-hdr-title');
+    if(t) t.textContent = v==='create'?'New Group' : v==='detail'?'Group settings' : 'Groups';
+}
+function grpShowList(){
+    _grpSetView('list');
+    const wrap=document.getElementById('grp-list');
+    const groups=_loadGroups();
+    if(!groups.length){
+        wrap.innerHTML='<div style="color:#4a6080;font-size:12px;text-align:center;padding:30px 10px;">'+
+            'No groups yet.<br>Tap “New Group” to create one and invite friends.</div>';
+        return;
+    }
+    wrap.innerHTML=groups.map(g=>{
+        const n=esc(g.name||'Group'), code=esc(g.code||''), mem=(g.members||[]).length;
+        return `<div class="grp-card">`+
+            `<div class="grp-avatar" style="background:${_avatarColor(g.name||'?')}">${esc((g.name||'?')[0].toUpperCase())}</div>`+
+            `<div style="flex:1;min-width:0;"><div class="grp-name">${n}</div>`+
+            `<div class="grp-sub">👥 ${mem} member${mem!==1?'s':''} · ${code}</div></div>`+
+            `<button class="grp-open-btn" onclick="grpOpenById('${g.id}')">Open</button>`+
+            `<button class="grp-gear" onclick="grpShowDetail('${g.id}')">⚙</button></div>`;
+    }).join('');
+}
+function grpShowCreate(){
+    _grpSetView('create');
+    _grpInvites=[];
+    document.getElementById('grp-name-in').value='';
+    document.getElementById('grp-invite-in').value='';
+    _grpRenderChips();
+    grpGenCode();
+}
+function grpAddChip(){
+    const inp=document.getElementById('grp-invite-in');
+    const name=inp.value.trim().replace(/^@/,'').toLowerCase();
+    inp.value='';
+    if(!name || name===(myName||'').toLowerCase() || _grpInvites.includes(name)) return;
+    _grpInvites.push(name); _grpRenderChips();
+}
+function _grpRenderChips(){
+    const wrap=document.getElementById('grp-chips');
+    wrap.innerHTML=_grpInvites.map(n=>
+        `<div class="grp-chip"><div class="grp-avatar" style="width:24px;height:24px;border-radius:12px;font-size:11px;background:${_avatarColor(n)}">${esc(n[0].toUpperCase())}</div>`+
+        `<span style="flex:1;color:#c4b5fd;font-size:12px;font-weight:600;">@${esc(n)}</span>`+
+        `<button class="grp-chip-x" onclick="grpRemoveChip('${n.replace(/'/g,"\\'")}')">✕</button></div>`
+    ).join('');
+}
+function grpRemoveChip(n){ _grpInvites=_grpInvites.filter(x=>x!==n); _grpRenderChips(); }
+function grpCreate(){
+    const name=document.getElementById('grp-name-in').value.trim();
+    let code=document.getElementById('grp-code-in').value.trim();
+    if(!name){ alert('Please give your group a name.'); return; }
+    if(!code){ grpGenCode(); code=document.getElementById('grp-code-in').value.trim(); }
+    const me=(myName||'').toLowerCase();
+    const grp={id:_genId(), name, code, owner:myName,
+        members:[me].concat(_grpInvites), created:new Date().toISOString().slice(0,10)};
+    _upsertGroup(grp);
+    _grpInvites.forEach(u=>_sendGroupInvite(u, grp));
+    if(_grpInvites.length) alert('“'+name+'” created and '+_grpInvites.length+
+        ' invite'+(_grpInvites.length!==1?'s':'')+' sent.\nFriends who are online get a notification with the code.');
+    grpShowList();
+}
+function grpShowDetail(id){ _grpEditId=id; _grpSetView('detail'); _grpRenderDetail(); }
+function _grpCurrent(){ return _loadGroups().find(g=>g.id===_grpEditId)||null; }
+function _grpRenderDetail(){
+    const g=_grpCurrent();
+    if(!g){ grpShowList(); return; }
+    const av=document.getElementById('grp-d-avatar');
+    av.style.background=_avatarColor(g.name||'?');
+    av.textContent=(g.name||'?')[0].toUpperCase();
+    document.getElementById('grp-d-name').textContent=g.name||'Group';
+    document.getElementById('grp-d-code').textContent='Code:  '+(g.code||'');
+    const me=(myName||'').toLowerCase();
+    const isOwner=(g.owner||'').toLowerCase()===me;
+    document.getElementById('grp-delete-btn').style.display=isOwner?'block':'none';
+    const owner=(g.owner||'').toLowerCase();
+    document.getElementById('grp-members').innerHTML=(g.members||[]).map(m=>{
+        const isMe=m===me;
+        let right='';
+        if(m===owner) right='<span class="grp-owner-tag">OWNER</span>';
+        else if(isOwner) right=`<button class="grp-remove" onclick="grpRemoveMember('${m.replace(/'/g,"\\'")}')">Remove</button>`;
+        return `<div class="grp-member"><div class="grp-avatar" style="width:30px;height:30px;border-radius:15px;font-size:14px;background:${_avatarColor(m)}">${esc(m[0].toUpperCase())}</div>`+
+            `<span style="flex:1;color:#e8eaf6;font-size:13px;font-weight:600;">@${esc(m)}${isMe?' (you)':''}</span>${right}</div>`;
+    }).join('');
+}
+function grpAddMember(){
+    const inp=document.getElementById('grp-add-in');
+    const name=inp.value.trim().replace(/^@/,'').toLowerCase();
+    inp.value='';
+    const g=_grpCurrent();
+    if(!g || !name || name===(myName||'').toLowerCase()) return;
+    if((g.members||[]).map(x=>x.toLowerCase()).includes(name)) return;
+    g.members=(g.members||[]).concat(name);
+    _upsertGroup(g);
+    _sendGroupInvite(name, g);
+    _grpRenderDetail();
+}
+function grpRemoveMember(name){
+    const g=_grpCurrent(); if(!g) return;
+    g.members=(g.members||[]).filter(m=>m.toLowerCase()!==name.toLowerCase());
+    _upsertGroup(g); _grpRenderDetail();
+}
+function grpDeleteCurrent(){
+    const g=_grpCurrent(); if(!g) return;
+    if(!confirm('Delete “'+g.name+'”? This only removes it from your list.')) return;
+    _deleteGroupById(g.id); grpShowList();
+}
+function grpOpenById(id){ const g=_loadGroups().find(x=>x.id===id); if(g) _grpOpen(g); }
+function grpOpenCurrent(){ const g=_grpCurrent(); if(g) _grpOpen(g); }
+function _grpOpen(g){
+    _upsertGroup(g);
+    closeGroupsScreen();
+    _dmMode=false; _dmPeer='';
+    document.getElementById('code-in').value=g.code;
+    const pw=document.getElementById('room-pw-in'); if(pw) pw.value='';
+    doConnect();   // synchronous until first await — runs before our header override
+    const hdrRoom=document.getElementById('hdr-room');
+    const hdrAvatar=document.getElementById('hdr-avatar');
+    if(hdrRoom) hdrRoom.textContent=g.name||g.code;
+    if(hdrAvatar){ hdrAvatar.textContent=(g.name||'?')[0].toUpperCase();
+        hdrAvatar.style.background=_avatarColor(g.name||'?'); hdrAvatar.style.color='#fff';
+        hdrAvatar.style.fontSize='16px'; hdrAvatar.style.border='none'; }
+}
+
 // ── Init ──────────────────────────────────────────────────────────────────────
+loginShow('chooser');
 genCode();
 </script>
 </body>
