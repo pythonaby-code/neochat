@@ -8,6 +8,10 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <title>NeoChat</title>
+<!-- PWA: makes NeoChat installable on phones (Add to Home Screen) -->
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="neochat-icon-192.png">
+<link rel="icon" type="image/png" href="neochat-icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
@@ -405,6 +409,14 @@ button:active{transform:scale(0.96);opacity:0.9;}
 .emoji-btn:hover{background:rgba(255,255,255,0.10);transform:scale(1.16);}
 .btn-emoji-txt{background:none;border:none;color:var(--teal);font-size:18px;padding:4px 8px;border-radius:8px;cursor:pointer;width:auto;flex-shrink:0;transition:all .18s;}
 .btn-emoji-txt:hover{background:rgba(255,255,255,0.09);}
+
+/* ── Stickers ── */
+.bubble.sticker{background:none!important;border:none!important;box-shadow:none!important;}
+.bubble.sticker .b-text{font-size:52px;line-height:1.15;}
+#sticker-picker{position:fixed;left:50%;bottom:88px;transform:translateX(-50%);z-index:300;background:rgba(7,5,20,0.98);border:1px solid var(--b1);border-radius:16px;padding:12px;display:none;flex-wrap:wrap;gap:6px;width:288px;max-width:92vw;box-shadow:var(--s2);backdrop-filter:blur(20px);justify-content:center;}
+#sticker-picker.show{display:flex;}
+.sticker-btn{background:none;border:none;font-size:32px;width:48px;height:48px;border-radius:10px;padding:0;cursor:pointer;transition:transform .15s,background .15s;}
+.sticker-btn:hover{background:rgba(255,255,255,0.10);transform:scale(1.18);}
 
 /* ── Admin ── */
 .btn-admin{background:transparent;border:none;font-size:18px;color:var(--t3);padding:4px 8px;width:auto;cursor:pointer;transition:color .18s;}
@@ -920,6 +932,10 @@ input::placeholder{color:var(--t4);font-weight:400;}
                 <span class="attach-opt-icon">📊</span>
                 <span class="attach-opt-label">Poll</span>
             </button>
+            <button class="attach-opt" onclick="openStickerPicker()">
+                <span class="attach-opt-icon">🌟</span>
+                <span class="attach-opt-label">Sticker</span>
+            </button>
             <button class="attach-opt" id="ttl-attach-opt" onclick="toggleTTLFromSheet()">
                 <span class="attach-opt-icon" id="ttl-attach-icon">💣</span>
                 <span class="attach-opt-label" id="ttl-attach-label">Self-Destruct</span>
@@ -933,6 +949,9 @@ input::placeholder{color:var(--t4);font-weight:400;}
         <button class="ttl-opt" onclick="setTTL(30)">⏱ 30 seconds</button>
         <button class="ttl-opt" onclick="setTTL(60)">⏱ 60 seconds</button>
     </div>
+
+    <!-- Sticker picker -->
+    <div id="sticker-picker"></div>
 
     <!-- Bottom navigation -->
     <div class="bottom-nav">
@@ -2234,6 +2253,105 @@ function sendMsg(){
         },_ttlSeconds*1000);
     }
     _saveHist(safeRoom,{type:'msg',sender:myName,text:txt,ts:msg.ts,quote:msg.quote||null,date:new Date().toISOString().slice(0,10)});
+
+    // NeoBot assistant — if the message mentions @neobot, this client posts
+    // NeoBot's reply (sender 'NeoBot'), so it shows for everyone with no dupes.
+    if(myName && txt.toLowerCase().includes('@neobot')){
+        const reply = neobotResponse(txt, activeUsers, myName)
+            || "🤖 I didn't quite catch that — type '@neobot help' for what I can do!";
+        setTimeout(()=>{
+            if(clients.length)
+                e2ePub(topic, JSON.stringify({sender:'NeoBot',text:reply,ts:now(),system:false}),{qos:1});
+        }, 600);
+    }
+}
+
+// ── Stickers ──────────────────────────────────────────────────────────────────
+const STICKERS=['👍','❤️','😂','🔥','🎉','😎','🥳','😭','💯','🙏','👏','🤝',
+                '🚀','⭐','💀','🤖','👀','✅','❌','💔','😡','🤔','🫡','🥰'];
+function _looksLikeSticker(text){
+    const s=(text||'').trim();
+    if(!s || s.length>12 || s.startsWith('@')) return false;
+    // \p{L}=letter (any language incl. Cyrillic), \p{N}=number. If the text has
+    // any, it's normal text — NOT a sticker. Only emoji/symbols stay big.
+    return !/[\p{L}\p{N}]/u.test(s);
+}
+function openStickerPicker(){
+    const sheet=document.getElementById('attach-sheet');
+    if(sheet) sheet.classList.remove('open');
+    const pk=document.getElementById('sticker-picker');
+    if(!pk) return;
+    if(!pk.dataset.built){
+        pk.innerHTML=STICKERS.map(s=>`<button class="sticker-btn" onclick="sendSticker('${s}')">${s}</button>`).join('');
+        pk.dataset.built='1';
+    }
+    pk.classList.add('show');
+}
+function sendSticker(s){
+    const pk=document.getElementById('sticker-picker'); if(pk) pk.classList.remove('show');
+    if(!clients.length) return;
+    const msg={sender:myName,text:s,ts:now(),system:false};
+    e2ePub(topic,JSON.stringify(msg),{qos:1});
+    addBubble(myName,s,msg.ts,true,null,null);   // echo is skipped (sender===myName)
+    _saveHist(safeRoom,{type:'msg',sender:myName,text:s,ts:msg.ts,quote:null,date:new Date().toISOString().slice(0,10)});
+}
+document.addEventListener('click',e=>{
+    const pk=document.getElementById('sticker-picker');
+    if(pk&&pk.classList.contains('show')&&!e.target.closest('#sticker-picker')&&!e.target.closest('[onclick*="openStickerPicker"]'))
+        pk.classList.remove('show');
+});
+
+// ── NeoBot — built-in rule-based assistant (mirrors Python _neobot_response) ──
+function neobotResponse(query, activeUsers, myName){
+    let q = query.toLowerCase().replace(/@neobot/g,' ').trim();
+    const active = activeUsers ? Array.from(activeUsers) : [];
+    const rnd = (a,b)=>Math.floor(Math.random()*(b-a+1))+a;
+
+    if(!q || ['help','commands','?','menu'].includes(q))
+        return "🤖 Hi, I'm NeoBot! Try one of these:\n"+
+            "• @neobot flip a coin\n• @neobot roll a dice\n• @neobot random 1-100\n"+
+            "• @neobot time\n• @neobot who is here\n• @neobot code   (make a room code)\n"+
+            "• @neobot 2 + 2 * 3   (do math)\n• @neobot joke";
+    if(['hi','hey','yo'].includes(q) || q.includes('hello') || q.startsWith('hi ') || q.startsWith('hey'))
+        return "👋 Hey"+(myName?' '+myName:'')+"! Type '@neobot help' to see what I can do.";
+    if(q.includes('coin')||q.includes('flip'))
+        return '🪙 '+(Math.random()<0.5?'Heads!':'Tails!');
+    if(q.includes('dice')||q.includes('die')||q==='roll'||q.startsWith('roll'))
+        return '🎲 You rolled a '+rnd(1,6)+'!';
+    if(q.includes('random')||q.includes('number')){
+        const nums=(q.match(/\d+/g)||[]);
+        if(nums.length>=2){ let lo=+nums[0],hi=+nums[1]; if(lo>hi){const t=lo;lo=hi;hi=t;}
+            return '🔢 '+rnd(lo,hi)+'  (between '+lo+' and '+hi+')'; }
+        return '🔢 '+rnd(1,100)+'  (1–100)';
+    }
+    if(q.includes('time')||q.includes('date')||q.includes('day'))
+        return '🕐 It is '+new Date().toLocaleString();
+    if(q.includes('who')||q.includes('online')||q.includes('here')){
+        const others=active.filter(u=>u&&u!=='NeoBot'&&u!=='__system__').sort();
+        if(others.length) return '👥 People here: '+others.join(', ')+(myName?' (and you, '+myName+')':'');
+        return "👥 Looks like it's just you here right now.";
+    }
+    if(q.includes('code')){
+        const w=['ocean','tiger','moon','storm','pixel','nova','delta','echo','frost','jade'];
+        const p=()=>w[rnd(0,w.length-1)];
+        return '🔑 Here is a room code: '+p()+'-'+p()+'-'+rnd(1,99);
+    }
+    if(q.includes('joke')){
+        const jokes=["😄 Why do programmers prefer dark mode? Because light attracts bugs!",
+            "😄 Why was the computer cold? It left its Windows open!",
+            "😄 There are 10 kinds of people: those who understand binary, and those who don't.",
+            "😄 Why did the developer go broke? Because he used up all his cache!"];
+        return jokes[rnd(0,jokes.length-1)];
+    }
+    // Simple calculator: regex guarantees only digits/operators, so eval is safe.
+    if(/^[\d\s+\-*/().]+$/.test(q) && /\d/.test(q)){
+        try{
+            const result=Function('"use strict";return ('+q+')')();
+            if(typeof result==='number' && isFinite(result)) return '🧮 '+q.trim()+' = '+result;
+        }catch(e){}
+        return "🧮 Hmm, I couldn't work that one out.";
+    }
+    return null;
 }
 
 // Avatar color from username hash
@@ -2254,6 +2372,7 @@ function addBubble(sender, text, ts, mine, quote, threadId){
     const d=document.createElement('div');
     let cls='bubble '+(mine?'mine':'theirs');
     if(threadId) cls+=' threaded';
+    if(_looksLikeSticker(text)) cls+=' sticker';
     d.className=cls;
     d.id='b'+bid;
     d.dataset.bid=String(bid);
@@ -2264,7 +2383,9 @@ function addBubble(sender, text, ts, mine, quote, threadId){
     if(threadId) d.dataset.threadId=threadId;
 
     const badge=sender.toLowerCase()==='mrminer'
-        ? ' <span style="color:#ff3366;font-size:9px;font-weight:700;">[Admin NeoNext]</span>' : '';
+        ? ' <span style="color:#ff3366;font-size:9px;font-weight:700;">[Admin NeoNext]</span>'
+        : sender==='NeoBot'
+        ? ' <span style="color:#22d3ee;font-size:9px;font-weight:700;">🤖 Bot</span>' : '';
 
     // @mention highlight
     let displayText=text;
@@ -2285,6 +2406,7 @@ function addBubble(sender, text, ts, mine, quote, threadId){
             ? `<button class="btn-bubble-act" onclick="startEdit(${bid})">✎ Edit</button>`+
               `<button class="btn-bubble-act" onclick="sendDeleteMsg('${esc(ts)}')">🗑 Delete</button>`
             : '')+
+        `<button class="btn-bubble-act" onclick="forwardBubble(${bid})">↪ Forward</button>`+
         `<button class="btn-bubble-act" onclick="_pinBubble(${bid})">📌 Pin</button>`+
         `<button class="btn-bubble-act" onclick="startThread('${msgId.replace(/'/g,"\\'")}')">💬 Thread</button>`+
         `<button class="btn-bubble-act" onclick="translateBubble(${bid})">🌐 Translate</button>`+
@@ -2539,7 +2661,7 @@ async function doRegister(){
     const pw2 =document.getElementById('acc-pw2').value;
     if(!name)         { accStatus('⚠  Enter a username.'); return; }
     if(name.length<2) { accStatus('⚠  Name too short (min 2 chars).'); return; }
-    if(['mrminer','k1ssq'].includes(name.toLowerCase())) { accStatus('⚠  This username is reserved.'); return; }
+    if(['mrminer','k1ssq','neobot'].includes(name.toLowerCase())) { accStatus('⚠  This username is reserved.'); return; }
     if(!pw)           { accStatus('⚠  Enter a password.'); return; }
     if(pw.length<4)   { accStatus('⚠  Password too short (min 4 chars).'); return; }
     if(pw!==pw2)      { accStatus('⚠  Passwords don\'t match.'); return; }
@@ -3573,6 +3695,14 @@ function doSearch(q){
     });
 }
 
+// ── Forward bubble ────────────────────────────────────────────────────────────
+function forwardBubble(bid){
+    const el=document.getElementById('b'+bid); if(!el) return;
+    const inp=document.getElementById('msg-in'); if(!inp) return;
+    inp.value='↪ Forwarded from '+(el.dataset.sender||'')+': '+(el.dataset.text||'');
+    inp.focus();
+}
+
 // ── Copy bubble ───────────────────────────────────────────────────────────────
 function copyBubble(bid){
     const el=document.getElementById('b'+bid);
@@ -4420,6 +4550,15 @@ function _grpOpen(g){
 // ── Init ──────────────────────────────────────────────────────────────────────
 loginShow('chooser');
 genCode();
+
+// ── PWA: register the service worker so NeoChat can be installed on phones ──────
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js')
+      .then(() => console.log('NeoChat PWA ready'))
+      .catch((err) => console.warn('SW registration failed:', err));
+  });
+}
 </script>
 </body>
 </html>

@@ -1,0 +1,31 @@
+{
+  "name": "NeoChat",
+  "short_name": "NeoChat",
+  "description": "Real-time cosmic messenger — chat, calls, groups and more.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#060810",
+  "theme_color": "#0d0a1e",
+  "icons": [
+    {
+      "src": "neochat-icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "neochat-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "neochat-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
