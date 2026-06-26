@@ -444,8 +444,15 @@ button:active{transform:scale(0.96);opacity:0.9;}
 #op-panel-view{display:none;width:100%;max-width:400px;flex-direction:column;gap:16px;margin:0 20px;}
 
 /* ── Contacts & Profile ── */
-#contacts-screen,#profile-screen,#groups-screen{position:fixed;inset:0;z-index:10;background:var(--space);display:none;flex-direction:column;}
-#contacts-screen.open,#profile-screen.open,#groups-screen.open{display:flex;}
+#contacts-screen,#profile-screen,#groups-screen,#bots-screen{position:fixed;inset:0;z-index:10;background:var(--space);display:none;flex-direction:column;}
+#contacts-screen.open,#profile-screen.open,#groups-screen.open,#bots-screen.open{display:flex;}
+.bot-rule-row{display:flex;align-items:center;gap:6px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.10);border-radius:10px;padding:6px 8px;}
+.bot-rule-row input{flex:1;min-width:0;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.14);border-radius:8px;color:#e8eaf6;font-size:12px;padding:7px 9px;}
+.bot-rule-row input.trig{flex:0 0 96px;}
+.bot-rule-x{background:transparent;border:none;color:#7a90b0;font-size:12px;cursor:pointer;flex-shrink:0;}
+.bot-rule-x:hover{color:#ff3366;}
+.bot-emoji-btn{width:34px;height:34px;border-radius:9px;font-size:17px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.16);cursor:pointer;}
+.bot-emoji-btn.sel{background:rgba(110,120,255,0.28);border-color:rgba(110,120,255,0.6);}
 /* Group manager */
 .grp-card{display:flex;align-items:center;gap:11px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.09);border-radius:14px;padding:11px 12px;}
 .grp-avatar{width:42px;height:42px;border-radius:21px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:18px;flex-shrink:0;}
@@ -752,6 +759,12 @@ input::placeholder{color:var(--t4);font-weight:400;}
             <span class="login-action-ico">👥</span>
             <span><span class="login-action-title">Create a group</span><br>
             <span class="login-action-sub">Make a group and invite your friends</span></span>
+            <span class="login-action-arrow">›</span>
+        </button>
+        <button class="login-action" onclick="openBotsScreen()">
+            <span class="login-action-ico">🤖</span>
+            <span><span class="login-action-title">Platform of Bots</span><br>
+            <span class="login-action-sub">Create and deploy your own bots</span></span>
             <span class="login-action-arrow">›</span>
         </button>
     </div>
@@ -1270,6 +1283,75 @@ input::placeholder{color:var(--t4);font-weight:400;}
         <button class="nav-tab active"><span class="nav-icon">🏠</span><span class="nav-label">Groups</span></button>
         <button class="nav-tab" onclick="closeGroupsScreen();openProfileScreen()"><span class="nav-icon">👤</span><span class="nav-label">Profile</span></button>
         <button class="nav-tab" onclick="closeGroupsScreen();openSettingsSheet()"><span class="nav-icon">⚙️</span><span class="nav-label">Settings</span></button>
+    </div>
+</div>
+
+<!-- Platform of Bots screen -->
+<div id="bots-screen">
+    <div class="contacts-header">
+        <button class="btn-hdr-ico" onclick="botBack()">←</button>
+        <div class="contacts-title" id="bot-hdr-title">Platform of Bots</div>
+    </div>
+    <div class="contacts-body">
+        <!-- LIST view -->
+        <div id="bot-view-list" style="display:flex;flex-direction:column;gap:12px;">
+            <button class="grp-primary" onclick="botNewBot()">➕  New Bot</button>
+            <span class="field-label">Your bots</span>
+            <div id="bot-list" style="display:flex;flex-direction:column;gap:8px;"></div>
+            <div style="color:#4a6080;font-size:11px;">💡 In any chat, type <b>@yourbot</b> followed by a
+                message and your bot will reply for everyone to see.</div>
+        </div>
+        <!-- EDIT view -->
+        <div id="bot-view-edit" style="display:none;flex-direction:column;gap:11px;">
+            <button class="grp-back" onclick="botShowList()">←  Back</button>
+            <div>
+                <span class="field-label">Bot name</span>
+                <input id="bot-name-in" type="text" placeholder="e.g. WeatherBot" autocomplete="off"
+                       maxlength="30" oninput="botSyncHandle()">
+            </div>
+            <div>
+                <span class="field-label">Handle — people type @this to reach it</span>
+                <input id="bot-handle-in" type="text" placeholder="weatherbot" autocomplete="off"
+                       autocapitalize="off" maxlength="20" oninput="_botHandleTouched=true">
+            </div>
+            <div>
+                <span class="field-label">Icon</span>
+                <div id="bot-emoji-row" style="display:flex;flex-wrap:wrap;gap:5px;"></div>
+            </div>
+            <div>
+                <span class="field-label">Description — optional</span>
+                <input id="bot-desc-in" type="text" placeholder="What does your bot do?" autocomplete="off" maxlength="80">
+            </div>
+            <div style="display:flex;align-items:center;justify-content:space-between;">
+                <span class="field-label">Rules — when a message contains… → reply</span>
+                <button class="grp-back" style="font-size:12px;" onclick="botAddRule()">＋ Add rule</button>
+            </div>
+            <div id="bot-rules" style="display:flex;flex-direction:column;gap:6px;"></div>
+            <div>
+                <span class="field-label">Fallback — reply when no rule matches</span>
+                <input id="bot-fallback-in" type="text" placeholder="Sorry, I didn't get that. Try 'help'." autocomplete="off" maxlength="160">
+            </div>
+            <div style="color:#4a6080;font-size:10px;">Tip: use {user}, {time}, {date}, {random}, {coin}, {dice} in replies.</div>
+            <div>
+                <span class="field-label">Try it</span>
+                <div class="code-row">
+                    <input id="bot-try-in" type="text" placeholder="Type a test message…" autocomplete="off"
+                           onkeydown="if(event.key==='Enter')botTest()">
+                    <button class="btn-contact-search" onclick="botTest()">Test</button>
+                </div>
+            </div>
+            <div id="bot-try-out" style="display:none;color:#cdd8ea;font-size:12px;background:rgba(110,120,255,0.10);
+                 border:1px solid rgba(110,120,255,0.25);border-radius:10px;padding:8px 12px;"></div>
+            <div id="bot-edit-status" style="color:#ff6b6b;font-size:11px;min-height:14px;"></div>
+            <button class="grp-primary" onclick="botSave()">Save Bot</button>
+        </div>
+    </div>
+    <div class="bottom-nav">
+        <button class="nav-tab" onclick="closeBotsScreen()"><span class="nav-icon">💬</span><span class="nav-label">Chats</span></button>
+        <button class="nav-tab" onclick="closeBotsScreen();openContactsScreen()"><span class="nav-icon">👥</span><span class="nav-label">Contacts</span></button>
+        <button class="nav-tab" onclick="closeBotsScreen();openGroupsScreen()"><span class="nav-icon">🏠</span><span class="nav-label">Groups</span></button>
+        <button class="nav-tab active"><span class="nav-icon">🤖</span><span class="nav-label">Bots</span></button>
+        <button class="nav-tab" onclick="closeBotsScreen();openProfileScreen()"><span class="nav-icon">👤</span><span class="nav-label">Profile</span></button>
     </div>
 </div>
 
@@ -2167,6 +2249,21 @@ async function doConnect(){
                         if(d.text&&myName&&d.text.toLowerCase().includes('@'+myName.toLowerCase())){
                             _showNotif(d.sender,d.text);
                         }
+                        // Platform of Bots — host our bots for the room: when anyone
+                        // else addresses one of our @bots, we publish its reply.
+                        // Skip messages already from a bot so bots never trigger bots.
+                        if(d.text && d.text.includes('@') && !_isBotSender(d.sender)){
+                            const bl=d.text.toLowerCase();
+                            _loadBots().forEach(bot=>{
+                                const h=(bot.handle||'').toLowerCase();
+                                if(h && bl.includes('@'+h)){
+                                    const reply=_userbotReply(bot, d.text, d.sender);
+                                    const nm=bot.name||h;
+                                    setTimeout(()=>{ if(clients.length)
+                                        e2ePub(topic, JSON.stringify({sender:nm,text:reply,ts:now(),system:false}),{qos:1}); }, 650);
+                                }
+                            });
+                        }
                     }
                     _saveHist(safeCode,{type:'msg',sender:d.sender,text:d.text,ts:d.ts,quote:d.quote||null,date:new Date().toISOString().slice(0,10)});
                 }catch(e){}
@@ -2264,6 +2361,18 @@ function sendMsg(){
                 e2ePub(topic, JSON.stringify({sender:'NeoBot',text:reply,ts:now(),system:false}),{qos:1});
         }, 600);
     }
+
+    // Platform of Bots — any of our bots addressed as @handle replies too.
+    const _low=txt.toLowerCase();
+    if(myName && _low.includes('@')) _loadBots().forEach(bot=>{
+        const h=(bot.handle||'').toLowerCase();
+        if(h && _low.includes('@'+h)){
+            const reply=_userbotReply(bot, txt, myName);
+            const nm=bot.name||h;
+            setTimeout(()=>{ if(clients.length)
+                e2ePub(topic, JSON.stringify({sender:nm,text:reply,ts:now(),system:false}),{qos:1}); }, 650);
+        }
+    });
 }
 
 // ── Stickers ──────────────────────────────────────────────────────────────────
@@ -2354,6 +2463,164 @@ function neobotResponse(query, activeUsers, myName){
     return null;
 }
 
+// ── Platform of Bots — user-created rule bots (mirrors Python) ────────────────
+const BOTS_KEY='neochat_bots';
+const BOT_EMOJIS=['🤖','🎮','🌦️','📚','🎵','🍕','💡','🎲','⚡','🐱','🚀','💬'];
+const BOT_RESERVED=['neobot','mrminer','k1ssq','system'];
+let _botEditId=null, _botEmoji='🤖', _botHandleTouched=false;
+
+function _loadBots(){ try{ return JSON.parse(localStorage.getItem(BOTS_KEY)||'[]'); }catch(e){ return []; } }
+function _saveBots(b){ try{ localStorage.setItem(BOTS_KEY, JSON.stringify(b)); }catch(e){} }
+function _upsertBot(bot){ const b=_loadBots(); const i=b.findIndex(x=>x.id===bot.id);
+    if(i>=0) b[i]=bot; else b.unshift(bot); _saveBots(b); }
+function _deleteBotById(id){ _saveBots(_loadBots().filter(x=>x.id!==id)); }
+function _botHandleSet(){ return new Set(_loadBots().map(b=>(b.handle||'').toLowerCase())); }
+function _isBotSender(name){ const n=(name||'').toLowerCase(); if(n==='neobot') return true;
+    return _loadBots().some(b=>(b.handle||'').toLowerCase()===n || (b.name||'').toLowerCase()===n); }
+
+function _fillBotTokens(text, bot, user){
+    const rnd=(a,b)=>Math.floor(Math.random()*(b-a+1))+a;
+    const map={'{user}':user||'there', '{bot}':bot.name||'Bot',
+        '{time}':new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}),
+        '{date}':new Date().toLocaleDateString(),
+        '{random}':String(rnd(1,100)), '{coin}':Math.random()<0.5?'Heads':'Tails', '{dice}':String(rnd(1,6))};
+    return Object.keys(map).reduce((s,k)=>s.split(k).join(map[k]), text);
+}
+function _userbotReply(bot, query, user){
+    const q=(query||'').toLowerCase().replace(/@\w+/g,' ').trim();
+    for(const r of (bot.rules||[])){
+        const t=String(r.trigger||'').trim().toLowerCase();
+        if(t && q.includes(t)) return _fillBotTokens(String(r.reply||''), bot, user);
+    }
+    const fb=String(bot.fallback||'').trim();
+    if(fb) return _fillBotTokens(fb, bot, user);
+    return (bot.emoji||'🤖')+' '+(bot.name||'Bot')+" here! I didn't understand that one yet.";
+}
+
+// ── Bot Studio UI ─────────────────────────────────────────────────────────────
+function openBotsScreen(){ const s=document.getElementById('bots-screen'); if(s) s.classList.add('open'); botShowList(); }
+function closeBotsScreen(){ const s=document.getElementById('bots-screen'); if(s) s.classList.remove('open'); }
+function botBack(){ const ed=document.getElementById('bot-view-edit');
+    if(ed && ed.style.display!=='none') botShowList(); else closeBotsScreen(); }
+function _botSetView(v){
+    document.getElementById('bot-view-list').style.display = v==='list'?'flex':'none';
+    document.getElementById('bot-view-edit').style.display = v==='edit'?'flex':'none';
+    const t=document.getElementById('bot-hdr-title');
+    if(t) t.textContent = v==='edit' ? (_botEditId?'Edit bot':'New bot') : 'Platform of Bots';
+}
+function botShowList(){
+    _botSetView('list');
+    const wrap=document.getElementById('bot-list'); const bots=_loadBots();
+    if(!bots.length){
+        wrap.innerHTML='<div style="color:#4a6080;font-size:12px;text-align:center;padding:30px 10px;">'+
+            'No bots yet.<br>Tap “New Bot” to build your first assistant.</div>';
+        return;
+    }
+    wrap.innerHTML=bots.map(b=>{
+        const n=(b.rules||[]).length;
+        return `<div class="grp-card">`+
+            `<div class="grp-avatar" style="background:rgba(110,120,255,0.16);border:1px solid rgba(110,120,255,0.38);font-size:20px;">${esc(b.emoji||'🤖')}</div>`+
+            `<div style="flex:1;min-width:0;"><div class="grp-name">${esc(b.name||'Bot')}</div>`+
+            `<div class="grp-sub">@${esc(b.handle||'')} · ${n} rule${n!==1?'s':''}</div></div>`+
+            `<button class="grp-open-btn" onclick="botEditBot('${b.id}')">Edit</button>`+
+            `<button class="grp-gear" onclick="botDeleteBot('${b.id}')">🗑</button></div>`;
+    }).join('');
+}
+function _botRenderEmojis(){
+    const row=document.getElementById('bot-emoji-row');
+    row.innerHTML=BOT_EMOJIS.map(e=>
+        `<button class="bot-emoji-btn${e===_botEmoji?' sel':''}" onclick="botPickEmoji('${e}')">${e}</button>`).join('');
+}
+function botPickEmoji(e){ _botEmoji=e; _botRenderEmojis(); }
+function botSyncHandle(){
+    if(_botHandleTouched) return;
+    const name=document.getElementById('bot-name-in').value;
+    document.getElementById('bot-handle-in').value=name.toLowerCase().replace(/[^a-z0-9_]/g,'');
+}
+function botAddRule(trigger, reply){
+    const wrap=document.getElementById('bot-rules');
+    const row=document.createElement('div');
+    row.className='bot-rule-row';
+    row.innerHTML=`<input class="trig" type="text" placeholder="contains…" maxlength="40">`+
+        `<span style="color:#7a90b0;">→</span>`+
+        `<input class="rep" type="text" placeholder="reply…" maxlength="200">`+
+        `<button class="bot-rule-x" onclick="this.parentNode.remove()">✕</button>`;
+    wrap.appendChild(row);
+    if(trigger) row.querySelector('.trig').value=trigger;
+    if(reply) row.querySelector('.rep').value=reply;
+}
+function _botCollectRules(){
+    const rules=[];
+    document.querySelectorAll('#bot-rules .bot-rule-row').forEach(row=>{
+        const t=row.querySelector('.trig').value.trim();
+        const r=row.querySelector('.rep').value.trim();
+        if(t && r) rules.push({trigger:t, reply:r});
+    });
+    return rules;
+}
+function _botDraft(){
+    return {name:document.getElementById('bot-name-in').value.trim()||'Bot',
+        handle:document.getElementById('bot-handle-in').value.trim().replace(/^@/,'').toLowerCase(),
+        emoji:_botEmoji, desc:document.getElementById('bot-desc-in').value.trim(),
+        rules:_botCollectRules(), fallback:document.getElementById('bot-fallback-in').value.trim()};
+}
+function botTest(){
+    const inp=document.getElementById('bot-try-in'); const msg=inp.value.trim();
+    if(!msg) return;
+    const reply=_userbotReply(_botDraft(), msg, myName||'');
+    const out=document.getElementById('bot-try-out');
+    out.textContent=_botEmoji+'  '+reply; out.style.display='block';
+}
+function _botClearForm(){
+    ['bot-name-in','bot-handle-in','bot-desc-in','bot-fallback-in','bot-try-in'].forEach(id=>document.getElementById(id).value='');
+    document.getElementById('bot-rules').innerHTML='';
+    document.getElementById('bot-try-out').style.display='none';
+    document.getElementById('bot-edit-status').textContent='';
+    _botHandleTouched=false;
+}
+function botNewBot(){
+    _botEditId=null; _botEmoji='🤖';
+    _botClearForm(); _botRenderEmojis();
+    botAddRule('hello','Hi {user}! 👋');
+    _botSetView('edit');
+}
+function botEditBot(id){
+    const b=_loadBots().find(x=>x.id===id); if(!b) return;
+    _botEditId=id; _botEmoji=b.emoji||'🤖';
+    _botClearForm(); _botRenderEmojis();
+    document.getElementById('bot-name-in').value=b.name||'';
+    document.getElementById('bot-handle-in').value=b.handle||'';
+    _botHandleTouched=true;
+    document.getElementById('bot-desc-in').value=b.desc||'';
+    document.getElementById('bot-fallback-in').value=b.fallback||'';
+    (b.rules||[]).forEach(r=>botAddRule(r.trigger, r.reply));
+    if(!(b.rules||[]).length) botAddRule();
+    _botSetView('edit');
+}
+function botDeleteBot(id){
+    const b=_loadBots().find(x=>x.id===id); if(!b) return;
+    if(!confirm('Delete “'+(b.name||'this bot')+'”? This cannot be undone.')) return;
+    _deleteBotById(id); botShowList();
+}
+function botSave(){
+    const st=document.getElementById('bot-edit-status');
+    const name=document.getElementById('bot-name-in').value.trim();
+    const handle=document.getElementById('bot-handle-in').value.trim().replace(/^@/,'').toLowerCase().replace(/[^a-z0-9_]/g,'');
+    if(!name){ st.textContent='⚠  Give your bot a name.'; return; }
+    if(!handle){ st.textContent='⚠  Give your bot a handle (letters/numbers).'; return; }
+    if(BOT_RESERVED.includes(handle)){ st.textContent='⚠  That handle is reserved — pick another.'; return; }
+    const rules=_botCollectRules();
+    if(!rules.length && !document.getElementById('bot-fallback-in').value.trim()){
+        st.textContent='⚠  Add at least one rule or a fallback reply.'; return; }
+    if(_loadBots().some(o=>(o.handle||'').toLowerCase()===handle && o.id!==_botEditId)){
+        st.textContent='⚠  You already have a bot with that handle.'; return; }
+    _upsertBot({id:_botEditId||_genId(), name, handle, emoji:_botEmoji,
+        desc:document.getElementById('bot-desc-in').value.trim(), rules,
+        fallback:document.getElementById('bot-fallback-in').value.trim(),
+        owner:myName, created:new Date().toISOString().slice(0,10)});
+    botShowList();
+}
+
 // Avatar color from username hash
 function _avatarColor(name){
     const pal=['#c2cde0','#22d3ee','#3b82f6','#06b6d4','#6366f1','#c2cde0','#0ea5e9','#2563eb','#38bdf8','#2f3647'];
@@ -2384,7 +2651,7 @@ function addBubble(sender, text, ts, mine, quote, threadId){
 
     const badge=sender.toLowerCase()==='mrminer'
         ? ' <span style="color:#ff3366;font-size:9px;font-weight:700;">[Admin NeoNext]</span>'
-        : sender==='NeoBot'
+        : (sender==='NeoBot' || _botHandleSet().has(sender.toLowerCase()))
         ? ' <span style="color:#22d3ee;font-size:9px;font-weight:700;">🤖 Bot</span>' : '';
 
     // @mention highlight
