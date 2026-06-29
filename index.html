@@ -1,9 +1,20 @@
 <!DOCTYPE html>
+<!--
+================================================================================
+  NeoChat  —  Copyright (c) 2026 pythonaby-code.  All Rights Reserved.
+--------------------------------------------------------------------------------
+  This source code is PROPRIETARY and CONFIDENTIAL.
+  Unauthorized copying, modification, distribution, reuse, or sale of this file
+  or any part of it, by any means, is strictly prohibited without the prior
+  written permission of the author. See the LICENSE file for full terms.
+  Contact: pythonaby@gmail.com
+================================================================================
+-->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<meta name="theme-color" content="#0d0a1e">
+<meta name="theme-color" content="#040405">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
@@ -14,7 +25,7 @@
 <link rel="icon" type="image/png" href="neochat-icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 /* ================================================================
    NeoChat  |  Premium Cosmic Messenger  |  Complete Visual System
@@ -22,40 +33,41 @@
    ================================================================ */
 
 :root {
-  /* ── Deep blue-black space base (color comes from the nebula) ── */
-  --void:    #060810;
-  --space:   #0a0c16;
-  --deep:    #10131f;
-  --panel:   #161a28;
+  /* ── Near-black showcase base (#040405) ── */
+  --void:    #020203;
+  --space:   #040405;
+  --deep:    #0a0b10;
+  --panel:   rgba(14,15,20,0.82);
 
-  --glass-1: rgba(18,20,28,0.62);
-  --glass-2: rgba(22,25,34,0.55);
-  --glass-3: rgba(14,16,22,0.72);
+  --glass-1: rgba(14,15,20,0.82);
+  --glass-2: rgba(20,22,30,0.58);
+  --glass-3: rgba(10,11,16,0.80);
 
-  /* ── Violet + magenta aurora accents (names kept as --teal* for compat) ── */
-  --teal:      #c2cde0;   /* vivid violet (primary accent)  */
-  --teal-dark: #2f3647;   /* deeper violet                  */
-  --teal-deep: #2a3142;   /* darkest violet                 */
+  /* ── Showcase accents: glowing white primary + periwinkle eyebrow ── */
+  --teal:      #ffffff;   /* primary accent = glowing white */
+  --teal-dark: #cfd8ea;   /* soft white                     */
+  --teal-deep: #aab4c8;   /* dim white                      */
   --teal-glow: rgba(255,255,255,0.30);
   --teal-faint:rgba(255,255,255,0.08);
-  --cyan:      #22d3ee;   /* neon cyan glow                 */
-  --cyan-glow: rgba(34,211,238,0.30);
+  --cyan:      rgb(150,180,255);   /* periwinkle accent      */
+  --cyan-glow: rgba(150,180,255,0.35);
+  --accent-blue: rgb(150,180,255); /* showcase eyebrow blue  */
 
-  --sent-bg:  linear-gradient(135deg,rgba(255,255,255,0.20),rgba(255,255,255,0.13));
+  --sent-bg:  #ffffff;
   --recv-bg:  rgba(255,255,255,0.07);
 
-  --t1: #e6edf8;
-  --t2: #9db0cf;
-  --t3: #5a6f96;
-  --t4: #2f4063;
+  --t1: #ffffff;
+  --t2: rgba(255,255,255,0.62);
+  --t3: rgba(255,255,255,0.42);
+  --t4: rgba(255,255,255,0.26);
 
-  --online:  #34d399;
+  --online:  #3ddc84;
   --danger:  #f43f5e;
   --warn:    #fb923c;
   --info:    #60a5fa;
 
-  --b1: rgba(255,255,255,0.10);
-  --b2: rgba(255,255,255,0.06);
+  --b1: rgba(255,255,255,0.14);
+  --b2: rgba(255,255,255,0.08);
   --b3: rgba(255,255,255,0.22);
   --b4: rgba(255,255,255,0.45);
 
@@ -65,7 +77,8 @@
 
   --r1: 10px; --r2: 16px; --r3: 22px; --r4: 28px;
 
-  --font: -apple-system,'SF Pro Display','Segoe UI Variable','Segoe UI',system-ui,sans-serif;
+  --font: 'Space Grotesk',system-ui,-apple-system,'Segoe UI',sans-serif;
+  --mono: 'JetBrains Mono',ui-monospace,SFMono-Regular,monospace;
   --accent: var(--teal); --neon: var(--teal); --neon-2: var(--cyan);
 }
 
@@ -76,7 +89,17 @@ body{background:var(--space);color:var(--t1);font-family:var(--font);overflow:hi
 ::-webkit-scrollbar-track{background:transparent;}
 ::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.20);border-radius:2px;}
 ::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,0.40);}
-#cyber-bg{position:fixed;inset:0;z-index:0;pointer-events:none;}
+#cyber-bg{display:none;}
+/* Showcase background: vignette + drifting glows + faint grid over near-black */
+body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
+  background:
+    radial-gradient(130% 120% at 50% 50%,transparent 55%,rgba(0,0,0,0.7)),
+    radial-gradient(1500px 1500px at 28% -28%,rgba(255,255,255,0.10),transparent 60%),
+    radial-gradient(1100px 1100px at 90% 120%,rgba(150,180,255,0.06),transparent 62%),
+    linear-gradient(rgba(255,255,255,0.035) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(255,255,255,0.035) 1px,transparent 1px),
+    #040405;
+  background-size:100% 100%,100% 100%,100% 100%,64px 64px,64px 64px,100% 100%;}
 .screen{position:absolute;inset:0;display:flex;flex-direction:column;opacity:1;transition:opacity 0.22s ease;z-index:1;}
 .screen.hidden{opacity:0;pointer-events:none;}
 
@@ -151,19 +174,19 @@ button:active{transform:scale(0.96);opacity:0.9;}
 .messages::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.18);}
 
 /* ── BUBBLES — core visual ── */
-.bubble{max-width:80%;padding:10px 14px;border-radius:18px;word-break:break-word;position:relative;animation:.25s ease-out both;}
+.bubble{max-width:80%;padding:11px 15px;border-radius:20px;word-break:break-word;position:relative;animation:.25s ease-out both;}
 .bubble .b-name{font-size:10px;font-weight:700;opacity:.8;margin-bottom:3px;}
 .bubble .b-text{font-size:14px;line-height:1.5;color:var(--t1);}
 .bubble .b-ts{font-size:10px;margin-top:4px;display:flex;align-items:center;gap:4px;}
 
 /* Sent: electric-blue→cyan gradient with neon glow */
-.bubble.mine{align-self:flex-end;background:var(--sent-bg);border:none;border-bottom-right-radius:4px;box-shadow:0 2px 12px rgba(0,0,0,0.30),0 0 18px rgba(255,255,255,0.35);animation-name:bbl-right;}
+.bubble.mine{align-self:flex-end;background:var(--sent-bg);border:none;border-bottom-right-radius:6px;box-shadow:0 0 26px rgba(255,255,255,0.34),0 0 60px rgba(255,255,255,0.14);animation-name:bbl-right;}
 .bubble.mine .b-text{color:#f4f9ff;}
 .bubble.mine .b-name{color:rgba(255,255,255,0.78);}
 .bubble.mine .b-ts{justify-content:flex-end;color:rgba(255,255,255,0.48);}
 
 /* Received: dark glass, no harsh border */
-.bubble.theirs{background:var(--recv-bg);border:1px solid var(--b2);border-bottom-left-radius:4px;box-shadow:0 2px 12px rgba(0,0,0,0.25);animation-name:bbl-left;}
+.bubble.theirs{background:var(--recv-bg);border:1px solid var(--b2);border-bottom-left-radius:6px;box-shadow:0 2px 12px rgba(0,0,0,0.25);animation-name:bbl-left;}
 .bubble.theirs .b-name{color:var(--teal);}
 .bubble.theirs .b-ts{color:var(--t3);}
 
@@ -531,7 +554,7 @@ button:active{transform:scale(0.96);opacity:0.9;}
    Layered last so it refines the base system without touching logic.
    ════════════════════════════════════════════════════════════════ */
 :root{
-  --font:'Inter',-apple-system,'Segoe UI',system-ui,sans-serif;
+  --font:'Space Grotesk','Inter',-apple-system,'Segoe UI',system-ui,sans-serif;
   --font-display:'Space Grotesk','Inter',system-ui,sans-serif;
   /* Signature aurora gradient — the through-line of the whole brand */
   --aurora:linear-gradient(120deg,#ffffff 0%,#dbe4f2 32%,#ffffff 70%,#cdd8ea 100%);
@@ -550,15 +573,13 @@ body::after{
 /* ── Wordmark: aurora-clipped Space Grotesk with a slow shimmer ── */
 .logo h1{
   font-family:var(--font-display);font-weight:700;letter-spacing:-1.2px;line-height:1.02;
-  background:linear-gradient(110deg,#eef2f8 0%,#c2ccde 26%,#dbe4f2 50%,#cdd8ea 74%,#c2ccde 100%);
-  background-size:230% 100%;-webkit-background-clip:text;background-clip:text;
-  -webkit-text-fill-color:transparent;color:transparent;
-  text-shadow:none;filter:drop-shadow(0 0 30px rgba(255,255,255,.38));
-  animation:aurora-shift 7s ease-in-out infinite;
+  background:none;color:#fff;-webkit-text-fill-color:#fff;
+  text-shadow:0 0 14px rgba(255,255,255,.6),0 0 34px rgba(255,255,255,.32);
+  filter:none;animation:none;
 }
 @keyframes aurora-shift{0%,100%{background-position:0% 50%;}50%{background-position:100% 50%;}}
-.logo p{font-family:var(--font);color:var(--t2);font-size:11px;font-weight:500;
-  letter-spacing:3.5px;text-transform:uppercase;margin-top:13px;opacity:.7;}
+.logo p{font-family:var(--mono);color:var(--t2);font-size:11px;font-weight:400;
+  letter-spacing:3.5px;text-transform:uppercase;margin-top:13px;opacity:.85;}
 
 /* ── Brand logo mark: glass chat-bubble + chrome 'N' that draws itself ── */
 .logo-mark{display:block;width:104px;height:104px;margin:0 auto 16px;
@@ -577,8 +598,8 @@ body::after{
 @keyframes nc-rise{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
 
 /* ── Field labels: quieter, more refined tracking ── */
-.field-label{color:var(--t2);font-size:10px;font-weight:600;letter-spacing:2.4px;
-  text-transform:uppercase;margin-bottom:9px;opacity:.62;}
+.field-label{color:var(--accent-blue);font-family:var(--mono);font-size:10px;font-weight:500;letter-spacing:.34em;
+  text-transform:uppercase;margin-bottom:9px;opacity:.95;}
 
 /* ── Inputs: softer fill, refined focus ring with violet bloom ── */
 input{background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.14);
@@ -589,28 +610,28 @@ input:focus{border-color:rgba(255,255,255,.6);background:rgba(255,255,255,.08);
 input::placeholder{color:var(--t4);font-weight:400;}
 
 /* ── Primary button: aurora fill, sheen, spring lift ── */
-.btn-connect{background:var(--aurora);background-size:170% 100%;color:#fff;
-  font-family:var(--font);font-weight:700;letter-spacing:.3px;border-radius:14px;padding:16px 20px;
-  box-shadow:0 10px 30px rgba(124,58,237,.4),inset 0 1px 0 rgba(255,255,255,.2);
-  transition:transform .2s var(--spring),box-shadow .28s,background-position .55s ease;}
-.btn-connect:hover{background:var(--aurora);background-position:100% 50%;
+.btn-connect{background:#fff;color:#0a0a0a;
+  font-family:var(--font);font-weight:700;letter-spacing:-.01em;border-radius:999px;padding:16px 20px;
+  box-shadow:0 0 36px rgba(255,255,255,.32),0 0 78px rgba(255,255,255,.16);
+  transition:transform .2s var(--spring),box-shadow .28s;}
+.btn-connect:hover{background:#fff;
   transform:translateY(-2px);
-  box-shadow:0 16px 44px rgba(255,255,255,.5),inset 0 1px 0 rgba(255,255,255,.28);}
+  box-shadow:0 0 46px rgba(255,255,255,.46),0 0 96px rgba(255,255,255,.22);}
 .btn-connect:active{transform:translateY(0) scale(.98);}
 
 /* ── Account card: refined glass, top light-leak, ambient aura behind ── */
 .account-card{
-  background:linear-gradient(180deg,rgba(22,14,46,.8),rgba(12,8,28,.9));
+  background:linear-gradient(180deg,rgba(20,21,28,.82),rgba(10,11,16,.92));
   border:1px solid rgba(255,255,255,.16);border-radius:26px;padding:42px 32px;
   box-shadow:var(--s2),inset 0 1px 0 rgba(255,255,255,.06),inset 0 0 0 1px rgba(255,255,255,.02);
   backdrop-filter:blur(30px) saturate(155%);-webkit-backdrop-filter:blur(30px) saturate(155%);
   overflow:hidden;}
 .account-card::before{content:'';position:absolute;top:0;left:50%;transform:translateX(-50%);
-  width:72%;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.85),rgba(232,121,249,.55),transparent);}
+  width:72%;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.85),rgba(150,180,255,.55),transparent);}
 #account::before,#login::before{content:'';position:absolute;top:50%;left:50%;
   width:560px;height:560px;border-radius:50%;pointer-events:none;z-index:-1;filter:blur(46px);
   transform:translate(-50%,-56%);
-  background:radial-gradient(circle,rgba(64,120,210,.20),rgba(40,170,235,.09) 45%,transparent 70%);
+  background:radial-gradient(circle,rgba(255,255,255,.12),rgba(150,180,255,.07) 45%,transparent 70%);
   animation:aura-breathe 9s ease-in-out infinite;}
 @keyframes aura-breathe{0%,100%{opacity:.65;transform:translate(-50%,-56%) scale(1);}
   50%{opacity:1;transform:translate(-50%,-56%) scale(1.09);}}
@@ -623,9 +644,11 @@ input::placeholder{color:var(--t4);font-weight:400;}
 /* ── Message bubbles: depth + inset highlight on sent, glassy received ── */
 .bubble{font-family:var(--font);}
 .bubble .b-text{font-weight:450;}
-.bubble.mine{box-shadow:0 4px 20px rgba(124,58,237,.34),inset 0 1px 0 rgba(255,255,255,.22);}
-.bubble.theirs{background:linear-gradient(180deg,rgba(24,15,44,.92),rgba(14,9,28,.96));
-  border:1px solid rgba(255,255,255,.13);}
+.bubble.mine{box-shadow:0 0 26px rgba(255,255,255,.34),0 0 60px rgba(255,255,255,.14);}
+.bubble.mine .b-text{color:#0a0a0a;font-weight:500;}
+.bubble.mine .b-name{color:rgba(10,10,10,.7);}
+.bubble.mine .b-ts{color:rgba(10,10,10,.5);}
+.bubble.theirs{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);}
 
 /* ── Nav labels & section headings in the display face for cohesion ── */
 .nav-label{font-family:var(--font);font-weight:600;letter-spacing:.6px;}
@@ -636,6 +659,203 @@ input::placeholder{color:var(--t4);font-weight:400;}
 .admin-card .logo h1{font-family:var(--font-display);background:none;
   -webkit-text-fill-color:currentColor;filter:none;animation:none;}
 
+/* ════════════════════════════════════════════════════════════════
+   DESKTOP TWO-PANE  —  showcase-style chat window (>=980px)
+   Left: persistent sidebar (logo + search + conversation list).
+   Right: existing header + thread + input (wrapped in .chat-main).
+   Phones keep the single-pane mobile flow untouched.
+   ════════════════════════════════════════════════════════════════ */
+.chat-main{flex:1;min-width:0;min-height:0;display:flex;flex-direction:column;}
+.side-brand{display:none;}
+.user-avatar{width:38px;height:38px;border-radius:50%;flex-shrink:0;display:flex;
+  align-items:center;justify-content:center;font-size:14px;font-weight:600;color:#fff;
+  font-family:var(--font);box-shadow:inset 0 0 0 1px rgba(255,255,255,.14),0 2px 8px rgba(0,0,0,.4);}
+.user-item-body{flex:1;min-width:0;}
+.user-item-name{display:block;}
+.user-item-sub{font-size:12px;color:var(--t3);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+/* NeoCreate row + new sidebar controls (revealed on desktop) */
+.side-profile,.side-fab,.side-add-menu{display:none;}
+.neocreate-item{display:flex;align-items:center;gap:12px;margin:4px 8px;padding:11px 12px;border-radius:14px;cursor:pointer;background:rgba(150,180,255,.06);border:1px solid rgba(150,180,255,.18);}
+.neocreate-item:hover{background:rgba(150,180,255,.12);}
+.neocreate-av{width:44px;height:44px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:20px;color:#fff;background:linear-gradient(150deg,#8ea2ff,#5566cc);box-shadow:0 0 16px rgba(150,180,255,.5),inset 0 0 0 1px rgba(255,255,255,.2);}
+.neocreate-item .user-item-name{font-size:16px;font-weight:700;}
+.neocreate-item .user-item-sub{color:rgba(150,180,255,.85);}
+
+@media (min-width:980px){
+  #chat{flex-direction:row;}
+  #chat .chat-main{height:100%;}
+  #chat .messages{padding:20px 26px 10px;}
+  #drawer-overlay{display:none !important;}
+  /* drawer becomes a pinned left sidebar */
+  #users-drawer{order:-1;position:relative;left:auto;top:auto;height:100%;
+    width:340px;max-width:340px;z-index:1;transform:none !important;box-shadow:none;
+    border-right:1px solid var(--b1);background:rgba(255,255,255,0.015);}
+  #users-drawer .drawer-hdr{display:none;}
+  .side-brand{display:block;padding:18px 16px 12px;border-bottom:1px solid var(--b2);}
+  .side-brand-top{display:flex;align-items:center;gap:10px;margin-bottom:12px;}
+  .side-orb{width:26px;height:26px;border-radius:50% 50% 50% 4px;flex-shrink:0;
+    background:radial-gradient(circle at 45% 40%,#fff,#cfe0ff 70%);
+    box-shadow:0 0 16px rgba(255,255,255,.5),0 0 35px rgba(255,255,255,.22);}
+  .side-word{font-family:var(--font);font-weight:700;font-size:20px;color:#fff;letter-spacing:-.02em;
+    text-shadow:0 0 14px rgba(255,255,255,.4),0 0 34px rgba(255,255,255,.2);}
+  .side-search{display:flex;align-items:center;gap:9px;padding:9px 13px;border-radius:12px;
+    background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);}
+  .side-search-ico{font-size:14px;opacity:.55;flex-shrink:0;}
+  .side-search input{flex:1;width:auto;background:none;border:none;padding:0;margin:0;font-size:14px;
+    color:var(--t1);border-radius:0;backdrop-filter:none;}
+  .side-search input:focus{box-shadow:none;border:none;background:none;}
+  #users-list{padding-bottom:10px;}
+  /* sidebar conversation rows, like the video */
+  #chat .user-item{margin:3px 8px;border-radius:14px;padding:11px 12px;gap:12px;border-bottom:none;cursor:pointer;}
+  #chat .user-item:hover{background:rgba(255,255,255,.06);}
+  #chat .user-avatar{width:44px;height:44px;font-size:15px;}
+  #chat .user-item-name{font-size:17px;font-weight:600;}
+  #chat .user-item .btn-user-dm,#chat .user-item .btn-user-call{opacity:0;transition:opacity .15s;}
+  #chat .user-item:hover .btn-user-dm,#chat .user-item:hover .btn-user-call{opacity:1;}
+
+  /* hide the extra app chrome for the clean showcase look (re-home later) */
+  #chat>.bottom-nav{display:none;}
+  #chat .chat-hdr-top{display:none;}
+  #chat #room-tabs:empty{display:none;}
+
+  /* header = contact row only, exactly like the video */
+  #chat .chat-header{padding:0;}
+  #chat .chat-hdr-contact{padding:16px 24px;gap:13px;border-bottom:1px solid var(--b1);}
+  #chat .hdr-avatar-circle{width:42px;height:42px;font-size:16px;border:none;
+    background:linear-gradient(150deg,hsl(250,55%,60%),hsl(280,50%,44%));
+    box-shadow:inset 0 0 0 1px rgba(255,255,255,.14);}
+  #chat .hdr-room{font-size:19px;font-weight:600;}
+  #chat .hdr-dot{font-family:var(--mono);font-size:13px;}
+  #chat .hdr-contact-actions{gap:10px;}
+  #chat .hdr-contact-actions .btn-hdr-ico{width:42px;height:42px;border-radius:12px;
+    background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);}
+
+  /* widen the conversation bubbles a touch in the larger pane */
+  #chat .bubble{max-width:62%;}
+
+  /* ---- the chat as a floating rounded window on the grid (like the video) ---- */
+  #chat{left:50%;top:50%;right:auto;bottom:auto;
+    margin-left:calc(min(1180px,94vw) / -2);margin-top:calc(min(760px,92vh) / -2);
+    width:min(1180px,94vw);height:min(760px,92vh);
+    border-radius:26px;border:1px solid rgba(255,255,255,.14);background:var(--panel);
+    box-shadow:0 0 60px rgba(255,255,255,.12),0 40px 120px rgba(0,0,0,.6),inset 0 1px 0 rgba(255,255,255,.14);}
+  #chat #users-drawer{border-radius:26px 0 0 26px;}
+  #chat .chat-header{border-top-right-radius:26px;}
+  #chat .input-bar{border-bottom-right-radius:26px;}
+
+  /* ---- profile icon to the right of the logo ---- */
+  .side-brand-top{align-items:center;}
+  .side-profile{display:flex;margin-left:auto;width:36px;height:36px;border-radius:50%;flex-shrink:0;
+    align-items:center;justify-content:center;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12);
+    color:#fff;cursor:pointer;padding:0;transition:all .15s;}
+  .side-profile svg{width:19px;height:19px;}
+  .side-profile:hover{background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.3);}
+
+  /* ---- "+" FAB bottom-right of the chat list + its menu ---- */
+  .side-fab{display:flex;position:absolute;right:16px;bottom:16px;width:52px;height:52px;border-radius:50%;
+    background:#fff;color:#0a0a0a;font-size:28px;line-height:1;align-items:center;justify-content:center;
+    border:none;cursor:pointer;z-index:5;padding:0;transition:transform .15s;
+    box-shadow:0 0 26px rgba(255,255,255,.4),0 6px 18px rgba(0,0,0,.4);}
+  .side-fab:hover{transform:scale(1.08);}
+  .side-add-menu{position:absolute;right:16px;bottom:78px;z-index:6;flex-direction:column;gap:2px;
+    background:rgba(20,22,30,.98);border:1px solid rgba(255,255,255,.14);border-radius:14px;padding:6px;
+    min-width:210px;box-shadow:0 16px 40px rgba(0,0,0,.55);backdrop-filter:blur(16px);}
+  .side-add-menu.open{display:flex;}
+  .side-add-menu button{display:flex;align-items:center;gap:11px;width:100%;text-align:left;background:none;
+    border:none;color:#fff;font-size:14px;padding:11px 13px;border-radius:9px;cursor:pointer;font-family:var(--font);}
+  .side-add-menu button:hover{background:rgba(255,255,255,.08);}
+  .side-add-menu button span{font-size:17px;}
+}
+
+/* ════════════════════════════════════════════════════════════════
+   CINEMATIC INTRO  —  the N draws → "NeoChat" rises → app reveals
+   ════════════════════════════════════════════════════════════════ */
+#intro{position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;
+  background:radial-gradient(60% 55% at 50% 44%,#0a0c13 0%,#040405 72%);
+  opacity:1;transition:opacity 1s ease,transform 1s cubic-bezier(.7,0,.3,1),filter 1s ease;}
+#intro::before{content:'';position:absolute;inset:0;pointer-events:none;
+  background-image:linear-gradient(rgba(255,255,255,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.04) 1px,transparent 1px);
+  background-size:64px 64px;
+  -webkit-mask-image:radial-gradient(circle at 50% 46%,#000 18%,transparent 70%);
+  mask-image:radial-gradient(circle at 50% 46%,#000 18%,transparent 70%);}
+#intro.intro-out{opacity:0;transform:scale(1.09);filter:blur(9px);pointer-events:none;}
+.intro-stage{position:relative;display:flex;flex-direction:column;align-items:center;text-align:center;z-index:1;}
+.intro-bloom{position:absolute;top:0;left:50%;width:360px;height:360px;border-radius:50%;
+  transform:translate(-50%,-32%);
+  background:radial-gradient(circle,rgba(150,180,255,.20),rgba(255,255,255,.06) 35%,transparent 64%);
+  filter:blur(22px);opacity:0;animation:intro-bloom 2.4s ease .4s forwards;}
+.intro-mark{width:136px;height:136px;filter:drop-shadow(0 0 30px rgba(150,185,230,.55));}
+.intro-bubble-fill{fill:rgba(255,255,255,.05);opacity:0;animation:intro-fade .9s ease .2s forwards;}
+.intro-bubble{fill:none;stroke:url(#intro-chrome);stroke-width:2.4;stroke-linejoin:round;
+  stroke-dasharray:300;stroke-dashoffset:300;animation:intro-draw 1.15s ease .2s forwards;}
+.intro-n{fill:none;stroke:url(#intro-chrome2);stroke-width:7;stroke-linecap:round;stroke-linejoin:round;
+  stroke-dasharray:118;stroke-dashoffset:118;filter:drop-shadow(0 0 9px rgba(255,255,255,.75));
+  animation:intro-draw 1.3s cubic-bezier(.6,.05,.3,1) .6s forwards;}
+.intro-word{margin-top:28px;font-family:'Space Grotesk',system-ui,sans-serif;font-weight:700;
+  font-size:clamp(40px,8vw,58px);letter-spacing:-.02em;color:#fff;display:flex;
+  text-shadow:0 0 18px rgba(255,255,255,.55),0 0 46px rgba(255,255,255,.28);}
+.intro-word span{display:inline-block;opacity:0;transform:translateY(18px) rotate(2deg);
+  animation:intro-letter .7s cubic-bezier(.2,.8,.2,1) forwards;
+  animation-delay:calc(1.75s + var(--i) * .07s);}
+.intro-word span:nth-child(n+4){color:#dfe8ff;}
+.intro-tag{margin-top:18px;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:clamp(11px,1.4vw,13px);
+  letter-spacing:.42em;text-transform:uppercase;color:rgba(255,255,255,.55);padding-left:.42em;
+  opacity:0;animation:intro-fade 1s ease 2.55s forwards;}
+@keyframes intro-draw{to{stroke-dashoffset:0;}}
+@keyframes intro-fade{to{opacity:1;}}
+@keyframes intro-letter{to{opacity:1;transform:none;}}
+@keyframes intro-bloom{0%{opacity:0;transform:translate(-50%,-32%) scale(.7);}55%{opacity:1;}100%{opacity:.85;transform:translate(-50%,-32%) scale(1);}}
+@media (prefers-reduced-motion:reduce){#intro *{animation-duration:.01ms!important;animation-delay:0s!important;}}
+
+/* ════════════════════════════════════════════════════════════════
+   POST-INTRO MAIN SCREEN  —  the video's app-tour window (~13s):
+   the chat window, flat + centered on the grid. (sc- = isolated.)
+   ════════════════════════════════════════════════════════════════ */
+/* static mockup retired — the real chat (#chat) is now the live window after sign-in */
+#showcase{display:none !important;}
+#showcase-DISABLED{position:fixed;inset:0;z-index:9000;display:flex;align-items:center;justify-content:center;padding:4vh 3vw;background:#040405;overflow:hidden;font-family:'Space Grotesk',system-ui,sans-serif;}
+#showcase::before{content:'';position:absolute;inset:0;pointer-events:none;background:radial-gradient(130% 120% at 50% 50%,transparent 55%,rgba(0,0,0,.7)),radial-gradient(1200px 1200px at 28% -20%,rgba(255,255,255,.10),transparent 60%),radial-gradient(1000px 1000px at 92% 120%,rgba(150,180,255,.06),transparent 62%),linear-gradient(rgba(255,255,255,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.035) 1px,transparent 1px),#040405;background-size:100% 100%,100% 100%,100% 100%,64px 64px,64px 64px,100% 100%;}
+#showcase .appstage{container-type:inline-size;position:relative;z-index:1;width:100%;max-width:1180px;aspect-ratio:1180/712;max-height:92vh;}
+#showcase .scapp{width:1180px;height:712px;transform-origin:top left;transform:scale(calc(100cqw/1180));border-radius:26px;overflow:hidden;display:flex;background:rgba(14,15,20,.82);border:1px solid rgba(255,255,255,.14);box-shadow:0 0 60px rgba(255,255,255,.12),0 40px 120px rgba(0,0,0,.6),inset 0 1px 0 rgba(255,255,255,.14);}
+#showcase .sc-side{width:340px;border-right:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.015);display:flex;flex-direction:column;}
+#showcase .sc-brand{padding:22px 22px 16px;display:flex;align-items:center;gap:10px;}
+#showcase .sc-orb{width:26px;height:26px;border-radius:50% 50% 50% 4px;background:radial-gradient(circle at 45% 40%,#fff,#cfe0ff 70%);box-shadow:0 0 16px rgba(255,255,255,.5),0 0 35px rgba(255,255,255,.22);}
+#showcase .sc-word{font-weight:700;font-size:22px;color:#fff;letter-spacing:-.02em;text-shadow:0 0 14px rgba(255,255,255,.4),0 0 34px rgba(255,255,255,.2);}
+#showcase .sc-search{margin:0 18px 14px;display:flex;align-items:center;gap:10px;padding:11px 15px;border-radius:13px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);}
+#showcase .sc-search svg{width:18px;height:18px;stroke:rgba(255,255,255,.55);flex-shrink:0;}
+#showcase .sc-search span{font-size:16px;color:rgba(255,255,255,.4);}
+#showcase .sc-convo{display:flex;align-items:center;gap:14px;padding:13px 18px;margin:0 10px;border-radius:14px;}
+#showcase .sc-convo--active{background:rgba(255,255,255,.07);box-shadow:inset 0 0 0 1px rgba(255,255,255,.12);}
+#showcase .sc-av{flex-shrink:0;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:600;color:#fff;box-shadow:inset 0 0 0 1px rgba(255,255,255,.12);}
+#showcase .sc-convo--active .sc-av{box-shadow:0 0 0 2px rgba(255,255,255,.85),0 0 16px rgba(255,255,255,.4);}
+#showcase .sc-body{flex:1;min-width:0;}
+#showcase .sc-row{display:flex;justify-content:space-between;}
+#showcase .sc-name{font-weight:600;font-size:17px;color:#fff;}
+#showcase .sc-time{font-family:'JetBrains Mono',monospace;font-size:12px;color:rgba(255,255,255,.35);}
+#showcase .sc-prev{font-size:15px;color:rgba(255,255,255,.4);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px;}
+#showcase .sc-convo--active .sc-prev{color:rgba(255,255,255,.6);}
+#showcase .sc-main{flex:1;display:flex;flex-direction:column;min-width:0;}
+#showcase .sc-head{display:flex;align-items:center;gap:14px;padding:18px 26px;border-bottom:1px solid rgba(255,255,255,.08);}
+#showcase .sc-who{flex:1;}
+#showcase .sc-who b{font-weight:600;font-size:19px;color:#fff;display:block;}
+#showcase .sc-dot{display:flex;align-items:center;gap:7px;margin-top:2px;font-family:'JetBrains Mono',monospace;font-size:13px;color:rgba(255,255,255,.5);}
+#showcase .sc-dot i{width:8px;height:8px;border-radius:50%;background:#3ddc84;box-shadow:0 0 8px #3ddc84;}
+#showcase .sc-headbtn{width:42px;height:42px;border-radius:12px;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);}
+#showcase .sc-headbtn svg{width:20px;height:20px;stroke:#fff;}
+#showcase .sc-thread{flex:1;padding:26px 30px;display:flex;flex-direction:column;gap:14px;justify-content:flex-end;}
+#showcase .sc-bub{max-width:460px;padding:13px 18px;border-radius:20px;font-size:19px;line-height:1.4;}
+#showcase .sc-in{align-self:flex-start;color:#eef1f8;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);border-bottom-left-radius:6px;}
+#showcase .sc-out{align-self:flex-end;color:#0a0a0a;background:#fff;border-bottom-right-radius:6px;box-shadow:0 0 26px rgba(255,255,255,.34),0 0 60px rgba(255,255,255,.14);}
+#showcase .sc-typing{align-self:flex-start;display:flex;gap:7px;padding:15px 20px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);}
+#showcase .sc-typing i{width:9px;height:9px;border-radius:50%;background:#fff;box-shadow:0 0 8px rgba(255,255,255,.6);animation:blink 1.4s infinite ease-in-out;}
+#showcase .sc-typing i:nth-child(2){animation-delay:.2s;}
+#showcase .sc-typing i:nth-child(3){animation-delay:.4s;}
+#showcase .sc-input{display:flex;align-items:center;gap:14px;padding:18px 26px;border-top:1px solid rgba(255,255,255,.08);}
+#showcase .sc-field{flex:1;padding:13px 20px;border-radius:14px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);font-size:17px;color:rgba(255,255,255,.4);}
+#showcase .sc-send{width:50px;height:50px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 0 26px rgba(255,255,255,.4);flex-shrink:0;}
+#showcase .sc-send svg{width:22px;height:22px;stroke:#0a0a0a;}
+@media (max-width:760px){#showcase{padding:0;}#showcase .appstage{max-height:none;height:100%;aspect-ratio:auto;}#showcase .scapp{position:absolute;inset:0;width:100%;height:100%;transform:none;border-radius:0;border:none;}#showcase .sc-side{display:none;}}
+
 </style>
 </head>
 <body>
@@ -643,6 +863,74 @@ input::placeholder{color:var(--t4);font-weight:400;}
 <canvas id="cyber-bg"></canvas>
 
 <!-- Shared chrome gradients for the brand logo mark -->
+<!-- ✦ Cinematic intro — the N draws itself, "NeoChat" appears, then the app reveals ✦ -->
+<div id="intro" aria-hidden="true">
+  <div class="intro-stage">
+    <div class="intro-bloom"></div>
+    <svg class="intro-mark" viewBox="0 0 100 100" aria-hidden="true">
+      <defs>
+        <linearGradient id="intro-chrome" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stop-color="#ffffff" stop-opacity=".92"/>
+          <stop offset=".5" stop-color="#d2e0f2" stop-opacity=".68"/>
+          <stop offset="1" stop-color="#b0c6e4" stop-opacity=".8"/>
+        </linearGradient>
+        <linearGradient id="intro-chrome2" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stop-color="#ffffff"/>
+          <stop offset=".55" stop-color="#e2ecf8"/>
+          <stop offset="1" stop-color="#b6cae6"/>
+        </linearGradient>
+      </defs>
+      <path class="intro-bubble-fill" d="M14 22 A14 14 0 0 1 28 8 L72 8 A14 14 0 0 1 86 22 L86 58 A14 14 0 0 1 72 72 L48 72 L20 91 L28 72 A14 14 0 0 1 14 58 Z"/>
+      <path class="intro-bubble" d="M14 22 A14 14 0 0 1 28 8 L72 8 A14 14 0 0 1 86 22 L86 58 A14 14 0 0 1 72 72 L48 72 L20 91 L28 72 A14 14 0 0 1 14 58 Z"/>
+      <path class="intro-n" d="M36 56 L36 22 L64 56 L64 22"/>
+    </svg>
+    <div class="intro-word"><span style="--i:0">N</span><span style="--i:1">e</span><span style="--i:2">o</span><span style="--i:3">C</span><span style="--i:4">h</span><span style="--i:5">a</span><span style="--i:6">t</span></div>
+    <div class="intro-tag">Conversations, illuminated</div>
+  </div>
+</div>
+<script>
+(function(){var intro=document.getElementById('intro');if(!intro)return;var done=false;
+function dismiss(){if(done)return;done=true;intro.classList.add('intro-out');setTimeout(function(){intro.style.display='none';},1000);}
+var t=setTimeout(dismiss,3500);
+intro.addEventListener('click',function(){clearTimeout(t);dismiss();});
+window.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key==='Escape'||e.code==='Space'){clearTimeout(t);dismiss();}});
+})();
+</script>
+
+<!-- ✦ Post-intro MAIN SCREEN — the video's app-tour chat window (~13s) ✦ -->
+<div id="showcase">
+  <div class="appstage">
+    <div class="scapp">
+      <aside class="sc-side">
+        <div class="sc-brand"><span class="sc-orb"></span><span class="sc-word">NeoChat</span></div>
+        <div class="sc-search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="6"/><path d="M15.5 15.5L20 20"/></svg><span>Search messages</span></div>
+        <div class="sc-list">
+          <div class="sc-convo sc-convo--active"><span class="sc-av" style="width:44px;height:44px;font-size:15px;background:linear-gradient(150deg,oklch(60% 0.12 250),oklch(38% 0.10 280))">MC</span><div class="sc-body"><div class="sc-row"><span class="sc-name">Maya Chen</span><span class="sc-time">now</span></div><div class="sc-prev">see you at 8 — bring the glow</div></div></div>
+          <div class="sc-convo"><span class="sc-av" style="width:44px;height:44px;font-size:15px;background:linear-gradient(150deg,oklch(60% 0.12 160),oklch(38% 0.10 190))">DT</span><div class="sc-body"><div class="sc-row"><span class="sc-name">Design Team</span><span class="sc-time">9:24</span></div><div class="sc-prev">Jordan: shipped the build</div></div></div>
+          <div class="sc-convo"><span class="sc-av" style="width:44px;height:44px;font-size:15px;background:linear-gradient(150deg,oklch(60% 0.12 30),oklch(38% 0.10 60))">AK</span><div class="sc-body"><div class="sc-row"><span class="sc-name">Arjun K.</span><span class="sc-time">8:02</span></div><div class="sc-prev">call me when you’re free</div></div></div>
+          <div class="sc-convo"><span class="sc-av" style="width:44px;height:44px;font-size:15px;background:linear-gradient(150deg,oklch(60% 0.12 320),oklch(38% 0.10 350))">PR</span><div class="sc-body"><div class="sc-row"><span class="sc-name">Priya R.</span><span class="sc-time">Tue</span></div><div class="sc-prev">typing…</div></div></div>
+        </div>
+      </aside>
+      <div class="sc-main">
+        <div class="sc-head">
+          <span class="sc-av" style="width:42px;height:42px;font-size:14px;background:linear-gradient(150deg,oklch(60% 0.12 250),oklch(38% 0.10 280))">MC</span>
+          <div class="sc-who"><b>Maya Chen</b><span class="sc-dot"><i></i>online</span></div>
+          <span class="sc-headbtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 4.5l3 .8 1 3.2-2 1.6a11 11 0 0 0 5.1 5.1l1.6-2 3.2 1 .8 3a1.6 1.6 0 0 1-1.6 1.8A15.5 15.5 0 0 1 4.7 6.1 1.6 1.6 0 0 1 6.5 4.5z"/></svg></span>
+          <span class="sc-headbtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="7" width="11" height="10" rx="2"/><path d="M14.5 10.5l5-2.5v8l-5-2.5"/></svg></span>
+        </div>
+        <div class="sc-thread">
+          <div class="sc-bub sc-in">Did you try the new NeoChat update?</div>
+          <div class="sc-bub sc-out">Just installed it — the glow is unreal ✨</div>
+          <div class="sc-bub sc-in">Right? And the calls are crystal clear</div>
+          <div class="sc-bub sc-typing"><i></i><i></i><i></i></div>
+          <div class="sc-bub sc-in">Sending you the invite link now</div>
+        </div>
+        <div class="sc-input"><div class="sc-field">Message Maya…</div><span class="sc-send"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12l16-7-7 16-2.2-6.8L4 12z"/></svg></span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
   <linearGradient id="nc-chrome" x1="0" y1="0" x2="1" y2="1">
     <stop offset="0" stop-color="#ffffff" stop-opacity=".92"/>
@@ -812,6 +1100,7 @@ input::placeholder{color:var(--t4);font-weight:400;}
 
 <!-- CHAT -->
 <div class="screen hidden" id="chat">
+    <div class="chat-main">
     <div class="chat-header">
         <!-- Top row: app name + icons -->
         <div class="chat-hdr-top">
@@ -923,6 +1212,7 @@ input::placeholder{color:var(--t4);font-weight:400;}
         <button class="btn-attach-simple" id="text-emoji-btn" onclick="toggleTextEmojiPicker(event)" title="Emoji">😊</button>
         <button class="btn-send" onclick="sendMsg()">➤</button>
     </div>
+    </div><!-- /.chat-main -->
 
     <!-- Attach bottom sheet (contains voice, file, poll, TTL, image) -->
     <div id="attach-sheet" onclick="if(event.target===this)toggleAttachSheet()">
@@ -995,12 +1285,28 @@ input::placeholder{color:var(--t4);font-weight:400;}
     <!-- Users drawer -->
     <div id="drawer-overlay" onclick="closeDrawer()"></div>
     <div id="users-drawer">
+        <div class="side-brand">
+            <div class="side-brand-top">
+                <span class="side-orb"></span><span class="side-word">NeoChat</span>
+                <button class="side-profile" onclick="openProfileScreen()" title="Profile" aria-label="Profile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.6"/><path d="M5 20a7 7 0 0 1 14 0"/></svg></button>
+            </div>
+            <div class="side-search"><span class="side-search-ico">🔍</span><input id="side-search-in" type="text" placeholder="Search messages" oninput="filterSideList(this.value)" autocomplete="off"></div>
+        </div>
         <div class="drawer-hdr">
             <span class="drawer-hdr-title">CALLS</span>
             <button class="btn-drawer-close" onclick="closeDrawer()">✕</button>
         </div>
         <div id="users-list">
+            <div class="neocreate-item" onclick="openBotsScreen()" title="NeoCreate — build & chat with bots">
+                <span class="neocreate-av">✦</span>
+                <div class="user-item-body"><span class="user-item-name">NeoCreate</span><div class="user-item-sub">Build &amp; chat with bots</div></div>
+            </div>
             <div class="no-users-msg" id="no-users-msg">No one else here yet.<br>Active users appear here when they send a message.</div>
+        </div>
+        <button class="side-fab" id="side-fab" onclick="toggleSideAdd(event)" title="New chat or group" aria-label="New chat or group">+</button>
+        <div class="side-add-menu" id="side-add-menu">
+            <button onclick="closeSideAdd();openContactsScreen()"><span>💬</span> Message a friend</button>
+            <button onclick="closeSideAdd();openGroupsSheet()"><span>🏠</span> New group</button>
         </div>
     </div>
 
@@ -1704,12 +2010,11 @@ function confirmSwitch(){ /* kept for compatibility */ }
 // Initialise on page load
 (function initAccount(){
     const acc = getAccount();
-    if(acc){
-        applyAccount();
-        show('login');
-    } else {
-        show('account');
-    }
+    if(acc){ applyAccount(); }
+    // Open straight into the chat window — the menu/sidebar shows immediately
+    // after the intro (no sign-in screen first). Old account/login flow kept in
+    // the code, to be re-homed later.
+    show('chat');
 })();
 
 // ── Premium Cosmic Background ─────────────────────────────────────────────────
@@ -3122,22 +3427,36 @@ function renderUsers(){
     activeUsers.forEach(name=>{
         const item=document.createElement('div');
         item.className='user-item';
+        const av=document.createElement('span');
+        av.className='user-avatar';
+        av.textContent=name.slice(0,2).toUpperCase();
+        let _h=0; for(const _c of name) _h=(_h*31+_c.charCodeAt(0))%360;
+        av.style.background='linear-gradient(150deg,hsl('+_h+',55%,58%),hsl('+((_h+30)%360)+',50%,42%))';
+        const body=document.createElement('div');
+        body.className='user-item-body';
         const nameEl=document.createElement('span');
         nameEl.className='user-item-name';
         nameEl.textContent=name;
+        const subEl=document.createElement('div');
+        subEl.className='user-item-sub';
+        subEl.textContent='Active now';
+        body.append(nameEl,subEl);
         const dmBtn=document.createElement('button');
         dmBtn.className='btn-user-dm'; dmBtn.textContent='💬'; dmBtn.title='Private message';
         dmBtn.onclick=()=>openDM(name);
         const callBtn=document.createElement('button');
         callBtn.className='btn-user-call'; callBtn.textContent='📞'; callBtn.title='Call';
         callBtn.onclick=()=>callUser(name);
-        item.append(nameEl,dmBtn,callBtn);
+        item.append(av,body,dmBtn,callBtn);
         list.appendChild(item);
     });
 }
 
 function openDrawer(){ document.getElementById('users-drawer').classList.add('open'); document.getElementById('drawer-overlay').classList.add('open'); }
 function closeDrawer(){ document.getElementById('users-drawer').classList.remove('open'); document.getElementById('drawer-overlay').classList.remove('open'); }
+function filterSideList(q){ q=(q||'').toLowerCase(); document.querySelectorAll('#users-list .user-item').forEach(it=>{ const n=(it.querySelector('.user-item-name')?.textContent||'').toLowerCase(); it.style.display=n.includes(q)?'':'none'; }); }
+function toggleSideAdd(e){ if(e) e.stopPropagation(); const m=document.getElementById('side-add-menu'); if(!m) return; const open=m.classList.toggle('open'); if(open) setTimeout(()=>document.addEventListener('click',closeSideAdd,{once:true}),0); }
+function closeSideAdd(){ const m=document.getElementById('side-add-menu'); if(m) m.classList.remove('open'); }
 
 // ── Private messages (DM) ─────────────────────────────────────────────────────
 let dmTarget='';
