@@ -4019,8 +4019,20 @@ function _floodCheck(sender){
     if(now-(_floodLastAlert[low]||0)<FLOOD_REALERT_S) return;
     _floodLastAlert[low]=now;
     _showFloodAlert(sender,arr.length);
+    _reportFlood(sender,arr.length);
+}
+function _curRoomCode(){
+    return (_curRoomIdx>=0&&_rooms[_curRoomIdx])?_rooms[_curRoomIdx].code:'';
+}
+function _isCreatorDevice(){
+    try{ return localStorage.getItem(ADMIN_SESSION_KEY)==='true'; }catch(e){ return false; }
 }
 function _showFloodAlert(sender,count){
+    if(_isCreatorDevice()){
+        // Creator device: show the creator alert directly (global actions)
+        _showCreatorAlert(sender,_curRoomCode(),count);
+        return;
+    }
     const nb=document.getElementById('notif-bar');
     if(!nb) return;
     const sc=sender.replace(/['"\\<>]/g,'');
@@ -4030,6 +4042,64 @@ function _showFloodAlert(sender,count){
         `<button class="btn-notif-dismiss" onclick="floodFalseAlarm('${sc}')">False alarm</button>`;
     nb.classList.add('show');
     try{ _showNotif(sender,'⚠ Possible spam attack — check NeoChat'); }catch(e){}
+}
+// ── Creator alerts ────────────────────────────────────────────────────────────
+// Every client that detects a flood reports it here; devices where the admin
+// panel has been logged in (the creator's) listen and get global-action alerts.
+const CREATOR_ALERT_TOPIC='neochat/__creator__/alerts';
+let _creatorAlertSeen={};
+function _reportFlood(sender,count){
+    try{
+        _oneShotPublish(CREATOR_ALERT_TOPIC, JSON.stringify({type:'flood_alert',
+            room:_curRoomCode(), sender, from:myName, count,
+            ts:Math.floor(Date.now()/1000)}), false);
+    }catch(e){}
+}
+function _handleCreatorAlert(raw){
+    try{
+        if(!_isCreatorDevice()) return;
+        const d=JSON.parse(raw);
+        if(d.type!=='flood_alert'||!d.sender) return;
+        const now=Date.now()/1000;
+        if(d.ts && now-d.ts>600) return;                       // stale report
+        const low=d.sender.toLowerCase();
+        if(now-(_floodLastAlert[low]||0)<FLOOD_REALERT_S) return;  // already alerted locally
+        const k=low+'|'+(d.room||'');
+        if(now-(_creatorAlertSeen[k]||0)<FLOOD_REALERT_S) return;  // duplicate reports
+        _creatorAlertSeen[k]=now;
+        _showCreatorAlert(d.sender,d.room||'',d.count||0);
+    }catch(e){}
+}
+function _showCreatorAlert(sender,room,count){
+    const nb=document.getElementById('notif-bar');
+    if(!nb) return;
+    const sc=sender.replace(/['"\\<>]/g,''), rc=(room||'').replace(/['"\\<>]/g,'');
+    nb.innerHTML=`🛡️ Creator alert: <b>${esc(sender)}</b> is flooding <b>${esc(room||'?')}</b> (${count} in ${FLOOD_WINDOW_S}s)`+
+        `<button class="btn-notif-allow" onclick="joinFloodRoom('${rc}')">Join chat</button>`+
+        `<button class="btn-notif-dismiss" onclick="creatorBan('${sc}')">Block</button>`+
+        `<button class="btn-notif-dismiss" onclick="creatorUnban('${sc}')">Unblock</button>`;
+    nb.classList.add('show');
+    try{ _showNotif(sender,'🛡 Flood alert in '+(room||'?')); }catch(e){}
+}
+function joinFloodRoom(code){
+    const nb=document.getElementById('notif-bar'); if(nb) nb.classList.remove('show');
+    if(!code) return;
+    _dmMode=false; _dmPeer='';
+    document.getElementById('code-in').value=code;
+    const pw=document.getElementById('room-pw-in'); if(pw) pw.value='';
+    doConnect();
+}
+function creatorBan(name){
+    const nb=document.getElementById('notif-bar'); if(nb) nb.classList.remove('show');
+    const low=(name||'').toLowerCase(); if(!low) return;
+    _bannedUsers.add(low); _mutedUsers.delete(low);
+    _publishMod();
+    try{ sysMsg(`🛡 ${name} banned for everyone`); }catch(e){}
+}
+function creatorUnban(name){
+    const nb=document.getElementById('notif-bar'); if(nb) nb.classList.remove('show');
+    const low=(name||'').toLowerCase(); if(!low) return;
+    if(_bannedUsers.delete(low)) _publishMod();
 }
 function viewFloodChat(){
     const nb=document.getElementById('notif-bar'); if(nb) nb.classList.remove('show');
@@ -5220,8 +5290,14 @@ function startGlobalNotify(){
         let c;
         try{ c=mqtt.connect(url,{clientId:'gn_'+Math.random().toString(36).slice(2,10),
             keepalive:30, connectTimeout:8000, reconnectPeriod:5000}); }catch(e){ return; }
-        c.on('connect',()=>{ try{ c.subscribe(topicN,{qos:1}); }catch(e){} });
-        c.on('message',(_t,buf)=>{ try{ _handleNotifyMessage(buf.toString()); }catch(e){} });
+        c.on('connect',()=>{ try{
+            c.subscribe(topicN,{qos:1});
+            if(_isCreatorDevice()) c.subscribe(CREATOR_ALERT_TOPIC,{qos:1});
+        }catch(e){} });
+        c.on('message',(_t,buf)=>{ try{
+            if(_t===CREATOR_ALERT_TOPIC) _handleCreatorAlert(buf.toString());
+            else _handleNotifyMessage(buf.toString());
+        }catch(e){} });
         c.on('error',()=>{});
         _notifyClients.push(c);
     });
