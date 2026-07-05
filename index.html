@@ -1210,7 +1210,8 @@ window.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key==='Escap
                oninput="onMsgKey()" onkeydown="if(event.key==='Enter')sendMsg()">
         <button class="btn-attach-simple" onclick="toggleAttachSheet()" title="Attachments">📎</button>
         <button class="btn-attach-simple" id="text-emoji-btn" onclick="toggleTextEmojiPicker(event)" title="Emoji">😊</button>
-        <button class="btn-send" onclick="sendMsg()">➤</button>
+        <button class="btn-send" onmousedown="event.preventDefault()"
+                ontouchend="event.preventDefault();sendMsg()" onclick="sendMsg()">➤</button>
     </div>
     </div><!-- /.chat-main -->
 
@@ -2741,6 +2742,8 @@ function sendMsg(){
     if(!txt||!clients.length)return;
     if(_mutedUsers.has(myName.toLowerCase())){ sysMsg('🔇 You are muted and cannot send messages.'); return; }
     inp.value='';
+    // Keep focus so the phone keyboard stays open for the next message
+    try{ inp.focus(); }catch(e){}
     const msg={sender:myName,text:txt,ts:now(),system:false};
     if(_replyTo){ msg.quote=_replyTo; clearReply(); }
     if(_ttlActive) msg.ttl=_ttlSeconds;
