@@ -2208,11 +2208,10 @@ function confirmSwitch(){ /* kept for compatibility */ }
 const ADMIN_SESSION_KEY = 'neochat_admin_session';
 
 function openAdmin(){
-    // This build has a single owner (the creator), so opening the panel signs
-    // straight into the MrMiner account — no credentials to type.
-    localStorage.setItem(ADMIN_SESSION_KEY,'true');
-    try{ startGlobalNotify(); }catch(e){}   // start receiving creator flood alerts
-    const sessionOk = true;
+    // First open asks for credentials; after a successful login the session is
+    // saved and stays active, so the panel opens straight to MrMiner on later
+    // visits until you log out. (doAdminLogin starts the creator alert feed.)
+    const sessionOk = localStorage.getItem(ADMIN_SESSION_KEY) === 'true';
     if(sessionOk){
         document.getElementById('admin-login-view').style.display='none';
         document.getElementById('admin-panel-view').style.display='';
