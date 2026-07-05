@@ -29,7 +29,7 @@
 <style>
 /* ================================================================
    NeoChat  |  Premium Cosmic Messenger  |  Complete Visual System
-   Amethyst Aurora mode: deep void-purple, vivid violet + magenta, glassmorphism
+   Showcase mode: near-black base, glowing white accents, periwinkle details, glassmorphism
    ================================================================ */
 
 :root {
@@ -179,7 +179,7 @@ button:active{transform:scale(0.96);opacity:0.9;}
 .bubble .b-text{font-size:14px;line-height:1.5;color:var(--t1);}
 .bubble .b-ts{font-size:10px;margin-top:4px;display:flex;align-items:center;gap:4px;}
 
-/* Sent: electric-blue→cyan gradient with neon glow */
+/* Sent: solid white pill with soft white glow */
 .bubble.mine{align-self:flex-end;background:var(--sent-bg);border:none;border-bottom-right-radius:6px;box-shadow:0 0 26px rgba(255,255,255,0.34),0 0 60px rgba(255,255,255,0.14);animation-name:bbl-right;}
 .bubble.mine .b-text{color:#f4f9ff;}
 .bubble.mine .b-name{color:rgba(255,255,255,0.78);}
@@ -1355,6 +1355,12 @@ window.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key==='Escap
 
         <div class="profile-card" style="width:100%;">
             <div class="profile-card-title">APPEARANCE</div>
+            <button class="profile-opt" onclick="document.getElementById('avatar-file-in').click()">
+                <span class="profile-opt-icon">🖼</span>
+                <span class="profile-opt-label">Change Avatar</span>
+                <span class="profile-opt-arrow">›</span>
+            </button>
+            <input type="file" id="avatar-file-in" accept="image/*" style="display:none" onchange="handleAvatarFile(this)">
             <button class="profile-opt" onclick="pickAccentColorFromProfile()">
                 <span class="profile-opt-icon">🎨</span>
                 <span class="profile-opt-label">Accent Color</span>
@@ -1382,7 +1388,7 @@ window.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key==='Escap
             <div class="profile-opt" style="cursor:default;">
                 <span class="profile-opt-icon">🔒</span>
                 <span class="profile-opt-label">Encryption</span>
-                <span class="profile-opt-value">AES-GCM 256-bit</span>
+                <span class="profile-opt-value">AES-GCM 256 · ECDH in DMs</span>
             </div>
         </div>
     </div>
@@ -1823,7 +1829,7 @@ async function deriveE2EKey(roomCode){
             km, {name:'AES-GCM',length:256}, false, ['encrypt','decrypt']);
     }catch(e){ return null; }
 }
-async function e2eEncrypt(key, plaintext){
+async function gcmEncrypt(key, plaintext, tag){
     if(!key) return plaintext;
     try{
         const iv = crypto.getRandomValues(new Uint8Array(12));
@@ -1831,24 +1837,83 @@ async function e2eEncrypt(key, plaintext){
             new TextEncoder().encode(plaintext));
         const out = new Uint8Array(12 + ct.byteLength);
         out.set(iv); out.set(new Uint8Array(ct), 12);
-        return JSON.stringify({e: btoa(String.fromCharCode(...out))});
+        const env = {}; env[tag] = btoa(String.fromCharCode(...out));
+        return JSON.stringify(env);
     }catch(e){ return plaintext; }
 }
-async function e2eDecrypt(key, payload){
-    if(!key) return payload;
+async function gcmDecrypt(key, b64){
     try{
-        const d = JSON.parse(payload);
-        if(!d.e) return payload;
-        const raw = Uint8Array.from(atob(d.e), c=>c.charCodeAt(0));
+        const raw = Uint8Array.from(atob(b64), c=>c.charCodeAt(0));
         const pt  = await crypto.subtle.decrypt({name:'AES-GCM',iv:raw.slice(0,12)},
             key, raw.slice(12));
         return new TextDecoder().decode(pt);
     }catch(e){ return null; }
 }
-// Publish to chat topic with optional E2E encryption
+async function e2eEncrypt(key, plaintext){ return gcmEncrypt(key, plaintext, 'e'); }
+// Decrypt an incoming room payload: 'e2' = DM Diffie-Hellman session key,
+// 'e' = legacy room-code key, neither = plaintext (old client / system topic).
+// Returns null when the message must be dropped (bad decrypt or missing key).
+async function roomDecrypt(payload){
+    let d;
+    try{ d = JSON.parse(payload); }catch(e){ return null; }
+    if(d && d.e2 !== undefined) return _dhKey ? gcmDecrypt(_dhKey, d.e2) : null;
+    if(d && d.e  !== undefined) return _e2eKey ? gcmDecrypt(_e2eKey, d.e) : null;
+    return payload;
+}
+// Publish to chat topic with E2E encryption (DH session key wins if present)
 async function e2ePub(topicName, payload, opts){
-    const enc = await e2eEncrypt(_e2eKey, payload);
+    const enc = _dhKey ? await gcmEncrypt(_dhKey, payload, 'e2')
+                       : await e2eEncrypt(_e2eKey, payload);
     pubAll(topicName, enc, opts);
+}
+
+// ── DM Diffie-Hellman handshake ──────────────────────────────────────────────
+// The room-code key is guessable by anyone who knows both usernames, so DM
+// rooms upgrade to an ephemeral ECDH session key on join. Interop contract
+// with the Python client: ECDH on P-256, public key = base64 of the raw
+// uncompressed point (65 bytes), shared secret = X coordinate, then
+// HKDF-SHA256(salt='neochat_dh_v1', info='neochat-dm-aes') → AES-GCM-256.
+let _dhPriv = null;   // our ephemeral keypair (DM rooms only)
+let _dhKey  = null;   // established session key
+
+async function dhInit(roomCode){
+    _dhPriv = null; _dhKey = null;
+    if(!roomCode.startsWith('__dm__')) return;
+    try{
+        _dhPriv = await crypto.subtle.generateKey(
+            {name:'ECDH', namedCurve:'P-256'}, false, ['deriveBits']);
+    }catch(e){ _dhPriv = null; }
+}
+async function dhAnnounce(reply){
+    if(!_dhPriv) return;
+    try{
+        const raw = await crypto.subtle.exportKey('raw', _dhPriv.publicKey);
+        const pub = btoa(String.fromCharCode(...new Uint8Array(raw)));
+        const payload = JSON.stringify({type:'dh', from:myName, pub, r:!!reply});
+        // Always the legacy envelope, never 'e2': the peer must be able to
+        // read the handshake before a session key exists.
+        pubAll(topic, await e2eEncrypt(_e2eKey, payload), {qos:1});
+    }catch(e){}
+}
+async function dhHandle(d){
+    if(!_dhPriv || !d.pub || (d.from||'') === myName) return;
+    const dk = 'dh|'+(d.from||'')+'|'+String(d.pub).slice(0,44);
+    if(_seen.has(dk)) return;
+    _seen.add(dk);
+    try{
+        const raw = Uint8Array.from(atob(d.pub), c=>c.charCodeAt(0));
+        const peerPub = await crypto.subtle.importKey('raw', raw,
+            {name:'ECDH', namedCurve:'P-256'}, false, []);
+        const bits = await crypto.subtle.deriveBits(
+            {name:'ECDH', public:peerPub}, _dhPriv.privateKey, 256);
+        const hk = await crypto.subtle.importKey('raw', bits, 'HKDF', false, ['deriveKey']);
+        _dhKey = await crypto.subtle.deriveKey(
+            {name:'HKDF', hash:'SHA-256',
+             salt:new TextEncoder().encode('neochat_dh_v1'),
+             info:new TextEncoder().encode('neochat-dm-aes')},
+            hk, {name:'AES-GCM', length:256}, false, ['encrypt','decrypt']);
+    }catch(e){ return; }
+    if(!d.r) dhAnnounce(true);  // peer may have missed our announce
 }
 
 // ── URL linkify ───────────────────────────────────────────────────────────────
@@ -1927,8 +1992,10 @@ function _wrapWithAvatar(bubbleEl, sender){
     if(showAvatar){
         const av = document.createElement('div');
         av.className = 'msg-avatar';
+        av.dataset.avatarFor = sender;
         av.style.background = _avatarColor(sender);
         av.textContent = (sender[0]||'?').toUpperCase();
+        _applyAvatarEl(av, sender);
         wrap.appendChild(av);
     } else {
         const sp = document.createElement('div');
@@ -1972,7 +2039,7 @@ async function doSignIn(){
     accStatus('');
     document.getElementById('acc-in-pw').value = '';
     applyAccount();
-    show('login');
+    show('chat');
 }
 
 function showNewAccount(){
@@ -2010,11 +2077,14 @@ function confirmSwitch(){ /* kept for compatibility */ }
 // Initialise on page load
 (function initAccount(){
     const acc = getAccount();
-    if(acc){ applyAccount(); }
-    // Open straight into the chat window — the menu/sidebar shows immediately
-    // after the intro (no sign-in screen first). Old account/login flow kept in
-    // the code, to be re-homed later.
-    show('chat');
+    if(acc){
+        // Known device: restore the session and open the chat window.
+        applyAccount();
+        show('chat');
+    } else {
+        // Fresh device: must create an account (or sign in) before entering.
+        show('account');
+    }
 })();
 
 // ── Premium Cosmic Background ─────────────────────────────────────────────────
@@ -2371,6 +2441,7 @@ async function doConnect(){
 
     _e2eKey = null;
     try { _e2eKey = await deriveE2EKey(keyCode); } catch(e) {}
+    await dhInit(code);   // DM rooms: fresh ephemeral ECDH keypair
 
     const baseId='neo_'+Math.random().toString(36).slice(2,10);
     connectAll(baseId,
@@ -2381,6 +2452,10 @@ async function doConnect(){
             c.subscribe('neochat/__admin__/control',{qos:1});
             _subscribeModTopic(c);
             _subscribePersonalNotify(c);
+            // DM rooms: offer our DH public key after EVERY broker connect —
+            // a single announce can miss a peer not yet subscribed on that
+            // broker. Receivers dedup by pubkey.
+            setTimeout(()=>dhAnnounce(false), 500);
             c.on('message',async (_t,buf)=>{
                 if(_t===MOD_TOPIC) return;
                 if(myName && _t==='neochat/__notify__/'+myName.toLowerCase()){
@@ -2415,9 +2490,12 @@ async function doConnect(){
                 }
                 try{
                     let rawStr=buf.toString();
-                    if(_e2eKey){ const dec=await e2eDecrypt(_e2eKey,rawStr); if(dec!==null) rawStr=dec; }
+                    const dec=await roomDecrypt(rawStr);
+                    if(dec===null) return;   // bad decrypt or missing key — drop
+                    rawStr=dec;
                     const d=JSON.parse(rawStr);
                     const msgType=d.type||'text';
+                    if(msgType==='dh'){ dhHandle(d); return; }
                     const _sndr=((d.sender||d.from||'').toLowerCase());
                     if(_sndr && _sndr!==myName.toLowerCase() &&
                        (_bannedUsers.has(_sndr)||_mutedUsers.has(_sndr))) return;
@@ -2427,6 +2505,17 @@ async function doConnect(){
                     }
                     if(msgType==='presence'){
                         handlePresence(d.from||d.sender||'?', d.status||'online');
+                        return;
+                    }
+                    if(msgType==='avatar'){
+                        const nm=d.from||d.sender||'';
+                        if(nm&&d.data){
+                            const ak='avatar|'+nm.toLowerCase()+'|'+String(d.data).slice(0,32);
+                            if(!_seen.has(ak)){
+                                _seen.add(ak);
+                                _cacheAvatar(nm,'data:'+(d.mime||'image/jpeg')+';base64,'+d.data);
+                            }
+                        }
                         return;
                     }
                     if(msgType==='reaction'){
@@ -2933,6 +3022,82 @@ function _avatarColor(name){
     return pal[Math.abs(h)%pal.length];
 }
 
+// ── Custom avatars — user-uploaded images, shared over MQTT ──────────────────
+const AVATAR_CACHE_KEY='neochat_avatar_cache';
+let _avatarImgs={};   // username(lower) → dataURL
+try{ _avatarImgs=JSON.parse(localStorage.getItem(AVATAR_CACHE_KEY)||'{}'); }catch(e){}
+
+function _avatarImg(name){ return _avatarImgs[(name||'').toLowerCase()]||null; }
+
+function _cacheAvatar(name, dataURL){
+    _avatarImgs[name.toLowerCase()]=dataURL;
+    try{
+        const keys=Object.keys(_avatarImgs);
+        while(keys.length>40){ delete _avatarImgs[keys.shift()]; }
+        localStorage.setItem(AVATAR_CACHE_KEY, JSON.stringify(_avatarImgs));
+    }catch(e){}
+    _refreshAvatarsFor(name);
+}
+
+function _applyAvatarEl(el, name){
+    const img=_avatarImg(name);
+    if(img&&el){
+        el.textContent='';
+        el.style.background=`url("${img}") center/cover no-repeat`;
+    }
+}
+
+function _refreshAvatarsFor(name){
+    document.querySelectorAll('[data-avatar-for]').forEach(el=>{
+        if((el.dataset.avatarFor||'').toLowerCase()===name.toLowerCase())
+            _applyAvatarEl(el, name);
+    });
+    if(myName&&name.toLowerCase()===myName.toLowerCase()){
+        const av=document.getElementById('profile-avatar-xl');
+        if(av&&av.closest('#profile-screen.open')) _applyAvatarEl(av, name);
+    }
+}
+
+function _publishAvatar(){
+    const acc=getAccount();
+    if(!acc||!acc.avatar||!clients.length||!myName) return;
+    const comma=acc.avatar.indexOf(',');
+    const semi=acc.avatar.indexOf(';');
+    if(comma<0) return;
+    const mime=semi>5 ? acc.avatar.slice(5,semi) : 'image/jpeg';
+    pubAll(topic, JSON.stringify({
+        type:'avatar', from:myName,
+        data:acc.avatar.slice(comma+1), mime, ts:now()
+    }), {qos:0});
+}
+
+function handleAvatarFile(input){
+    const file=input.files&&input.files[0];
+    input.value='';
+    if(!file) return;
+    const rd=new FileReader();
+    rd.onload=()=>{
+        const img=new Image();
+        img.onload=()=>{
+            // Downscale to a 96×96 JPEG so broadcasts stay small
+            const c=document.createElement('canvas');
+            c.width=c.height=96;
+            const ctx=c.getContext('2d');
+            const side=Math.min(img.width,img.height);
+            ctx.drawImage(img,(img.width-side)/2,(img.height-side)/2,side,side,0,0,96,96);
+            const dataURL=c.toDataURL('image/jpeg',0.85);
+            const acc=getAccount();
+            if(acc){ acc.avatar=dataURL; saveAccount(acc); }
+            if(myName) _cacheAvatar(myName, dataURL);
+            _publishAvatar();
+            const av=document.getElementById('profile-avatar-xl');
+            if(av){ av.textContent=''; av.style.background=`url("${dataURL}") center/cover no-repeat`; }
+        };
+        img.src=rd.result;
+    };
+    rd.readAsDataURL(file);
+}
+
 let _lastBubbleSender = ''; // track sender for avatar grouping
 
 function addBubble(sender, text, ts, mine, quote, threadId){
@@ -3245,7 +3410,7 @@ async function doRegister(){
     saveAccount({username:name,pwHash:hash});
     claimUsername(name);
     applyAccount();
-    show('login');
+    show('chat');
 }
 
 // ── File / image sending ──────────────────────────────────────────────────────
@@ -3429,9 +3594,11 @@ function renderUsers(){
         item.className='user-item';
         const av=document.createElement('span');
         av.className='user-avatar';
+        av.dataset.avatarFor=name;
         av.textContent=name.slice(0,2).toUpperCase();
         let _h=0; for(const _c of name) _h=(_h*31+_c.charCodeAt(0))%360;
         av.style.background='linear-gradient(150deg,hsl('+_h+',55%,58%),hsl('+((_h+30)%360)+',50%,42%))';
+        _applyAvatarEl(av, name);
         const body=document.createElement('div');
         body.className='user-item-body';
         const nameEl=document.createElement('span');
@@ -3960,7 +4127,16 @@ function sendPresence(status){
 }
 function startHeartbeat(){
     sendPresence('online');
-    _presenceTimer = setInterval(()=>sendPresence('online'), 20000);
+    // Show + broadcast our custom avatar; re-send every 3rd heartbeat so
+    // people who join later still receive it (dedup on the receiving side).
+    const acc=getAccount();
+    if(acc&&acc.avatar&&myName) _cacheAvatar(myName, acc.avatar);
+    _publishAvatar();
+    let _hbCount=0;
+    _presenceTimer = setInterval(()=>{
+        sendPresence('online');
+        if(++_hbCount%3===0) _publishAvatar();
+    }, 20000);
 }
 function stopHeartbeat(){
     if(_presenceTimer){ clearInterval(_presenceTimer); _presenceTimer=null; }
@@ -4610,7 +4786,15 @@ function openProfileScreen(){
     if(acc){
         const color = _avatarColor(acc.username);
         const av = document.getElementById('profile-avatar-xl');
-        if(av){ av.textContent=(acc.username[0]||'?').toUpperCase(); av.style.background=color; }
+        if(av){
+            if(acc.avatar){
+                av.textContent='';
+                av.style.background=`url("${acc.avatar}") center/cover no-repeat`;
+            } else {
+                av.textContent=(acc.username[0]||'?').toUpperCase();
+                av.style.background=color;
+            }
+        }
         const nm = document.getElementById('profile-name-xl');
         if(nm) nm.textContent = acc.username;
     }
