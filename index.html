@@ -1307,6 +1307,7 @@ window.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key==='Escap
         <div class="side-add-menu" id="side-add-menu">
             <button onclick="closeSideAdd();openContactsScreen()"><span>💬</span> Message a friend</button>
             <button onclick="closeSideAdd();openGroupsSheet()"><span>🏠</span> New group</button>
+            <button onclick="closeSideAdd();manageBlocked()"><span>🚫</span> Blocked users</button>
         </div>
     </div>
 
@@ -2498,7 +2499,7 @@ async function doConnect(){
                     if(msgType==='dh'){ dhHandle(d); return; }
                     const _sndr=((d.sender||d.from||'').toLowerCase());
                     if(_sndr && _sndr!==myName.toLowerCase() &&
-                       (_bannedUsers.has(_sndr)||_mutedUsers.has(_sndr))) return;
+                       (_bannedUsers.has(_sndr)||_mutedUsers.has(_sndr)||_blockedUsers.has(_sndr))) return;
                     if(msgType==='typing'){
                         if(_sndr&&_sndr!==myName.toLowerCase()) handleTyping(d.from||d.sender||'?');
                         return;
@@ -2632,6 +2633,7 @@ async function doConnect(){
                     addActiveUser(d.sender);
                     _maybeDateSep();
                     if(d.sender!==myName){
+                        _floodCheck(d.sender);
                         addBubble(d.sender,d.text,d.ts,false,d.quote||null,d.thread_id||null);
                         if(d.ttl>0){
                             const bEl=document.getElementById('b'+(_bubbleCounter-1));
@@ -3995,6 +3997,64 @@ function joinRoom1488AsOperator(){
 const MOD_TOPIC = 'neochat/__admin__/moderation';
 let _bannedUsers = new Set();
 let _mutedUsers  = new Set();
+
+// ── Flood guard ───────────────────────────────────────────────────────────────
+// Personal block list — unlike the admin ban/mute sets above (overwritten from
+// the retained admin topic on every connect), this one is yours alone and
+// survives restarts via localStorage.
+const FLOOD_WINDOW_S=5, FLOOD_THRESHOLD=8, FLOOD_REALERT_S=120;
+let _blockedUsers=new Set();
+try{ _blockedUsers=new Set(JSON.parse(localStorage.getItem('neochat_blocked')||'[]').map(n=>String(n).toLowerCase())); }catch(e){}
+function _saveBlocked(){ try{ localStorage.setItem('neochat_blocked', JSON.stringify([..._blockedUsers])); }catch(e){} }
+
+let _floodTimes={}, _floodOk=new Set(), _floodLastAlert={};
+function _floodCheck(sender){
+    if(!sender) return;
+    const now=Date.now()/1000;
+    const arr=(_floodTimes[sender]=(_floodTimes[sender]||[]).filter(t=>now-t<=FLOOD_WINDOW_S));
+    arr.push(now);
+    if(arr.length<=FLOOD_THRESHOLD) return;
+    const low=sender.toLowerCase();
+    if(_floodOk.has(low)||_blockedUsers.has(low)) return;
+    if(now-(_floodLastAlert[low]||0)<FLOOD_REALERT_S) return;
+    _floodLastAlert[low]=now;
+    _showFloodAlert(sender,arr.length);
+}
+function _showFloodAlert(sender,count){
+    const nb=document.getElementById('notif-bar');
+    if(!nb) return;
+    const sc=sender.replace(/['"\\<>]/g,'');
+    nb.innerHTML=`⚠️ <b>${esc(sender)}</b> is sending very fast (${count} in ${FLOOD_WINDOW_S}s) — possible spam attack`+
+        `<button class="btn-notif-allow" onclick="viewFloodChat()">View chat</button>`+
+        `<button class="btn-notif-dismiss" onclick="blockFloodUser('${sc}')">Block</button>`+
+        `<button class="btn-notif-dismiss" onclick="floodFalseAlarm('${sc}')">False alarm</button>`;
+    nb.classList.add('show');
+    try{ _showNotif(sender,'⚠ Possible spam attack — check NeoChat'); }catch(e){}
+}
+function viewFloodChat(){
+    const nb=document.getElementById('notif-bar'); if(nb) nb.classList.remove('show');
+    showChat();
+}
+function blockFloodUser(sender){
+    const nb=document.getElementById('notif-bar'); if(nb) nb.classList.remove('show');
+    const low=(sender||'').toLowerCase(); if(!low) return;
+    _blockedUsers.add(low); _saveBlocked();
+    delete _floodTimes[sender];
+    try{ sysMsg(`🚫 ${sender} blocked — their messages are now hidden`); }catch(e){}
+}
+function floodFalseAlarm(sender){
+    const nb=document.getElementById('notif-bar'); if(nb) nb.classList.remove('show');
+    _floodOk.add((sender||'').toLowerCase());
+}
+function manageBlocked(){
+    if(_blockedUsers.size===0){ alert('You haven\'t blocked anyone.'); return; }
+    const list=[..._blockedUsers].sort();
+    const name=prompt('Blocked users:\n'+list.join('\n')+'\n\nType a name to unblock:');
+    if(!name) return;
+    const low=name.trim().toLowerCase();
+    if(_blockedUsers.delete(low)){ _saveBlocked(); alert(low+' is unblocked.'); }
+    else alert(name+' is not in the blocked list.');
+}
 
 function _applyModPayload(payload){
     try{
