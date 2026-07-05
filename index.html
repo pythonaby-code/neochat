@@ -4029,7 +4029,6 @@ function _floodCheck(sender){
     if(now-(_floodLastAlert[low]||0)<FLOOD_REALERT_S) return;
     _floodLastAlert[low]=now;
     _showFloodAlert(sender,arr.length);
-    _reportFlood(sender,arr.length);
 }
 function _curRoomCode(){
     return (_curRoomIdx>=0&&_rooms[_curRoomIdx])?_rooms[_curRoomIdx].code:'';
@@ -4039,19 +4038,26 @@ function _isCreatorDevice(){
 }
 function _showFloodAlert(sender,count){
     if(_isCreatorDevice()){
-        // Creator device: show the creator alert directly (global actions)
+        // Creator device: creator alert with global actions, plus a report
+        // so the creator's other devices hear about it too.
         _showCreatorAlert(sender,_curRoomCode(),count);
+        _reportFlood(sender,count);
         return;
     }
+    // Regular users: a quiet in-chat bar only; the creator is notified
+    // when they press Call Administrator.
     const nb=document.getElementById('notif-bar');
     if(!nb) return;
     const sc=sender.replace(/['"\\<>]/g,'');
     nb.innerHTML=`⚠️ <b>${esc(sender)}</b> is sending very fast (${count} in ${FLOOD_WINDOW_S}s) — possible spam attack`+
-        `<button class="btn-notif-allow" onclick="viewFloodChat()">View chat</button>`+
-        `<button class="btn-notif-dismiss" onclick="blockFloodUser('${sc}')">Block</button>`+
+        `<button class="btn-notif-allow" onclick="callAdminFlood('${sc}',${count|0})">Call Administrator</button>`+
         `<button class="btn-notif-dismiss" onclick="floodFalseAlarm('${sc}')">False alarm</button>`;
     nb.classList.add('show');
-    try{ _showNotif(sender,'⚠ Possible spam attack — check NeoChat'); }catch(e){}
+}
+function callAdminFlood(sender,count){
+    const nb=document.getElementById('notif-bar'); if(nb) nb.classList.remove('show');
+    _reportFlood(sender,count||FLOOD_THRESHOLD+1);
+    try{ sysMsg('🛡 Administrator notified about the flood'); }catch(e){}
 }
 // ── Creator alerts ────────────────────────────────────────────────────────────
 // Every client that detects a flood reports it here; devices where the admin
@@ -4110,17 +4116,6 @@ function creatorUnban(name){
     const nb=document.getElementById('notif-bar'); if(nb) nb.classList.remove('show');
     const low=(name||'').toLowerCase(); if(!low) return;
     if(_bannedUsers.delete(low)) _publishMod();
-}
-function viewFloodChat(){
-    const nb=document.getElementById('notif-bar'); if(nb) nb.classList.remove('show');
-    showChat();
-}
-function blockFloodUser(sender){
-    const nb=document.getElementById('notif-bar'); if(nb) nb.classList.remove('show');
-    const low=(sender||'').toLowerCase(); if(!low) return;
-    _blockedUsers.add(low); _saveBlocked();
-    delete _floodTimes[sender];
-    try{ sysMsg(`🚫 ${sender} blocked — their messages are now hidden`); }catch(e){}
 }
 function floodFalseAlarm(sender){
     const nb=document.getElementById('notif-bar'); if(nb) nb.classList.remove('show');
