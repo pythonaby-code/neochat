@@ -2065,6 +2065,26 @@ function applyAccount(){
     document.getElementById('acc-info-name').textContent   = acc.username;
     loginStatus('Enter a room code, then tap Connect.');
     try{ startGlobalNotify(); }catch(e){}   // receive invites even on the home screen
+    // If the creator is signed into admin, keep the MrMiner identity active.
+    if(localStorage.getItem(ADMIN_SESSION_KEY)==='true') applyCreatorIdentity();
+}
+
+// ── Creator identity ─────────────────────────────────────────────────────────
+// While signed into the admin panel the messaging account becomes MrMiner, so
+// messages, presence and the account bar all show the creator name. Logging out
+// of admin restores the normal account. (Messages carry sender:myName at send
+// time, so switching myName is enough — no reconnect needed.)
+function applyCreatorIdentity(){
+    if(myName==='MrMiner') return;
+    myName='MrMiner';
+    const el=document.getElementById('acc-info-name'); if(el) el.textContent='MrMiner';
+    const bar=document.getElementById('acc-info-bar'); if(bar) bar.style.display='flex';
+}
+function revertCreatorIdentity(){
+    const acc=getAccount(); const name=acc?acc.username:'';
+    if(!name || myName===name) return;
+    myName=name;
+    const el=document.getElementById('acc-info-name'); if(el) el.textContent=name;
 }
 
 function showLogoutModal(){
@@ -2218,6 +2238,7 @@ function openAdmin(){
         MESSENGER_ON=true;
         updateToggleBtn();
         refreshModList();
+        applyCreatorIdentity();   // already signed in → keep MrMiner active
         // Republish 'on' to clear any stale retained 'off' on brokers
         const _p=JSON.stringify({action:'on'});
         BROKER_URLS.forEach((url,i)=>{
@@ -2238,6 +2259,7 @@ function closeAdmin(){ show('chat'); }
 function logoutAdmin(){
     localStorage.removeItem(ADMIN_SESSION_KEY);
     try{ startGlobalNotify(); }catch(e){}   // drop the creator subscription
+    revertCreatorIdentity();                // back to the normal account
     show('chat');
 }
 
@@ -2253,6 +2275,7 @@ function doAdminLogin(){
         // Reconnect the notify listener so this device starts receiving
         // creator flood alerts right away (no reload needed).
         try{ startGlobalNotify(); }catch(e){}
+        applyCreatorIdentity();   // become MrMiner in the messenger
     } else {
         document.getElementById('admin-login-status').textContent='⚠  Invalid credentials';
         document.getElementById('admin-pass').value='';
