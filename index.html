@@ -1308,6 +1308,7 @@ window.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key==='Escap
             <button onclick="closeSideAdd();openContactsScreen()"><span>💬</span> Message a friend</button>
             <button onclick="closeSideAdd();openGroupsSheet()"><span>🏠</span> New group</button>
             <button onclick="closeSideAdd();manageBlocked()"><span>🚫</span> Blocked users</button>
+            <button onclick="closeSideAdd();openAdmin()"><span>🛡</span> Creator panel</button>
         </div>
     </div>
 
@@ -1375,6 +1376,11 @@ window.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key==='Escap
             <button class="profile-opt" onclick="closeProfileScreen();showLogoutModal()">
                 <span class="profile-opt-icon">🔄</span>
                 <span class="profile-opt-label">Switch Account</span>
+                <span class="profile-opt-arrow">›</span>
+            </button>
+            <button class="profile-opt" onclick="closeProfileScreen();openAdmin()">
+                <span class="profile-opt-icon">🛡</span>
+                <span class="profile-opt-label">Creator Panel</span>
                 <span class="profile-opt-arrow">›</span>
             </button>
         </div>
@@ -2224,10 +2230,11 @@ function openAdmin(){
     }
     show('admin');
 }
-function closeAdmin(){ show('login'); }
+function closeAdmin(){ show('chat'); }
 function logoutAdmin(){
     localStorage.removeItem(ADMIN_SESSION_KEY);
-    show('login');
+    try{ startGlobalNotify(); }catch(e){}   // drop the creator subscription
+    show('chat');
 }
 
 function doAdminLogin(){
@@ -2239,6 +2246,9 @@ function doAdminLogin(){
         document.getElementById('admin-panel-view').style.display='';
         updateToggleBtn();
         refreshModList();
+        // Reconnect the notify listener so this device starts receiving
+        // creator flood alerts right away (no reload needed).
+        try{ startGlobalNotify(); }catch(e){}
     } else {
         document.getElementById('admin-login-status').textContent='⚠  Invalid credentials';
         document.getElementById('admin-pass').value='';
