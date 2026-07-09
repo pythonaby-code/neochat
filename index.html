@@ -2394,6 +2394,10 @@ const CALL_TOPIC_PREFIX = 'neochat/__call__/';
 
 // ── Account management ────────────────────────────────────────────────────────
 const ACC_KEY = 'neochat_v1_account';
+/* Declared up here (not in the admin section) because applyAccount() reads it
+   during the initAccount IIFE at load — a later const = TDZ crash that kills
+   the whole script for every returning user. */
+const ADMIN_SESSION_KEY = 'neochat_admin_session';
 
 function getAccount(){ try{ return JSON.parse(localStorage.getItem(ACC_KEY)); }catch(e){ return null; } }
 function saveAccount(obj){ localStorage.setItem(ACC_KEY, JSON.stringify(obj)); }
@@ -2803,7 +2807,7 @@ function confirmSwitch(){ /* kept for compatibility */ }
 })();
 
 // ── Admin ─────────────────────────────────────────────────────────────────────
-const ADMIN_SESSION_KEY = 'neochat_admin_session';
+// (ADMIN_SESSION_KEY is declared near ACC_KEY at the top — see note there)
 
 function openAdmin(){
     // First open asks for credentials; after a successful login the session is
