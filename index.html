@@ -27,6 +27,37 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script>
+/* ── Visible error reporter: a silent script death looks like "buttons don't
+   work". Surface the first JS error as a red banner so it can be reported. ── */
+(function(){
+  var shown=false;
+  function showErr(msg){
+    if(shown) return; shown=true;
+    try{
+      var d=document.createElement('div');
+      d.setAttribute('style','position:fixed;top:0;left:0;right:0;z-index:2147483647;'
+        +'background:#7f1d1d;color:#fff;font:12px/1.5 monospace;padding:8px 12px;'
+        +'word-break:break-all;border-bottom:2px solid #f43f5e;');
+      d.textContent='⚠ NeoChat error: '+msg;
+      var x=document.createElement('span');
+      x.textContent='  [✕]';
+      x.setAttribute('style','cursor:pointer;font-weight:bold;');
+      x.onclick=function(){ d.parentNode&&d.parentNode.removeChild(d); };
+      d.appendChild(x);
+      (document.body||document.documentElement).appendChild(d);
+    }catch(e){}
+  }
+  window.addEventListener('error',function(e){
+    var m=(e&&e.message)||'unknown';
+    if(e&&e.filename) m+=' @ '+e.filename.split('/').pop()+':'+e.lineno;
+    showErr(m);
+  });
+  window.addEventListener('unhandledrejection',function(e){
+    var r=e&&e.reason; showErr('promise: '+((r&&(r.message||r))||'unknown'));
+  });
+})();
+</script>
+<script>
 /* ── Device + language bootstrap: runs before first paint ──
    Detects phone vs PC (manual override wins), picks RU/EN (saved choice wins,
    otherwise the device language). The rest of the app reads NEO_UI_MODE / NEO_LANG. */
@@ -2213,11 +2244,16 @@ function _ruPattern(s){
   }
   return null;
 }
+/* Index the dictionary under whitespace-collapsed keys too, so entries written
+   with double spaces ('⚠  …', '←  Back') match however the text reaches us. */
+const RU_N={};
+for(var _rk in RU){ RU_N[_rk.replace(/\s+/g,' ').trim()]=RU[_rk]; }
 function t(s){
   if(window.NEO_LANG!=='ru'||s==null) return s;
   s=String(s);
+  if(RU[s]!==undefined) return RU[s];
   const norm=s.replace(/\s+/g,' ').trim();
-  if(RU[norm]!==undefined) return RU[norm];
+  if(RU_N[norm]!==undefined) return RU_N[norm];
   /* no ?? here — the rest of this file avoids post-2019 syntax so the app
      keeps parsing on older phone browsers/webviews */
   var p=_ruPattern(s);
