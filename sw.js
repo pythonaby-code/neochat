@@ -1,6 +1,6 @@
 /* NeoChat service worker — enables "Install app" and offline app-shell.
    Bump CACHE_VERSION whenever you upload a new index.html so phones refresh. */
-const CACHE_VERSION = 'neochat-v13';
+const CACHE_VERSION = 'neochat-v14';
 const SHELL = [
   './',
   './index.html',

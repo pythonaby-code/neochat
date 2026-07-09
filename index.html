@@ -2218,7 +2218,12 @@ function t(s){
   s=String(s);
   const norm=s.replace(/\s+/g,' ').trim();
   if(RU[norm]!==undefined) return RU[norm];
-  return _ruPattern(s) ?? _ruPattern(norm) ?? s;
+  /* no ?? here — the rest of this file avoids post-2019 syntax so the app
+     keeps parsing on older phone browsers/webviews */
+  var p=_ruPattern(s);
+  if(p!==null) return p;
+  p=_ruPattern(norm);
+  return p!==null ? p : s;
 }
 /* Skip user content: usernames, message text, previews — never translate those.
    System bubbles (.bubble.sys) ARE translated via the pattern rules. */
