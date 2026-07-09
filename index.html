@@ -26,6 +26,37 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script>
+/* ── Device + language bootstrap: runs before first paint ──
+   Detects phone vs PC (manual override wins), picks RU/EN (saved choice wins,
+   otherwise the device language). The rest of the app reads NEO_UI_MODE / NEO_LANG. */
+(function(){
+  var root=document.documentElement;
+  var ua=navigator.userAgent||'';
+  var uaMobile=/Android|iPhone|iPad|iPod|Mobile|Windows Phone|IEMobile/i.test(ua);
+  var coarse=false; try{ coarse=window.matchMedia('(pointer:coarse)').matches; }catch(e){}
+  window.NEO_DEVICE_MOBILE = uaMobile || (coarse && !/Windows NT/i.test(ua));
+  window.__applyUiMode=function(){
+    var pref=null; try{ pref=localStorage.getItem('neochat_ui'); }catch(e){}
+    var mode=(pref==='mobile'||pref==='desktop') ? pref
+             : (window.NEO_DEVICE_MOBILE ? 'mobile' : 'desktop');
+    /* auto-desktop falls back to the phone layout in a narrow window;
+       an explicit user choice is honored as-is */
+    if(mode==='desktop' && !pref && window.innerWidth<900) mode='mobile';
+    root.classList.toggle('ui-desktop', mode==='desktop');
+    root.classList.toggle('ui-mobile',  mode==='mobile');
+    window.NEO_UI_MODE=mode;
+    return mode;
+  };
+  window.__applyUiMode();
+  window.addEventListener('resize', window.__applyUiMode);
+  var lang=null; try{ lang=localStorage.getItem('neochat_lang'); }catch(e){}
+  if(lang!=='ru'&&lang!=='en')
+    lang=((navigator.language||'').toLowerCase().indexOf('ru')===0)?'ru':'en';
+  window.NEO_LANG=lang;
+  root.setAttribute('lang',lang);
+})();
+</script>
 <style>
 /* ================================================================
    NeoChat  |  Premium Cosmic Messenger  |  Complete Visual System
@@ -681,7 +712,9 @@ input::placeholder{color:var(--t4);font-weight:400;}
 .neocreate-item .user-item-name{font-size:16px;font-weight:700;}
 .neocreate-item .user-item-sub{color:rgba(150,180,255,.85);}
 
-@media (min-width:980px){
+/* Desktop layout is now switched by device detection (html.ui-desktop),
+   not by window width — see the bootstrap script in <head>. */
+html.ui-desktop{
   #chat{flex-direction:row;}
   #chat .chat-main{height:100%;}
   #chat .messages{padding:20px 26px 10px;}
@@ -765,6 +798,15 @@ input::placeholder{color:var(--t4);font-weight:400;}
     border:none;color:#fff;font-size:14px;padding:11px 13px;border-radius:9px;cursor:pointer;font-family:var(--font);}
   .side-add-menu button:hover{background:rgba(255,255,255,.08);}
   .side-add-menu button span{font-size:17px;}
+
+  /* Explicit desktop mode in a very narrow window: drop the sidebar,
+     stretch the chat window edge-to-edge so nothing is crushed. */
+  @media (max-width:699px){
+    #users-drawer{display:none;}
+    #chat{left:0;top:0;margin:0;width:100%;height:100%;border-radius:0;border:none;}
+    #chat .chat-hdr-top{display:flex;}
+    #chat>.bottom-nav{display:flex;}
+  }
 }
 
 /* ════════════════════════════════════════════════════════════════
@@ -856,11 +898,135 @@ input::placeholder{color:var(--t4);font-weight:400;}
 #showcase .sc-send svg{width:22px;height:22px;stroke:#0a0a0a;}
 @media (max-width:760px){#showcase{padding:0;}#showcase .appstage{max-height:none;height:100%;aspect-ratio:auto;}#showcase .scapp{position:absolute;inset:0;width:100%;height:100%;transform:none;border-radius:0;border:none;}#showcase .sc-side{display:none;}}
 
+/* ════════════════════════════════════════════════════════════════
+   MOBILE UI  —  dedicated phone-first interface (html.ui-mobile)
+   Bigger touch targets, one-row chat header, app-like bottom nav,
+   sheet grab-handles, lighter blur for weaker GPUs.
+   ════════════════════════════════════════════════════════════════ */
+html.ui-mobile{
+  /* ── global ergonomics: 16px inputs stop iOS auto-zoom, 48px+ targets ── */
+  input{font-size:16px;padding:15px 16px;border-radius:16px;}
+  button{font-size:16px;}
+  .btn-connect{padding:17px 20px;font-size:16px;}
+  .btn-hdr-ico{width:44px;height:44px;font-size:20px;}
+  .btn-back{width:44px;height:44px;font-size:24px;}
+  ::-webkit-scrollbar{width:0;height:0;}
+
+  /* lighter glass = smoother scrolling on phones */
+  .chat-header,.contacts-header,.input-bar,.bottom-nav,.account-card
+    {backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);}
+  .account-card{animation:none;}
+  body::after{display:none;}   /* film grain off on phones */
+
+  /* ── home hub: bigger friendlier action cards ── */
+  #login{padding:26px 18px 34px;gap:14px;}
+  #login .logo-mark{width:84px;height:84px;margin-bottom:10px;}
+  #login .logo h1{font-size:36px;}
+  .login-action{padding:17px 16px;border-radius:20px;gap:15px;}
+  .login-action-ico{font-size:30px;width:44px;}
+  .login-action-title{font-size:16px;}
+  .login-action-sub{font-size:12px;}
+  .login-action-arrow{font-size:24px;}
+  #acc-info-bar{border-radius:16px;padding:12px 16px;}
+
+  /* ── chat: single-row header (rows merged by JS), roomier bubbles ── */
+  .chat-hdr-contact{padding:6px 10px 8px;padding-top:max(8px,env(safe-area-inset-top));gap:8px;}
+  .hdr-avatar-circle{width:42px;height:42px;font-size:17px;}
+  .hdr-room{font-size:16px;}
+  .hdr-dot{font-size:12px;}
+  .messages{padding:12px 12px 8px;gap:5px;}
+  .bubble{max-width:86%;border-radius:18px;padding:11px 14px;}
+  .bubble .b-text{font-size:15px;line-height:1.45;}
+  .bubble .b-ts{font-size:10px;}
+  .bubble img{max-width:min(240px,64vw);}
+  .btn-bubble-act{font-size:12px;padding:5px 10px;border-radius:9px;}
+  .date-sep{font-size:12px;}
+
+  /* ── input bar: big thumb-friendly send ── */
+  .input-bar{padding:8px 10px;padding-bottom:max(8px,env(safe-area-inset-bottom));gap:6px;}
+  .input-bar input{font-size:16px;padding:13px 16px;min-height:48px;}
+  .btn-send{width:50px;height:50px;font-size:20px;}
+  .btn-attach-simple{width:44px;height:44px;font-size:22px;}
+
+  /* ── bottom nav: taller, glowing active pill ── */
+  .bottom-nav{padding:7px 4px;padding-bottom:max(8px,env(safe-area-inset-bottom));gap:2px;}
+  .nav-tab{padding:7px 2px 5px;border-radius:14px;}
+  .nav-tab::before{display:none;}
+  .nav-icon{font-size:22px;}
+  .nav-label{font-size:10px;letter-spacing:.3px;}
+  .nav-tab.active{background:rgba(255,255,255,.09);}
+  .nav-tab.active .nav-icon{transform:none;}
+
+  /* ── bottom sheets: grab handle + grid of big attach tiles ── */
+  .attach-sheet-inner,.more-menu-inner,.settings-sheet-inner,.groups-sheet-inner,.dm-sheet{position:relative;padding-top:26px;}
+  .attach-sheet-inner::before,.more-menu-inner::before,.settings-sheet-inner::before,
+  .groups-sheet-inner::before,.dm-sheet::before{
+    content:'';position:absolute;top:10px;left:50%;transform:translateX(-50%);
+    width:42px;height:4px;border-radius:2px;background:rgba(255,255,255,.28);}
+  .attach-sheet-inner{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:26px 16px 20px;padding-bottom:max(20px,env(safe-area-inset-bottom));}
+  .attach-opt{min-width:0;padding:16px 8px;border-radius:18px;}
+  .attach-opt-icon{font-size:30px;}
+  .attach-opt-label{font-size:12px;}
+  .more-menu-item,.settings-item{padding:16px 22px;font-size:16px;}
+  .settings-item-icon,.more-menu-item-icon{font-size:22px;}
+
+  /* ── pickers sized for thumbs ── */
+  #emoji-picker,#text-emoji-picker{width:min(248px,92vw);}
+  #emoji-picker .emoji-btn,#text-emoji-picker .emoji-btn{width:44px;height:44px;font-size:24px;}
+  #sticker-picker{width:min(320px,94vw);}
+  .sticker-btn{width:52px;height:52px;font-size:34px;}
+
+  /* ── screens & lists ── */
+  .contacts-title{font-size:19px;}
+  .contacts-body{padding:16px 16px 90px;}
+  .profile-opt,.settings-item{min-height:52px;}
+  .dm-item{padding:14px;border-radius:16px;}
+  .grp-primary{padding:15px;font-size:15px;border-radius:14px;}
+  .room-tab{font-size:12px;padding:9px 14px;}
+  #users-drawer{width:84%;max-width:320px;}
+  .user-item{padding:12px 14px;}
+  .no-users-msg{font-size:13px;}
+  #typing-ind{font-size:12px;}
+}
+
+/* ════════════════════════════════════════════════════════════════
+   UI PILLS (language / interface switch) + first-run mode toast
+   ════════════════════════════════════════════════════════════════ */
+#ui-pills{position:fixed;top:max(12px,env(safe-area-inset-top));right:12px;z-index:25;
+  display:none;gap:8px;}
+#ui-pills.show{display:flex;}
+.ui-pill{width:auto;background:rgba(14,15,20,.72);border:1px solid rgba(255,255,255,.18);
+  border-radius:999px;color:var(--t2);font-size:12px;font-weight:700;letter-spacing:.4px;
+  padding:8px 14px;display:flex;align-items:center;gap:6px;backdrop-filter:blur(14px);
+  -webkit-backdrop-filter:blur(14px);transition:all .18s;}
+.ui-pill:hover{color:var(--t1);border-color:rgba(255,255,255,.4);background:rgba(255,255,255,.08);}
+#ui-toast{position:fixed;left:50%;bottom:max(24px,env(safe-area-inset-bottom));transform:translateX(-50%) translateY(12px);
+  z-index:9000;display:flex;align-items:center;gap:12px;max-width:min(480px,92vw);
+  background:rgba(14,15,20,.95);border:1px solid rgba(255,255,255,.2);border-radius:16px;
+  padding:13px 16px;font-size:13px;color:var(--t1);box-shadow:0 12px 40px rgba(0,0,0,.55);
+  backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);
+  opacity:0;pointer-events:none;transition:opacity .3s,transform .3s;}
+#ui-toast.show{opacity:1;pointer-events:auto;transform:translateX(-50%) translateY(0);}
+#ui-toast button{width:auto;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.3);
+  border-radius:10px;color:#fff;font-size:12px;font-weight:700;padding:7px 13px;flex-shrink:0;}
+
 </style>
 </head>
 <body>
 
 <canvas id="cyber-bg"></canvas>
+
+<!-- Language / interface quick switches (visible on start screens) -->
+<div id="ui-pills">
+    <button class="ui-pill" onclick="toggleLang()" id="ui-pill-lang" title="Language">🌐 RU</button>
+    <button class="ui-pill" onclick="toggleUiMode()" id="ui-pill-mode" title="Interface">📱</button>
+</div>
+<!-- First-run device-detection toast -->
+<div id="ui-toast">
+    <span id="ui-toast-text"></span>
+    <button onclick="toggleUiMode()" id="ui-toast-btn">Switch</button>
+    <button onclick="hideUiToast()" style="background:none;border:none;color:var(--t3);padding:7px 4px;">✕</button>
+</div>
 
 <!-- Shared chrome gradients for the brand logo mark -->
 <!-- ✦ Cinematic intro — the N draws itself, "NeoChat" appears, then the app reveals ✦ -->
@@ -1439,6 +1605,16 @@ window.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key==='Escap
             <span class="settings-item-icon">👥</span>
             <span class="settings-item-label">Active Users</span>
         </button>
+        <button class="settings-item" onclick="toggleLang()">
+            <span class="settings-item-icon">🌐</span>
+            <span class="settings-item-label">Language</span>
+            <span class="settings-item-value" id="settings-lang-val"></span>
+        </button>
+        <button class="settings-item" onclick="toggleUiMode()">
+            <span class="settings-item-icon">📱</span>
+            <span class="settings-item-label">Interface</span>
+            <span class="settings-item-value" id="settings-ui-val"></span>
+        </button>
         <button class="settings-item" onclick="closeSettingsSheet()">
             <span class="settings-item-icon">✕</span>
             <span class="settings-item-label">Close</span>
@@ -1803,6 +1979,367 @@ window.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key==='Escap
 <!-- MQTT.js (loaded from CDN, requires internet) -->
 <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
 <script>
+/* ════════════════════════════════════════════════════════════════
+   I18N (RU/EN) + UI MODE (phone/PC)
+   The wire protocol stays 100% English — translation happens only at
+   render time (DOM walker + MutationObserver + pattern rules), so the
+   web app remains byte-compatible with the Python desktop app.
+   ════════════════════════════════════════════════════════════════ */
+const RU = {
+  // ── intro / brand ──
+  'Conversations, illuminated':'Общение в новом свете',
+  'Real-time Internet Messenger':'Интернет-мессенджер в реальном времени',
+  'Real-time Messenger':'Мессенджер в реальном времени',
+  'NeoChat Member':'Участник NeoChat',
+  // ── account screens ──
+  'Create your account':'Создайте аккаунт',
+  'Your name':'Ваше имя','e.g. Alice':'например, Alice',
+  'Password':'Пароль','Create a password (min 4 chars)':'Придумайте пароль (мин. 4 символа)',
+  'Confirm password':'Подтвердите пароль','Repeat your password':'Повторите пароль',
+  'Create Account →':'Создать аккаунт →',
+  'Welcome back!':'С возвращением!','Enter your password':'Введите пароль',
+  'Sign In →':'Войти →','Create new account instead':'Создать новый аккаунт',
+  'Switch Account':'Сменить аккаунт','Confirm with your password':'Подтвердите паролем',
+  'Current password':'Текущий пароль','Confirm →':'Подтвердить →','Cancel':'Отмена',
+  // ── login hub ──
+  'Join a chat with a code':'Войти в чат по коду',
+  'Enter a room code someone shared with you':'Введите код комнаты, которым с вами поделились',
+  'Send a private message':'Личное сообщение',
+  'Message someone directly by their @username':'Напишите человеку напрямую по @имени',
+  'Create a group':'Создать группу',
+  'Make a group and invite your friends':'Создайте группу и пригласите друзей',
+  'Platform of Bots':'Платформа ботов',
+  'Create and deploy your own bots':'Создавайте и запускайте своих ботов',
+  '←  Back':'←  Назад','Room code':'Код комнаты','e.g. CHAT01':'например, CHAT01',
+  'Random room code':'Случайный код комнаты',
+  'Room password (optional)':'Пароль комнаты (необязательно)',
+  'Leave blank for no password':'Оставьте пустым, если пароля нет',
+  'Enter a room code, then tap Connect.':'Введите код комнаты и нажмите «Подключиться».',
+  'Connect →':'Подключиться →',
+  '@username — find someone to message':'@имя — найдите собеседника',
+  'Find →':'Найти →',
+  'Type a friend’s username and we’ll open a private, end-to-end encrypted chat — only the two of you can read it.':'Введите имя друга — мы откроем приватный чат со сквозным шифрованием: прочитать его сможете только вы двое.',
+  // ── chat screen ──
+  'Search':'Поиск','More':'Ещё','Room':'Комната',
+  'Video call':'Видеозвонок','Voice call':'Голосовой звонок',
+  '● connecting':'● подключение','● online':'● в сети','● offline':'● не в сети',
+  '💬 Replying in thread':'💬 Ответ в теме',
+  '💬 Replying in thread — ✕ to exit':'💬 Ответ в теме — ✕ чтобы выйти',
+  'Search messages…':'Поиск по сообщениям…','Search messages':'Поиск сообщений',
+  '📞 Incoming call…':'📞 Входящий звонок…','Accept':'Принять','Decline':'Отклонить',
+  'Hang up':'Завершить','Share screen':'Демонстрация экрана',
+  '🔔 Get notified when new messages arrive?':'🔔 Получать уведомления о новых сообщениях?',
+  'Allow':'Разрешить','Message…':'Сообщение…','Attachments':'Вложения','Emoji':'Эмодзи',
+  'Photo':'Фото','Voice':'Голос','File':'Файл','Poll':'Опрос','Sticker':'Стикер',
+  'Self-Destruct':'Самоуничтожение','Self-destruct message':'Самоуничтожающееся сообщение',
+  '⏱ 10 seconds':'⏱ 10 секунд','⏱ 30 seconds':'⏱ 30 секунд','⏱ 60 seconds':'⏱ 60 секунд',
+  'Chats':'Чаты','Contacts':'Контакты','Groups':'Группы','Profile':'Профиль',
+  'Settings':'Настройки','Bots':'Боты',
+  'today':'сегодня','yesterday':'вчера',
+  // ── drawer / sidebar ──
+  'CALLS':'ЗВОНКИ','NeoCreate — build & chat with bots':'NeoCreate — создавайте ботов и общайтесь',
+  'Build & chat with bots':'Создавай ботов и общайся',
+  'No one else here yet.':'Пока здесь больше никого нет.',
+  'Active users appear here when they send a message.':'Активные участники появятся здесь, когда напишут сообщение.',
+  'New chat or group':'Новый чат или группа','Message a friend':'Написать другу',
+  'New group':'Новая группа','Blocked users':'Заблокированные','Creator panel':'Панель создателя',
+  'Active now':'Сейчас в сети','Tap to message':'Нажмите, чтобы написать',
+  'Wants to message you':'Хочет вам написать',
+  // ── poll ──
+  '📊 Create Poll':'📊 Создать опрос','Question':'Вопрос','Ask a question…':'Задайте вопрос…',
+  'Options (one per line)':'Варианты (по одному в строке)','Yes No Maybe':'Да\nНет\nВозможно',
+  'Create Poll →':'Создать опрос →',
+  'Please provide a question and at least 2 options.':'Укажите вопрос и минимум 2 варианта.',
+  // ── DM sheet ──
+  'PRIVATE MESSAGE':'ЛИЧНОЕ СООБЩЕНИЕ','Type a private message…':'Введите личное сообщение…',
+  'Private message':'Личное сообщение',
+  // ── profile ──
+  'APPEARANCE':'ОФОРМЛЕНИЕ','Change Avatar':'Сменить аватар','Accent Color':'Цвет акцента',
+  'ACCOUNT':'АККАУНТ','Creator Panel':'Панель создателя','ABOUT':'О ПРИЛОЖЕНИИ',
+  'Encryption':'Шифрование','AES-GCM 256 · ECDH in DMs':'AES-GCM 256 · ECDH в ЛС',
+  // ── settings / sheets ──
+  'Search Messages':'Поиск сообщений','Media Gallery':'Медиагалерея',
+  'Active Users':'Активные участники','Close':'Закрыть',
+  'Language':'Язык','Interface':'Интерфейс','Russian':'Русский','English':'English',
+  'Phone':'Телефон','Computer':'Компьютер','Switch':'Сменить',
+  'Phone interface is on':'Включён интерфейс для телефона',
+  'Computer interface is on':'Включён интерфейс для компьютера',
+  'Rooms':'Комнаты','Join another room':'Войти в другую комнату',
+  'Enter room code…':'Введите код комнаты…','Join →':'Войти →',
+  '🖼 Media Gallery':'🖼 Медиагалерея','📁 Files':'📁 Файлы',
+  'No images in this session.':'Нет изображений за эту сессию.',
+  // ── contacts ──
+  'Find user by username':'Найти пользователя по имени',
+  'Recent Conversations':'Недавние переписки',
+  'Enter a username to search.':'Введите имя для поиска.',
+  'That’s you! 😊':'Это вы! 😊',"That's you! 😊":'Это вы! 😊',
+  'Checking registration…':'Проверяем регистрацию…',
+  '✓ Registered user · tap to message':'✓ Зарегистрирован · нажмите, чтобы написать',
+  'Not seen in registry yet — they’ll receive it when they connect':'Ещё не в реестре — сообщение придёт при подключении',
+  'Couldn’t verify registration — you can still message them':'Не удалось проверить регистрацию — написать всё равно можно',
+  'Message':'Написать',
+  // ── groups manager ──
+  '➕  New Group':'➕  Новая группа','Your groups':'Ваши группы','Group name':'Название группы',
+  'e.g. Best Friends':'например, Лучшие друзья',
+  'Group code — friends join with this':'Код группы — по нему заходят друзья',
+  'Random code':'Случайный код','Invite friends — add @usernames':'Пригласите друзей — добавьте @имена',
+  'Add':'Добавить','Create Group & Invite':'Создать группу и пригласить',
+  'Open Group Chat  →':'Открыть чат группы  →','Members':'Участники','Add member':'Добавить участника',
+  'Invite':'Пригласить','🗑  Delete group':'🗑  Удалить группу','OWNER':'ВЛАДЕЛЕЦ','Remove':'Убрать',
+  'No groups yet.':'Групп пока нет.',
+  'Tap “New Group” to create one and invite friends.':'Нажмите «Новая группа», чтобы создать группу и пригласить друзей.',
+  'Please give your group a name.':'Дайте группе название.',
+  'Group settings':'Настройки группы','New room':'Новая комната',
+  'Enter room code for new tab:':'Код комнаты для новой вкладки:',
+  // ── bots ──
+  '➕  New Bot':'➕  Новый бот','Your bots':'Ваши боты',
+  '💡 In any chat, type':'💡 В любом чате введите',
+  'followed by a message and your bot will reply for everyone to see.':'и сообщение — ваш бот ответит на виду у всех.',
+  'Bot name':'Имя бота','e.g. WeatherBot':'например, WeatherBot',
+  'Handle — people type @this to reach it':'Хэндл — люди пишут @это, чтобы обратиться к боту',
+  'Icon':'Иконка','Description — optional':'Описание — необязательно',
+  'What does your bot do?':'Что делает ваш бот?',
+  'Rules — when a message contains… → reply':'Правила — если сообщение содержит… → ответ',
+  '＋ Add rule':'＋ Добавить правило',
+  'Fallback — reply when no rule matches':'Запасной ответ — когда ни одно правило не подошло',
+  "Sorry, I didn't get that. Try 'help'.":'Извини, я не понял. Попробуй «help».',
+  'Tip: use {user}, {time}, {date}, {random}, {coin}, {dice} in replies.':'Совет: используйте {user}, {time}, {date}, {random}, {coin}, {dice} в ответах.',
+  'Try it':'Проверьте бота','Type a test message…':'Введите тестовое сообщение…','Test':'Тест',
+  'Save Bot':'Сохранить бота','New bot':'Новый бот','Edit bot':'Редактировать бота',
+  'No bots yet.':'Ботов пока нет.',
+  'Tap “New Bot” to build your first assistant.':'Нажмите «Новый бот», чтобы создать первого помощника.',
+  '⚠  Give your bot a name.':'⚠  Дайте боту имя.',
+  '⚠  Give your bot a handle (letters/numbers).':'⚠  Дайте боту хэндл (буквы/цифры).',
+  '⚠  That handle is reserved — pick another.':'⚠  Этот хэндл зарезервирован — выберите другой.',
+  '⚠  You already have a bot with that handle.':'⚠  У вас уже есть бот с таким хэндлом.',
+  '⚠  Add at least one rule or a fallback reply.':'⚠  Добавьте хотя бы одно правило или запасной ответ.',
+  // ── message actions ──
+  '📋 Copy':'📋 Копировать','✎ Edit':'✎ Изменить','🗑 Delete':'🗑 Удалить',
+  '↪ Forward':'↪ Переслать','📌 Pin':'📌 Закрепить','💬 Thread':'💬 Тема',
+  '🌐 Translate':'🌐 Перевести','Reply':'Ответить','↩ Reply':'↩ Ответить',
+  'Add reaction':'Добавить реакцию','Edit message…':'Изменить сообщение…','Save':'Сохранить',
+  'Message deleted':'Сообщение удалено','💥 message self-destructed':'💥 сообщение самоуничтожилось',
+  '🌐 Translating…':'🌐 Переводим…','[no translation]':'[нет перевода]','[translation failed]':'[перевод не удался]',
+  '🎤 Voice message':'🎤 Голосовое сообщение','📎 Image':'📎 Изображение',
+  // ── statuses / errors ──
+  '⚠  Enter your password.':'⚠  Введите пароль.','⚠  Wrong password.':'⚠  Неверный пароль.',
+  '⚠  Enter a username.':'⚠  Введите имя.','⚠  Name too short (min 2 chars).':'⚠  Имя слишком короткое (мин. 2 символа).',
+  '⚠  This username is reserved.':'⚠  Это имя зарезервировано.','⚠  Enter a password.':'⚠  Введите пароль.',
+  '⚠  Password too short (min 4 chars).':'⚠  Пароль слишком короткий (мин. 4 символа).',
+  "⚠  Passwords don't match.":'⚠  Пароли не совпадают.','Checking username…':'Проверяем имя…',
+  '⚠  Username already taken. Choose another.':'⚠  Имя уже занято. Выберите другое.',
+  'Sorry! Messenger is turned off.':'Извините! Мессенджер выключен.',
+  '⚠  No account. Please restart.':'⚠  Нет аккаунта. Перезапустите приложение.',
+  'Connecting…':'Подключение…','⚠  Could not connect. Try again.':'⚠  Не удалось подключиться. Попробуйте ещё раз.',
+  '⛔  You have been banned from NeoChat.':'⛔  Вы заблокированы в NeoChat.',
+  '⚠  Invalid credentials':'⚠  Неверные данные','Please sign in first.':'Сначала войдите в аккаунт.',
+  'No answer.':'Нет ответа.','Calling… tap 📞 to cancel':'Звоним… нажмите 📞 для отмены',
+  'Starting video call… tap 📹 to cancel':'Начинаем видеозвонок… нажмите 📹 для отмены',
+  'Microphone/camera permission denied.':'Нет доступа к микрофону/камере.',
+  '⚠  Call audio disconnected — trying to reconnect…':'⚠  Звук звонка прервался — переподключаемся…',
+  '⚠  Call connection failed — try moving to a different network.':'⚠  Не удалось установить соединение — попробуйте другую сеть.',
+  '🔇 You are muted and cannot send messages.':'🔇 Вы замьючены и не можете отправлять сообщения.',
+  '🔇 You have been muted by an admin.':'🔇 Администратор выключил вам звук.',
+  '🛡 Administrator notified about the flood':'🛡 Администратор уведомлён о флуде',
+  'Call Administrator':'Позвать администратора','False alarm':'Ложная тревога',
+  'Join chat':'Войти в чат','Block':'Заблокировать','Unblock':'Разблокировать',
+  "You haven't blocked anyone.":'Вы никого не заблокировали.',
+  'Open':'Открыть',
+  // ── link safety ──
+  'Open External Link?':'Открыть внешнюю ссылку?','Open →':'Открыть →',
+  '✓ Looks safe':'✓ Выглядит безопасно','No obvious threats detected':'Явных угроз не обнаружено',
+  'Contains a nested URL — possible redirect':'Содержит вложенный URL — возможен редирект',
+  'Links directly to an IP address — may be suspicious':'Ведёт напрямую на IP-адрес — это подозрительно',
+  'Unusually long URL — could be a redirect chain':'Необычно длинный URL — возможна цепочка редиректов',
+  'Could not parse URL':'Не удалось разобрать URL',
+  // ── admin / operator ──
+  'NeoChat · Operator Access':'NeoChat · Доступ оператора',
+  'NeoChat · Restricted Access':'NeoChat · Ограниченный доступ',
+  'Username':'Имя пользователя','Enter →':'Войти →','✕  Cancel':'✕  Отмена','✕ Logout':'✕ Выйти',
+  'Connect as K1ssq →':'Подключиться как K1ssq →','🚪  Enter Room 1488':'🚪  Войти в комнату 1488',
+  'MODERATION':'МОДЕРАЦИЯ','Username to ban or mute…':'Имя для бана или мьюта…',
+  '🚫 Ban':'🚫 Забанить','🔇 Mute':'🔇 Замьютить',
+  '🟢  Messenger is ON — tap to turn OFF':'🟢  Мессенджер ВКЛЮЧЁН — нажмите, чтобы выключить',
+  '🔴  Messenger is OFF — tap to turn ON':'🔴  Мессенджер ВЫКЛЮЧЕН — нажмите, чтобы включить'
+};
+/* Pattern rules for strings composed at runtime (checked after exact match).
+   $1/$2 = captured groups. Order matters: first match wins. */
+const RU_PATTERNS = [
+  [/^(.+) joined the chat 👋$/, '$1 заходит в чат 👋'],
+  [/^(.+) left the chat 👋$/, '$1 выходит из чата 👋'],
+  [/^(.+) is typing…$/, '$1 печатает…'],
+  [/^(.+) and (.+) are typing…$/, '$1 и $2 печатают…'],
+  [/^(.+) are typing…$/, '$1 печатают…'],
+  [/^(.*) wants to start a video call$/, '$1 хочет начать видеозвонок'],
+  [/^(.*) wants to start a call$/, '$1 хочет начать звонок'],
+  [/^(.+) accepted the call 📞$/, '$1 принимает звонок 📞'],
+  [/^(.+) ended the call$/, '$1 завершает звонок'],
+  [/^(.+)['’]s call was declined$/, 'Звонок $1 отклонён'],
+  [/^📞 (.+) wants to talk — tap the 📞 button to call them$/, '📞 $1 хочет поговорить — нажмите 📞, чтобы позвонить'],
+  [/^🛡 (.+) banned for everyone$/, '🛡 $1 забанен(а) для всех'],
+  [/^🛡 Flood alert in ([\s\S]+)$/, '🛡 Флуд-тревога в $1'],
+  [/^🛡️ Creator alert: ?$/, '🛡️ Тревога создателя: '],
+  [/^is flooding$/, 'флудит в'],
+  [/^is sending very fast \((\d+) in (\d+)s\) — possible spam attack$/, 'отправляет слишком быстро ($1 за $2 с) — похоже на спам-атаку'],
+  [/^\((\d+) in (\d+)s\)$/, '($1 за $2 с)'],
+  [/^↪ Forwarded from (.+)$/, '↪ Переслано от $1'],
+  [/^💬 (\d+) repl(?:y|ies)$/, '💬 ответов: $1'],
+  [/^@(.+) \(you\)$/, '@$1 (вы)'],
+  [/^Code: {1,2}(.*)$/, 'Код:  $1'],
+  [/^👥 People here: ([\s\S]+?)( \(and you, (.+)\))?$/, (m)=>'👥 Сейчас здесь: '+m[1]+(m[3]?' (и вы, '+m[3]+')':'')],
+  [/^🔑 Here is a room code: (.+)$/, '🔑 Вот код комнаты: $1'],
+  [/^This file is (\d+) MB\. The limit is 100 MB — please choose a smaller file or video\.$/,
+    'Файл весит $1 МБ. Лимит — 100 МБ: выберите файл или видео поменьше.'],
+  [/^Delete “([\s\S]+)”\? This cannot be undone\.$/, 'Удалить «$1»? Это действие необратимо.'],
+  [/^Delete “([\s\S]+)”\? This only removes it from your list\.$/, 'Удалить «$1»? Группа исчезнет только из вашего списка.'],
+  [/^“([\s\S]+)” created and (\d+) invites? sent\.\s*Friends who are online get a notification with the code\.$/,
+    'Группа «$1» создана, приглашений отправлено: $2.\nДрузья онлайн получат уведомление с кодом.'],
+  [/^Blocked users:\n([\s\S]*)\n\nType a name to unblock:$/, 'Заблокированные:\n$1\n\nВведите имя, чтобы разблокировать:'],
+  [/^(.+) is unblocked\.$/, '$1 разблокирован(а).'],
+  [/^(.+) is not in the blocked list\.$/, '$1 нет в списке заблокированных.'],
+  [/^Could not accept call: ([\s\S]*)$/, 'Не удалось принять звонок: $1'],
+  [/^Could not start call: ([\s\S]*)$/, 'Не удалось начать звонок: $1'],
+  [/^Call setup error: ([\s\S]*)$/, 'Ошибка при установке звонка: $1'],
+  [/^Microphone error: ([\s\S]*)$/, 'Ошибка микрофона: $1'],
+  [/^Screen share error: ([\s\S]*)$/, 'Ошибка демонстрации экрана: $1'],
+  [/^Uses a high-risk domain extension \((.+)\)$/, 'Домен в зоне повышенного риска ($1)'],
+  [/^📌 ([\s\S]+) — click to cycle$/, '📌 $1 — нажмите, чтобы листать'],
+  [/^(.*) — click to cycle$/, '$1 — нажмите, чтобы листать']
+];
+function _ruPattern(s){
+  for(const [re,rep] of RU_PATTERNS){
+    const m=s.match(re);
+    if(m) return (typeof rep==='function') ? rep(m) : s.replace(re,rep);
+  }
+  return null;
+}
+function t(s){
+  if(window.NEO_LANG!=='ru'||s==null) return s;
+  s=String(s);
+  const norm=s.replace(/\s+/g,' ').trim();
+  if(RU[norm]!==undefined) return RU[norm];
+  return _ruPattern(s) ?? _ruPattern(norm) ?? s;
+}
+/* Skip user content: usernames, message text, previews — never translate those.
+   System bubbles (.bubble.sys) ARE translated via the pattern rules. */
+const _I18N_SKIP='.b-text,.b-name,.b-quote-text,.b-quote-name,#reply-preview,.dm-item-preview,'+
+  '.gallery-file-item,.hdr-room,.profile-name-xl,#acc-info-name,.contact-result-name,'+
+  '.grp-name,.link-preview-title,.link-preview-desc,.user-item-name,[data-no-i18n]';
+function _i18nSkip(el){
+  if(!el||el.nodeType!==1) return false;
+  if(el.closest('script,style')) return true;
+  if(el.closest('.bubble.sys')) return false;
+  return !!el.closest(_I18N_SKIP);
+}
+let _i18nBusy=false;
+function _i18nText(node){
+  const raw=node.nodeValue; if(!raw||!raw.trim()) return;
+  if(_i18nSkip(node.parentElement)) return;
+  const m=raw.match(/^(\s*)([\s\S]*?)(\s*)$/);
+  const tr=t(m[2]);
+  if(tr!==undefined&&tr!==m[2]) node.nodeValue=m[1]+tr+m[3];
+}
+function _i18nAttrs(el){
+  if(el.nodeType!==1||_i18nSkip(el)) return;
+  for(const a of ['placeholder','title','aria-label']){
+    const v=el.getAttribute&&el.getAttribute(a);
+    if(v){ const tr=t(v); if(tr!==v) el.setAttribute(a,tr); }
+  }
+}
+function _i18nWalk(root){
+  if(window.NEO_LANG!=='ru') return;
+  _i18nBusy=true;
+  try{
+    if(root.nodeType===3){ _i18nText(root); return; }
+    if(root.nodeType!==1&&root.nodeType!==11) return;
+    if(root.nodeType===1) _i18nAttrs(root);
+    const w=document.createTreeWalker(root,NodeFilter.SHOW_TEXT|NodeFilter.SHOW_ELEMENT);
+    let n; while((n=w.nextNode())){
+      if(n.nodeType===3) _i18nText(n); else _i18nAttrs(n);
+    }
+  } finally { _i18nBusy=false; }
+}
+function _i18nStart(){
+  if(window.NEO_LANG!=='ru') return;
+  document.title='NeoChat';
+  _i18nWalk(document.body);
+  new MutationObserver(muts=>{
+    if(_i18nBusy) return;
+    for(const mu of muts){
+      if(mu.type==='characterData'){ _i18nBusy=true; try{ _i18nText(mu.target); }finally{ _i18nBusy=false; } }
+      else if(mu.type==='childList') mu.addedNodes.forEach(n=>_i18nWalk(n));
+    }
+  }).observe(document.body,{childList:true,subtree:true,characterData:true});
+  // native dialogs (guarded: some webviews lack prompt/confirm)
+  try{ if(typeof window.alert==='function'){ const _al=window.alert.bind(window);
+    window.alert=m=>_al(t(String(m))); } }catch(e){}
+  try{ if(typeof window.confirm==='function'){ const _cf=window.confirm.bind(window);
+    window.confirm=m=>_cf(t(String(m))); } }catch(e){}
+  try{ if(typeof window.prompt==='function'){ const _pr=window.prompt.bind(window);
+    window.prompt=(m,d)=>_pr(t(String(m)),d); } }catch(e){}
+}
+
+/* ── UI mode: pills, toast, mobile header merge ─────────────────── */
+function toggleLang(){
+  try{ localStorage.setItem('neochat_lang', window.NEO_LANG==='ru'?'en':'ru'); }catch(e){}
+  location.reload();
+}
+function toggleUiMode(){
+  try{
+    localStorage.setItem('neochat_ui', window.NEO_UI_MODE==='mobile'?'desktop':'mobile');
+    localStorage.setItem('neochat_ui_seen','1');
+  }catch(e){}
+  location.reload();
+}
+function _updUiPills(screenId){
+  const p=document.getElementById('ui-pills'); if(!p) return;
+  p.classList.toggle('show', screenId==='account'||screenId==='login');
+}
+function hideUiToast(){ const el=document.getElementById('ui-toast'); if(el) el.classList.remove('show'); }
+function _showUiToastOnce(){
+  let seen=null; try{ seen=localStorage.getItem('neochat_ui_seen'); }catch(e){}
+  if(seen) return;
+  try{ localStorage.setItem('neochat_ui_seen','1'); }catch(e){}
+  const el=document.getElementById('ui-toast'); if(!el) return;
+  const mob2=window.NEO_UI_MODE==='mobile';
+  document.getElementById('ui-toast-text').textContent=
+    (mob2?'📱 ':'💻 ')+t(mob2?'Phone interface is on':'Computer interface is on');
+  document.getElementById('ui-toast-btn').textContent=t('Switch');
+  el.classList.add('show');
+  setTimeout(hideUiToast,9000);
+}
+/* On phones: merge the two chat-header rows into one —
+   [←][avatar][name/status][📹][📞][🔍][⋮] */
+function _mobileHeaderMerge(){
+  if(window.NEO_UI_MODE!=='mobile') return;
+  try{
+    const top=document.querySelector('#chat .chat-hdr-top');
+    const contact=document.querySelector('#chat .chat-hdr-contact');
+    const actions=contact.querySelector('.hdr-contact-actions');
+    const back=top.querySelector('.btn-back');
+    contact.insertBefore(back,contact.firstChild);
+    top.querySelectorAll('.btn-hdr-ico').forEach(b=>actions.appendChild(b));
+    top.style.display='none';
+  }catch(e){}
+}
+function _i18nUiInit(){
+  const mob=window.NEO_UI_MODE==='mobile';
+  const lp=document.getElementById('ui-pill-lang');
+  const mp=document.getElementById('ui-pill-mode');
+  if(lp) lp.textContent='🌐 '+(window.NEO_LANG==='ru'?'RU':'EN');
+  if(mp) mp.textContent=mob?'📱':'💻';
+  const lv=document.getElementById('settings-lang-val');
+  const uv=document.getElementById('settings-ui-val');
+  if(lv) lv.textContent=t(window.NEO_LANG==='ru'?'Russian':'English');
+  if(uv) uv.textContent=t(mob?'Phone':'Computer');
+  _mobileHeaderMerge();
+  const cur=document.querySelector('.screen:not(.hidden)');
+  _updUiPills(cur?cur.id:'account');
+  if(window.NEO_LANG==='ru') _i18nStart();
+  try{ const _sn=_showNotif; _showNotif=(s,x)=>_sn(s,t(x)); }catch(e){}
+  _showUiToastOnce();
+}
+
 let myName        = '';
 let topic         = '';
 let callTopic     = '';
@@ -2421,6 +2958,7 @@ function showChat() { show('chat');  }
 function show(id){
     document.querySelectorAll('.screen').forEach(s=>s.classList.add('hidden'));
     document.getElementById(id).classList.remove('hidden');
+    try{ _updUiPills(id); }catch(e){}
 }
 
 function loginStatus(msg, color){
@@ -5490,6 +6028,7 @@ function _grpOpen(g){
 // ── Init ──────────────────────────────────────────────────────────────────────
 loginShow('chooser');
 genCode();
+_i18nUiInit();   // language (RU/EN) + phone/PC interface mode
 
 // ── PWA: register the service worker so NeoChat can be installed on phones ──────
 if ('serviceWorker' in navigator) {
