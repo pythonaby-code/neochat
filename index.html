@@ -488,6 +488,17 @@ button:active{transform:scale(0.96);opacity:0.9;}
 .btn-vcall-ctrl.off{background:rgba(244,63,94,.15);border-color:rgba(244,63,94,.38);color:var(--danger);}
 
 /* ── Emoji ── */
+/* ── NeoPlus ── */
+@keyframes plusStickerIn{0%{transform:scale(0.3);}55%{transform:scale(1.18);}75%{transform:scale(0.94);}100%{transform:scale(1);}}
+.bubble.sticker.plus-anim .b-text{display:inline-block;animation:plusStickerIn .9s cubic-bezier(.3,1.4,.4,1) both;}
+#plus-profile-card{position:fixed;inset:0;z-index:950;display:flex;align-items:center;justify-content:center;background:rgba(2,2,8,0.55);backdrop-filter:blur(6px);}
+#plus-profile-card .ppc-inner{background:#0b0820;border:1px solid rgba(255,255,255,0.2);border-radius:18px;padding:22px 30px;display:flex;flex-direction:column;align-items:center;gap:7px;max-width:82vw;}
+#plus-profile-card .ppc-av{width:64px;height:64px;border-radius:32px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:26px;font-weight:700;}
+#plus-profile-card .ppc-name{font-size:17px;font-weight:800;}
+#plus-profile-card .ppc-badge{color:#1a1405;border-radius:9px;font-size:11px;font-weight:800;padding:3px 12px;}
+#plus-profile-card .ppc-bio{color:#aab3d6;font-size:11px;text-align:center;max-width:240px;}
+#plus-profile-card .ppc-sub{color:#4a6080;font-size:10px;}
+.plus-name-star{font-size:9px;font-weight:700;}
 #emoji-picker,#text-emoji-picker{position:fixed;z-index:300;background:rgba(7,5,20,0.98);border:1px solid var(--b1);border-radius:var(--r2);padding:10px;gap:4px;display:none;flex-wrap:wrap;width:196px;box-shadow:var(--s2);backdrop-filter:blur(20px);}
 #emoji-picker.show,#text-emoji-picker.show{display:flex;}
 .emoji-btn{background:none;border:none;font-size:22px;width:40px;height:40px;border-radius:9px;padding:0;cursor:pointer;transition:all .15s;}
@@ -1441,6 +1452,10 @@ window.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key==='Escap
                 <span class="attach-opt-icon" id="ttl-attach-icon">💣</span>
                 <span class="attach-opt-label" id="ttl-attach-label">Self-Destruct</span>
             </button>
+            <button class="attach-opt" onclick="scheduleMessage()">
+                <span class="attach-opt-icon">⏰</span>
+                <span class="attach-opt-label">Schedule ⭐</span>
+            </button>
         </div>
     </div>
 
@@ -1449,6 +1464,7 @@ window.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key==='Escap
         <button class="ttl-opt" onclick="setTTL(10)">⏱ 10 seconds</button>
         <button class="ttl-opt" onclick="setTTL(30)">⏱ 30 seconds</button>
         <button class="ttl-opt" onclick="setTTL(60)">⏱ 60 seconds</button>
+        <button class="ttl-opt" onclick="setTTLCustom()">⭐ Custom…</button>
     </div>
 
     <!-- Sticker picker -->
@@ -1567,6 +1583,10 @@ window.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key==='Escap
                 <span class="profile-opt-value"><span id="accent-color-dot" style="display:inline-block;width:14px;height:14px;border-radius:50%;vertical-align:middle;"></span></span>
                 <span class="profile-opt-arrow">›</span>
             </button>
+        </div>
+
+        <div class="profile-card" style="width:100%;border-color:rgba(255,215,0,0.25);" id="plus-card">
+            <!-- Filled by renderPlusCard() -->
         </div>
 
         <div class="profile-card" style="width:100%;">
@@ -1765,6 +1785,9 @@ window.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key==='Escap
                 <span class="field-label">Group code — friends join with this</span>
                 <div class="code-row">
                     <input id="grp-code-in" type="text" autocomplete="off" autocapitalize="characters" maxlength="40">
+                    <label id="grp-plus-only-row" style="display:none;align-items:center;gap:8px;color:#ffd700;font-size:12px;cursor:pointer;">
+                        <input type="checkbox" id="grp-plus-only" onchange="grpTogglePlusCode(this.checked)"> ⭐ NeoPlus-only room
+                    </label>
                     <button class="btn-dice" onclick="grpGenCode()" title="Random code">🎲</button>
                 </div>
             </div>
@@ -1823,6 +1846,11 @@ window.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key==='Escap
         <!-- LIST view -->
         <div id="bot-view-list" style="display:flex;flex-direction:column;gap:12px;">
             <button class="grp-primary" onclick="botNewBot()">➕  New Bot</button>
+            <div style="display:flex;gap:8px;">
+                <button class="grp-back" style="flex:1;" onclick="exportBots()">📤 Export pack ⭐</button>
+                <button class="grp-back" style="flex:1;" onclick="document.getElementById('bot-pack-in').click()">📥 Import pack ⭐</button>
+                <input type="file" id="bot-pack-in" accept=".json,application/json" style="display:none" onchange="importBots(this)">
+            </div>
             <span class="field-label">Your bots</span>
             <div id="bot-list" style="display:flex;flex-direction:column;gap:8px;"></div>
             <div style="color:#4a6080;font-size:11px;">💡 In any chat, type <b>@yourbot</b> followed by a
@@ -1857,6 +1885,13 @@ window.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key==='Escap
             <div>
                 <span class="field-label">Fallback — reply when no rule matches</span>
                 <input id="bot-fallback-in" type="text" placeholder="Sorry, I didn't get that. Try 'help'." autocomplete="off" maxlength="160">
+            </div>
+            <div>
+                <span class="field-label">⭐ Scheduled post (NeoPlus) — the bot says this on a timer</span>
+                <div style="display:flex;gap:8px;">
+                    <input id="bot-sched-in" type="text" placeholder="What the bot posts on a schedule…" autocomplete="off" maxlength="160" style="flex:1;">
+                    <input id="bot-sched-min-in" type="text" placeholder="every N min" autocomplete="off" maxlength="4" style="width:92px;flex:none;">
+                </div>
             </div>
             <div style="color:#4a6080;font-size:10px;">Tip: use {user}, {time}, {date}, {random}, {coin}, {dice} in replies.</div>
             <div>
@@ -2003,6 +2038,14 @@ window.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key==='Escap
             <button class="btn-big-admin" style="background:rgba(255,170,0,0.12);border:1px solid rgba(255,170,0,0.45);color:#ffaa00;padding:12px;font-size:13px;flex:1;" onclick="muteUser()">🔇 Mute</button>
         </div>
         <div id="mod-list" style="display:flex;flex-direction:column;gap:6px;"></div>
+        <div style="height:1px;background:rgba(255,215,0,0.2);margin:4px 0;"></div>
+        <div style="color:#ffd700;font-size:10px;font-weight:700;letter-spacing:3px;padding:0 4px;">NEOPLUS</div>
+        <input id="plus-user-in" type="text" placeholder="Username to grant NeoPlus…"
+               autocomplete="off" autocorrect="off" autocapitalize="off" style="font-size:13px;">
+        <input id="plus-code-in" type="text" placeholder="Activation code (from neoplus_codegen.py)…"
+               autocomplete="off" autocorrect="off" autocapitalize="off" style="font-size:13px;">
+        <button class="btn-big-admin" style="background:rgba(255,215,0,0.12);border:1px solid rgba(255,215,0,0.45);color:#ffd700;padding:12px;font-size:13px;" onclick="grantPlus()">⭐ Grant NeoPlus</button>
+        <div id="plus-grant-status" style="color:#4a6080;font-size:11px;min-height:14px;"></div>
     </div>
 
 </div>
@@ -2017,6 +2060,32 @@ window.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key==='Escap
    web app remains byte-compatible with the Python desktop app.
    ════════════════════════════════════════════════════════════════ */
 const RU = {
+  // ── NeoPlus ──
+  '⭐ NEOPLUS':'⭐ NEOPLUS',
+  'Activate NeoPlus…':'Активировать NeoPlus…',
+  'Badge title':'Титул на бейдже',
+  'Name color':'Цвет имени',
+  'Profile bio':'О себе',
+  'Chat background':'Фон чата',
+  'Notification sound':'Звук уведомлений',
+  'Send effects':'Эффекты отправки',
+  'Seasonal theme':'Сезонная тема',
+  'Gold theme':'Золотая тема',
+  '⭐ NeoPlus member':'⭐ Участник NeoPlus',
+  'NeoChat member':'Участник NeoChat',
+  'Schedule ⭐':'Отложить ⭐',
+  '⭐ Custom…':'⭐ Свой…',
+  '📤 Export pack ⭐':'📤 Экспорт набора ⭐',
+  '📥 Import pack ⭐':'📥 Импорт набора ⭐',
+  '⭐ NeoPlus-only room':'⭐ Комната только для NeoPlus',
+  '⭐ Scheduled post (NeoPlus) — the bot says this on a timer':'⭐ Пост по расписанию (NeoPlus) — бот пишет это по таймеру',
+  'What the bot posts on a schedule…':'Что бот публикует по расписанию…',
+  'every N min':'кажд. N мин',
+  'Username to grant NeoPlus…':'Кому выдать NeoPlus…',
+  'Activation code (from neoplus_codegen.py)…':'Код активации (из neoplus_codegen.py)…',
+  '⭐ Grant NeoPlus':'⭐ Выдать NeoPlus',
+  'Gold name & badge · 500 MB uploads · animated stickers · themes · scheduling · and more':
+      'Золотое имя и бейдж · загрузки 500 МБ · живые стикеры · темы · отложенные сообщения · и не только',
   // ── intro / brand ──
   'Conversations, illuminated':'Общение в новом свете',
   'Real-time Internet Messenger':'Интернет-мессенджер в реальном времени',
@@ -2196,6 +2265,10 @@ const RU = {
 /* Pattern rules for strings composed at runtime (checked after exact match).
    $1/$2 = captured groups. Order matters: first match wins. */
 const RU_PATTERNS = [
+  // NeoPlus
+  [/^⏰ Scheduled — sends in (\d+) min if NeoChat stays open\.$/, '⏰ Отложено — отправится через $1 мин, если NeoChat открыт.'],
+  [/^⏰ A scheduled message was skipped — you left its room\.$/, '⏰ Отложенное сообщение пропущено — вы покинули его комнату.'],
+  [/^⭐ NEOPLUS — ACTIVE \((.+)\)$/, '⭐ NEOPLUS — АКТИВЕН ($1)'],
   [/^(.+) joined the chat 👋$/, '$1 заходит в чат 👋'],
   [/^(.+) left the chat 👋$/, '$1 выходит из чата 👋'],
   [/^(.+) is typing…$/, '$1 печатает…'],
@@ -2691,6 +2764,13 @@ function confirmSwitch(){ /* kept for compatibility */ }
         // Known device: restore the session and open the chat window.
         applyAccount();
         show('chat');
+        // NeoPlus login flourish — golden burst + seasonal accent refresh
+        setTimeout(()=>{ try{
+            if(plusActive()){
+                if(plusState().seasonal) applyAccent(seasonalAccent());
+                playSparkle();
+            }
+        }catch(e){} }, 900);
     } else {
         // Fresh device: must create an account (or sign in) before entering.
         show('account');
@@ -2940,6 +3020,286 @@ function applyAccent(color){
 // Apply saved accent on load
 (function(){ applyAccent(getAccent()); })();
 
+/* ════════════════════════════════════════════════════════════════
+   NEOPLUS (premium tier)
+   Activation codes are minted by the creator-only tool
+   neoplus_codegen.py and verified with the embedded ECDSA P-256
+   public key — codes can't be forged from the app source.
+   Wire contract (identical to the Python app):
+     * chat messages carry an optional plus:{b,c,bio,fx} object
+     * notify message {type:'plus_grant',to,code} activates remotely
+   ════════════════════════════════════════════════════════════════ */
+const NEOPLUS_PUBKEY_B64='BOFVmGzzTor3ym0yOM48WptKwoS/VzPX9aHJEvU/DtH0LHhzZKmeQdq9vvDRC9mBBp+Ufd6ChCAxDu4Clh3e2rs=';
+const PLUS_GOLD='#ffd700';
+const PLUS_MAX_TRANSFER=500*1024*1024, FREE_MAX_TRANSFER=100*1024*1024;
+const FREE_BOT_SLOTS=3, PLUS_BOT_SLOTS=10;
+const FREE_EDIT_WINDOW_MS=5*60*1000;
+const PLUS_REACTIONS=['👑','💎','🦄','⚡','🌟','🏆'];
+const PLUS_NAME_COLORS=[['Gold','#ffd700'],['Sunset','#f97316'],['Rose','#f43f5e'],['Violet','#a855f7'],['Cyan','#22d3ee'],['Mint','#4ade80'],['Magenta','#e879f9'],['White','#ffffff']];
+const PLUS_SOUNDS=['chime','pulse','retro','none'];
+const PLUS_BACKGROUNDS={
+    none:'',
+    aurora:'linear-gradient(135deg,rgba(24,10,64,0.5),rgba(6,28,46,0.5))',
+    nebula:'linear-gradient(135deg,rgba(60,8,68,0.45),rgba(10,12,60,0.45))',
+    ember:'linear-gradient(45deg,rgba(70,20,4,0.45),rgba(30,6,40,0.45))',
+    ocean:'linear-gradient(180deg,rgba(4,30,60,0.5),rgba(2,12,28,0.5))',
+    gold:'linear-gradient(135deg,rgba(60,44,4,0.45),rgba(24,14,2,0.45))'
+};
+let _plusSenders={};          // sender → validated plus payload from the wire
+let _plusKeyPromise=null;
+let _plusWelcomeDone=false;
+
+function plusState(){ try{ return JSON.parse(localStorage.getItem('neoplus')||'{}'); }catch(e){ return {}; } }
+function savePlus(st){ try{ localStorage.setItem('neoplus', JSON.stringify(st)); }catch(e){} }
+function plusActive(){
+    const st=plusState();
+    if(!st.active) return false;
+    if(st.exp && new Date().toISOString().slice(0,10)>st.exp){
+        st.active=false; savePlus(st); return false;
+    }
+    return true;
+}
+function _b64Bytes(b64){ const bin=atob(b64); const u=new Uint8Array(bin.length); for(let i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i); return u; }
+function _b64uBytes(s){ s=s.replace(/-/g,'+').replace(/_/g,'/'); while(s.length%4)s+='='; return _b64Bytes(s); }
+function _plusPubKey(){
+    if(!_plusKeyPromise){
+        _plusKeyPromise=crypto.subtle.importKey('raw', _b64Bytes(NEOPLUS_PUBKEY_B64),
+            {name:'ECDSA', namedCurve:'P-256'}, false, ['verify']);
+    }
+    return _plusKeyPromise;
+}
+async function verifyPlusCode(code){
+    try{
+        code=(code||'').trim();
+        if(!code.startsWith('NEOPLUS-')||!code.includes('.')) return null;
+        const body=code.slice(8);
+        const dot=body.indexOf('.');
+        const raw=_b64uBytes(body.slice(0,dot));
+        const sig=_b64uBytes(body.slice(dot+1));
+        if(sig.length!==64) return null;
+        const key=await _plusPubKey();
+        const ok=await crypto.subtle.verify({name:'ECDSA',hash:'SHA-256'}, key, sig, raw);
+        if(!ok) return null;
+        const payload=JSON.parse(new TextDecoder().decode(raw));
+        return (payload&&typeof payload==='object')?payload:null;
+    }catch(e){ return null; }
+}
+async function activatePlus(code){
+    const payload=await verifyPlusCode(code);
+    if(!payload) return {ok:false,msg:'That code is not a valid NeoPlus code.'};
+    const today=new Date().toISOString().slice(0,10);
+    if(payload.exp && today>payload.exp) return {ok:false,msg:'That NeoPlus code has expired.'};
+    const st=plusState();
+    const used=st.used_ids||[];
+    if(payload.id && used.includes(payload.id) && !st.active)
+        return {ok:false,msg:'That code was already used on this device.'};
+    st.active=true; st.code_id=payload.id||''; st.exp=payload.exp||null;
+    st.since=st.since||today;
+    if(st.color===undefined) st.color=PLUS_GOLD;
+    if(st.sound===undefined) st.sound='chime';
+    if(st.fx===undefined) st.fx=true;
+    if(payload.id && !used.includes(payload.id)) st.used_ids=used.concat([payload.id]);
+    savePlus(st);
+    return {ok:true,msg:st.exp?('NeoPlus active until '+st.exp):'NeoPlus activated — permanent!'};
+}
+function plusWire(fx){
+    if(!plusActive()) return null;
+    const st=plusState();
+    const out={c:st.color||PLUS_GOLD};
+    if(st.badge) out.b=String(st.badge).slice(0,20);
+    if(st.bio) out.bio=String(st.bio).slice(0,80);
+    if(fx && st.fx!==false) out.fx=1;
+    return out;
+}
+function notePlusSender(sender, plus){
+    if(!sender||!plus||typeof plus!=='object') return;
+    const info={};
+    if(typeof plus.c==='string' && /^#[0-9a-fA-F]{6}$/.test(plus.c)) info.c=plus.c;
+    if(typeof plus.b==='string' && plus.b.trim()) info.b=plus.b.trim().slice(0,20);
+    if(typeof plus.bio==='string' && plus.bio.trim()) info.bio=plus.bio.trim().slice(0,80);
+    if(plus.fx===1) info.fx=1;
+    if(Object.keys(info).length){ info.c=info.c||PLUS_GOLD; _plusSenders[sender]=info; }
+}
+function plusInfoFor(sender){
+    if(sender===myName && plusActive()) return plusWire()||{c:PLUS_GOLD};
+    return _plusSenders[sender]||null;
+}
+function maxTransferBytes(){ return plusActive()?PLUS_MAX_TRANSFER:FREE_MAX_TRANSFER; }
+function isPlusRoom(code){ return (code||'').trim().toUpperCase().startsWith('PLUS'); }
+function seasonalAccent(){
+    const m=new Date().getMonth()+1;
+    if(m===12||m<=2) return '#7dd3fc';
+    if(m<=5) return '#4ade80';
+    if(m<=8) return '#fcd34d';
+    return '#fb923c';
+}
+function _hexRgba(hex,a){
+    try{ const h=hex.replace('#','');
+        return `rgba(${parseInt(h.slice(0,2),16)},${parseInt(h.slice(2,4),16)},${parseInt(h.slice(4,6),16)},${a})`;
+    }catch(e){ return `rgba(255,215,0,${a})`; }
+}
+
+// ── NeoPlus send effect — golden particle burst over the chat ──
+function playSparkle(){
+    try{
+        const host=document.body;
+        const cv=document.createElement('canvas');
+        cv.style.cssText='position:fixed;inset:0;width:100vw;height:100vh;pointer-events:none;z-index:900;';
+        cv.width=innerWidth; cv.height=innerHeight;
+        host.appendChild(cv);
+        const ctx=cv.getContext('2d');
+        const cols=['#ffd700','#ffe98a','#fff6d0','#f7b733'];
+        const parts=Array.from({length:26},()=>({
+            x:(0.15+Math.random()*0.7)*cv.width,
+            y:cv.height-(0.05+Math.random()*0.2)*cv.height,
+            vx:(Math.random()-0.5)*4.8, vy:-(3+Math.random()*4.5),
+            r:2+Math.random()*2.5, c:cols[Math.floor(Math.random()*cols.length)]
+        }));
+        const t0=performance.now(), LIFE=1300;
+        (function tick(t){
+            const age=t-t0;
+            ctx.clearRect(0,0,cv.width,cv.height);
+            if(age>=LIFE){ cv.remove(); return; }
+            const fade=1-age/LIFE;
+            parts.forEach(p=>{
+                p.x+=p.vx; p.y+=p.vy; p.vy+=0.28;
+                ctx.globalAlpha=fade; ctx.fillStyle=p.c;
+                ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,7); ctx.fill();
+            });
+            requestAnimationFrame(tick);
+        })(t0);
+    }catch(e){}
+}
+
+// ── NeoPlus notification melodies (WebAudio, no files) ──
+const _PLUS_MELODIES={
+    chime:[[880,90],[1175,90],[1568,140]],
+    pulse:[[440,70],[0,40],[660,70],[0,40],[880,110]],
+    retro:[[523,80],[659,80],[784,80],[1047,140]]
+};
+function playPlusSound(){
+    if(!plusActive()) return false;
+    const snd=plusState().sound||'chime';
+    if(snd==='none') return true;              // handled: stay silent
+    const mel=_PLUS_MELODIES[snd];
+    if(!mel) return false;
+    try{
+        const ac=new (window.AudioContext||window.webkitAudioContext)();
+        let t=ac.currentTime;
+        mel.forEach(([f,ms])=>{
+            if(f>0){
+                const o=ac.createOscillator(), g=ac.createGain();
+                o.frequency.value=f; o.type='sine';
+                g.gain.setValueAtTime(0.0001,t);
+                g.gain.exponentialRampToValueAtTime(0.22,t+0.015);
+                g.gain.exponentialRampToValueAtTime(0.0001,t+ms/1000);
+                o.connect(g); g.connect(ac.destination);
+                o.start(t); o.stop(t+ms/1000+0.02);
+            }
+            t+=ms/1000;
+        });
+        setTimeout(()=>{ try{ ac.close(); }catch(e){} }, 1600);
+        return true;
+    }catch(e){ return false; }
+}
+
+// ── NeoPlus message scheduling (fires while the tab stays open) ──
+function scheduleMessage(){
+    const sheet=document.getElementById('attach-sheet');
+    if(sheet) sheet.classList.remove('open');
+    if(!plusActive()){ alert('⏰ Message scheduling is a NeoPlus perk.\nActivate NeoPlus in your Profile!'); return; }
+    const inp=document.getElementById('msg-in');
+    const text=(inp&&inp.value.trim())||'';
+    if(!text){ alert('Type the message first, then choose Schedule.'); return; }
+    const mins=parseInt(prompt('Send in how many minutes?\n(NeoChat must stay open)','5')||'',10);
+    if(isNaN(mins)||mins<1||mins>1440) return;
+    inp.value='';
+    const room=safeRoom;
+    sysMsg(`⏰ Scheduled — sends in ${mins} min if NeoChat stays open.`);
+    setTimeout(()=>{
+        if(clients.length&&safeRoom===room){
+            const msg={sender:myName,text,ts:now(),system:false};
+            const _pw=plusWire(); if(_pw) msg.plus=_pw;
+            e2ePub(topic,JSON.stringify(msg),{qos:1});
+            addBubble(myName,text,msg.ts,true,null,null);
+            _saveHist(safeRoom,{type:'msg',sender:myName,text,ts:msg.ts,quote:null,date:new Date().toISOString().slice(0,10)});
+        } else {
+            try{ sysMsg('⏰ A scheduled message was skipped — you left its room.'); }catch(e){}
+        }
+    }, mins*60*1000);
+}
+
+// ── NeoPlus scheduled bot posts ──
+let _botSchedTimers=[];
+function startBotSchedules(){
+    stopBotSchedules();
+    if(!plusActive()) return;
+    _loadBots().forEach(bot=>{
+        const every=parseInt(bot.every_min||0,10);
+        const text=(bot.sched_text||'').trim();
+        if(every<1||!text) return;
+        const nm=bot.name||bot.handle||'Bot';
+        _botSchedTimers.push(setInterval(()=>{
+            if(clients.length)
+                e2ePub(topic, JSON.stringify({sender:nm,text:_fillBotTokens(text,bot,myName),ts:now(),system:false}),{qos:1});
+        }, every*60*1000));
+    });
+}
+function stopBotSchedules(){
+    _botSchedTimers.forEach(t=>clearInterval(t));
+    _botSchedTimers=[];
+}
+
+// ── NeoPlus bot-to-bot chains: a bot reply can trigger ONE other bot ──
+function maybeChainBots(botReply, excludeHandle){
+    if(!plusActive()||!botReply||!botReply.includes('@')) return;
+    const low=botReply.toLowerCase();
+    for(const other of _loadBots()){
+        const oh=(other.handle||'').toLowerCase();
+        if(oh&&oh!==excludeHandle&&low.includes('@'+oh)){
+            const chained=_userbotReply(other, botReply, myName);
+            const onm=other.name||oh;
+            setTimeout(()=>{ if(clients.length)
+                e2ePub(topic, JSON.stringify({sender:onm,text:chained,ts:now(),system:false}),{qos:1}); },1500);
+            return;   // one chain hop only
+        }
+    }
+}
+
+// ── NeoPlus chat background (local-only) ──
+function applyPlusBg(){
+    const box=document.getElementById('messages');
+    if(!box) return;
+    if(!plusActive()){ box.style.background=''; box.style.backgroundSize=''; return; }
+    const st=plusState();
+    if(st.bg_img){
+        box.style.background=`url("${st.bg_img}") center/cover no-repeat`;
+        return;
+    }
+    box.style.background=PLUS_BACKGROUNDS[st.bg||'none']||'';
+}
+
+// ── NeoPlus profile card popup ──
+function showProfileCard(sender){
+    if(!sender||sender==='__system__') return;
+    const plus=_plusSenders[sender]||((sender===myName&&plusActive())?plusWire():null);
+    const old=document.getElementById('plus-profile-card');
+    if(old) old.remove();
+    const av=(typeof _avatarCache!=='undefined'&&_avatarCache[sender.toLowerCase()])||null;
+    const col=plus?(plus.c||PLUS_GOLD):'#e8eaf6';
+    const wrap=document.createElement('div');
+    wrap.id='plus-profile-card';
+    wrap.innerHTML=`<div class="ppc-inner" style="border-color:${plus?_hexRgba(col,0.6):'rgba(255,255,255,0.2)'}">
+        <div class="ppc-av" style="background:${av?`url(${av}) center/cover`:_avatarColor(sender)}">${av?'':esc(sender[0].toUpperCase())}</div>
+        <div class="ppc-name" style="color:${col}">${esc(sender)}</div>
+        ${plus?`<div class="ppc-badge" style="background:${_hexRgba(col,0.9)}">⭐ ${esc(plus.b||'NeoPlus')}</div>`:''}
+        ${plus&&plus.bio?`<div class="ppc-bio">${esc(plus.bio)}</div>`:''}
+        <div class="ppc-sub">${plus?'⭐ NeoPlus member':'NeoChat member'}</div>
+    </div>`;
+    wrap.onclick=()=>wrap.remove();
+    document.body.appendChild(wrap);
+}
+
 function _dedupKey(d){
     return `${d.sender||''}|${d.ts||''}|${(d.text||'').slice(0,40)}`;
 }
@@ -3024,6 +3384,11 @@ async function doConnect(){
     const name=myName;
     let   code=document.getElementById('code-in').value.trim();
     if(!code){ genCode(); code=document.getElementById('code-in').value; }
+    // NeoPlus-only rooms — codes starting with PLUS need an active NeoPlus
+    if(isPlusRoom(code) && !plusActive() && !code.startsWith('__dm__')){
+        loginStatus('⭐ This is a NeoPlus-only room. Activate NeoPlus in your Profile!','#ffd700');
+        return;
+    }
     const roomPw=(document.getElementById('room-pw-in')||{}).value||'';
     const keyCode = roomPw ? (code + '::pwd::' + roomPw) : code;
 
@@ -3196,6 +3561,7 @@ async function doConnect(){
                         if(_seen.size>300)_seen.clear();
                         addActiveUser(d.sender);
                         _maybeDateSep();
+                        notePlusSender(d.sender, d.plus);
                         addVoiceBubble(d.sender||'?',d.data||'',d.mime||'audio/webm',d.duration||0,d.ts||'',d.sender===myName);
                         _saveHist(safeCode,{type:'voice',sender:d.sender,mime:d.mime,duration:d.duration,ts:d.ts,date:new Date().toISOString().slice(0,10)});
                         if(d.sender!==myName) _showNotif(d.sender,'🎤 Voice message');
@@ -3208,6 +3574,7 @@ async function doConnect(){
                         if(_seen.size>300)_seen.clear();
                         addActiveUser(d.sender);
                         _maybeDateSep();
+                        notePlusSender(d.sender, d.plus);
                         addImageBubble(d.sender||'?',d.data||'',d.mime||'jpeg',d.ts||'',d.sender===myName);
                         _saveHist(safeCode,{type:'image',sender:d.sender,mime:d.mime,ts:d.ts,date:new Date().toISOString().slice(0,10)});
                         if(d.sender!==myName) _showNotif(d.sender,'📎 Image');
@@ -3220,6 +3587,7 @@ async function doConnect(){
                         if(_seen.size>300)_seen.clear();
                         addActiveUser(d.sender);
                         _maybeDateSep();
+                        notePlusSender(d.sender, d.plus);
                         addFileBubble(d.sender||'?',d.name||'file',d.data||'',d.ts||'',d.size||0,d.sender===myName);
                         _saveHist(safeCode,{type:'file',sender:d.sender,name:d.name,size:d.size,ts:d.ts,date:new Date().toISOString().slice(0,10)});
                         if(d.sender!==myName) _showNotif(d.sender,'📁 '+(d.name||'file'));
@@ -3252,9 +3620,11 @@ async function doConnect(){
                     }
                     addActiveUser(d.sender);
                     _maybeDateSep();
+                    notePlusSender(d.sender, d.plus);
                     if(d.sender!==myName){
                         _floodCheck(d.sender);
                         addBubble(d.sender,d.text,d.ts,false,d.quote||null,d.thread_id||null);
+                        if(d.plus&&d.plus.fx===1) playSparkle();
                         if(d.ttl>0){
                             const bEl=document.getElementById('b'+(_bubbleCounter-1));
                             if(bEl) setTimeout(()=>{
@@ -3277,6 +3647,7 @@ async function doConnect(){
                                     const nm=bot.name||h;
                                     setTimeout(()=>{ if(clients.length)
                                         e2ePub(topic, JSON.stringify({sender:nm,text:reply,ts:now(),system:false}),{qos:1}); }, 650);
+                                    maybeChainBots(reply, h);
                                 }
                             });
                         }
@@ -3306,6 +3677,10 @@ async function doConnect(){
             });
             pubSystem(`${name} joined the chat 👋`);
             startHeartbeat();
+            applyPlusBg();
+            startBotSchedules();
+            // NeoPlus welcome — golden burst on the first room of the session
+            if(plusActive()&&!_plusWelcomeDone){ _plusWelcomeDone=true; setTimeout(playSparkle,700); }
             if(typeof Notification!=='undefined'&&Notification.permission==='default')
                 document.getElementById('notif-bar').classList.add('show');
         },
@@ -3320,6 +3695,7 @@ function doDisconnect(){
     _dmMode=false; _dmPeer='';
     if(callState!=='idle') endCall(false);
     stopHeartbeat();
+    stopBotSchedules();
     if(_voiceRecording) stopVoiceRec();
     Object.keys(_typingUsers).forEach(k=>clearTimeout(_typingUsers[k]));
     _typingUsers={}; _renderTyping();
@@ -3357,7 +3733,10 @@ function sendMsg(){
     if(_replyTo){ msg.quote=_replyTo; clearReply(); }
     if(_ttlActive) msg.ttl=_ttlSeconds;
     if(_activeThread) msg.thread_id=_activeThread;
+    const _pw=plusWire(Math.random()<0.2);
+    if(_pw) msg.plus=_pw;
     e2ePub(topic,JSON.stringify(msg),{qos:1});
+    if(_pw&&_pw.fx===1) playSparkle();
     // Show own message
     addBubble(myName,txt,msg.ts,true,msg.quote||null,msg.thread_id||null);
     if(_ttlActive&&_ttlSeconds>0){
@@ -3389,6 +3768,7 @@ function sendMsg(){
             const nm=bot.name||h;
             setTimeout(()=>{ if(clients.length)
                 e2ePub(topic, JSON.stringify({sender:nm,text:reply,ts:now(),system:false}),{qos:1}); }, 650);
+            maybeChainBots(reply, h);
         }
     });
 }
@@ -3418,6 +3798,8 @@ function sendSticker(s){
     const pk=document.getElementById('sticker-picker'); if(pk) pk.classList.remove('show');
     if(!clients.length) return;
     const msg={sender:myName,text:s,ts:now(),system:false};
+    const _pw=plusWire();
+    if(_pw) msg.plus=_pw;
     e2ePub(topic,JSON.stringify(msg),{qos:1});
     addBubble(myName,s,msg.ts,true,null,null);   // echo is skipped (sender===myName)
     _saveHist(safeRoom,{type:'msg',sender:myName,text:s,ts:msg.ts,quote:null,date:new Date().toISOString().slice(0,10)});
@@ -3590,7 +3972,7 @@ function botTest(){
     out.textContent=_botEmoji+'  '+reply; out.style.display='block';
 }
 function _botClearForm(){
-    ['bot-name-in','bot-handle-in','bot-desc-in','bot-fallback-in','bot-try-in'].forEach(id=>document.getElementById(id).value='');
+    ['bot-name-in','bot-handle-in','bot-desc-in','bot-fallback-in','bot-try-in','bot-sched-in','bot-sched-min-in'].forEach(id=>document.getElementById(id).value='');
     document.getElementById('bot-rules').innerHTML='';
     document.getElementById('bot-try-out').style.display='none';
     document.getElementById('bot-edit-status').textContent='';
@@ -3611,6 +3993,8 @@ function botEditBot(id){
     _botHandleTouched=true;
     document.getElementById('bot-desc-in').value=b.desc||'';
     document.getElementById('bot-fallback-in').value=b.fallback||'';
+    document.getElementById('bot-sched-in').value=b.sched_text||'';
+    document.getElementById('bot-sched-min-in').value=b.every_min?String(b.every_min):'';
     (b.rules||[]).forEach(r=>botAddRule(r.trigger, r.reply));
     if(!(b.rules||[]).length) botAddRule();
     _botSetView('edit');
@@ -3632,11 +4016,75 @@ function botSave(){
         st.textContent='⚠  Add at least one rule or a fallback reply.'; return; }
     if(_loadBots().some(o=>(o.handle||'').toLowerCase()===handle && o.id!==_botEditId)){
         st.textContent='⚠  You already have a bot with that handle.'; return; }
+    // Bot slots: 3 free / 10 with NeoPlus (editing existing bots is fine)
+    if(!_botEditId){
+        const limit=plusActive()?PLUS_BOT_SLOTS:FREE_BOT_SLOTS;
+        if(_loadBots().length>=limit){
+            st.textContent='⚠  Bot limit reached ('+limit+'). '
+                +(plusActive()?'Delete a bot first.':'⭐ NeoPlus raises it to 10!');
+            return;
+        }
+    }
+    const schedText=(document.getElementById('bot-sched-in')||{value:''}).value.trim();
+    let schedMin=parseInt((document.getElementById('bot-sched-min-in')||{value:''}).value.trim()||'0',10);
+    if(isNaN(schedMin)||schedMin<0) schedMin=0;
     _upsertBot({id:_botEditId||_genId(), name, handle, emoji:_botEmoji,
         desc:document.getElementById('bot-desc-in').value.trim(), rules,
         fallback:document.getElementById('bot-fallback-in').value.trim(),
+        sched_text:schedText, every_min:schedMin,
         owner:myName, created:new Date().toISOString().slice(0,10)});
+    startBotSchedules();   // refresh timers if we're in a room
     botShowList();
+}
+
+// ── NeoPlus bot packs — export/import all bots as a JSON file ──
+function exportBots(){
+    if(!plusActive()){ alert('⭐ Exporting bot packs is a NeoPlus perk.'); return; }
+    const bots=_loadBots();
+    if(!bots.length){ alert('No bots to export yet.'); return; }
+    const pack={neochat_bot_pack:1, bots:bots.map(b=>{ const c={...b}; delete c.id; return c; })};
+    const blob=new Blob([JSON.stringify(pack,null,2)],{type:'application/json'});
+    const a=document.createElement('a');
+    a.href=URL.createObjectURL(blob);
+    a.download='neochat_bots_pack.json';
+    a.click();
+    setTimeout(()=>URL.revokeObjectURL(a.href),2000);
+}
+function importBots(input){
+    const file=input.files&&input.files[0];
+    input.value='';
+    if(!file) return;
+    if(!plusActive()){ alert('⭐ Importing bot packs is a NeoPlus perk.'); return; }
+    const rd=new FileReader();
+    rd.onload=()=>{
+        try{
+            const pack=JSON.parse(rd.result);
+            const incoming=pack&&pack.bots;
+            if(!Array.isArray(incoming)) throw new Error('not a NeoChat bot pack');
+            const existing=_loadBots();
+            const handles=new Set(existing.map(b=>(b.handle||'').toLowerCase()));
+            let added=0;
+            for(const b of incoming){
+                if(!b||typeof b!=='object'||!b.handle) continue;
+                if(existing.length+added>=PLUS_BOT_SLOTS) break;
+                const h=String(b.handle).toLowerCase().replace(/[^a-z0-9_]/g,'').slice(0,20);
+                if(!h||handles.has(h)||BOT_RESERVED.includes(h)) continue;
+                _upsertBot({id:_genId(),
+                    name:String(b.name||h).slice(0,30), handle:h,
+                    emoji:String(b.emoji||'🤖').slice(0,4),
+                    desc:String(b.desc||'').slice(0,120),
+                    rules:(Array.isArray(b.rules)?b.rules:[]).filter(r=>r&&typeof r==='object').slice(0,20),
+                    fallback:String(b.fallback||'').slice(0,160),
+                    sched_text:String(b.sched_text||'').slice(0,160),
+                    every_min:parseInt(b.every_min||0,10)||0,
+                    owner:myName, created:new Date().toISOString().slice(0,10)});
+                handles.add(h); added++;
+            }
+            botShowList();
+            alert(added?('📥 Imported '+added+' bot(s).'):'Nothing new to import (duplicates or limit reached).');
+        }catch(e){ alert('Could not import: '+e.message); }
+    };
+    rd.readAsText(file);
 }
 
 // Avatar color from username hash
@@ -3699,6 +4147,21 @@ function handleAvatarFile(input){
     const file=input.files&&input.files[0];
     input.value='';
     if(!file) return;
+    // NeoPlus: animated GIF avatars keep their raw bytes (and animation)
+    if(file.type==='image/gif' && plusActive() && file.size<=400000){
+        const gr=new FileReader();
+        gr.onload=()=>{
+            const dataURL=gr.result;
+            const acc=getAccount();
+            if(acc){ acc.avatar=dataURL; saveAccount(acc); }
+            if(myName) _cacheAvatar(myName, dataURL);
+            _publishAvatar();
+            const av=document.getElementById('profile-avatar-xl');
+            if(av){ av.textContent=''; av.style.background=`url("${dataURL}") center/cover no-repeat`; }
+        };
+        gr.readAsDataURL(file);
+        return;
+    }
     const rd=new FileReader();
     rd.onload=()=>{
         const img=new Image();
@@ -3731,9 +4194,10 @@ function addBubble(sender, text, ts, mine, quote, threadId){
     if(mine) _lastMyBid=bid;
 
     const d=document.createElement('div');
+    const plus=plusInfoFor(sender);
     let cls='bubble '+(mine?'mine':'theirs');
     if(threadId) cls+=' threaded';
-    if(_looksLikeSticker(text)) cls+=' sticker';
+    if(_looksLikeSticker(text)){ cls+=' sticker'; if(plus) cls+=' plus-anim'; }
     d.className=cls;
     d.id='b'+bid;
     d.dataset.bid=String(bid);
@@ -3741,12 +4205,18 @@ function addBubble(sender, text, ts, mine, quote, threadId){
     d.dataset.sender=sender;
     d.dataset.text=text;
     d.dataset.ts=ts;
+    d.dataset.created=String(Date.now());
     if(threadId) d.dataset.threadId=threadId;
 
-    const badge=sender.toLowerCase()==='mrminer'
+    let badge=sender.toLowerCase()==='mrminer'
         ? ' <span style="color:#ff3366;font-size:9px;font-weight:700;">[Admin NeoNext]</span>'
         : (sender==='NeoBot' || _botHandleSet().has(sender.toLowerCase()))
         ? ' <span style="color:#22d3ee;font-size:9px;font-weight:700;">🤖 Bot</span>' : '';
+    if(plus){
+        // NeoPlus: gold border + ⭐ badge (with custom title) + name color
+        d.style.borderColor=_hexRgba(plus.c||PLUS_GOLD,0.55);
+        badge+=` <span class="plus-name-star" style="color:${plus.c||PLUS_GOLD}">⭐${plus.b?' '+esc(plus.b):''}</span>`;
+    }
 
     // @mention highlight
     let displayText=text;
@@ -3780,7 +4250,7 @@ function addBubble(sender, text, ts, mine, quote, threadId){
             '<span style="color:#ff3366;font-weight:700;">$1</span>')
         : renderMD(text);
 
-    d.innerHTML=`<div class="b-name">${esc(sender)}${badge}</div>`+
+    d.innerHTML=`<div class="b-name"${plus?` style="color:${plus.c||PLUS_GOLD};cursor:pointer;"`:' style="cursor:pointer;"'}>${esc(sender)}${badge}</div>`+
         quoteHtml+
         `<div class="b-text">${renderedText}</div>`+
         `<div class="b-ts">${esc(ts)} <button class="btn-react-add" title="Add reaction">+😊</button></div>`+
@@ -3789,6 +4259,8 @@ function addBubble(sender, text, ts, mine, quote, threadId){
         actionsHtml;
 
     d.querySelector('.btn-react-add').onclick=(e)=>{e.stopPropagation();showEmojiPicker(bid,msgId,e);};
+    const nameEl=d.querySelector('.b-name');
+    if(nameEl) nameEl.onclick=(e)=>{ e.stopPropagation(); showProfileCard(sender); };
     if(quote&&quote.sender){
         d.querySelector('.b-quote').onclick=()=>setReplyTo(quote.sender,quote.text||'');
     }
@@ -3903,6 +4375,12 @@ function _renderLinkPreview(url, preview, bubbleEl){
 function startEdit(bid){
     const el=document.getElementById('b'+bid);
     if(!el) return;
+    // Free accounts edit within 5 minutes; NeoPlus edits anytime
+    const created=Number(el.dataset.created||0);
+    if(!plusActive() && created && Date.now()-created>FREE_EDIT_WINDOW_MS){
+        alert('✏️ Free accounts can edit messages for 5 minutes.\n⭐ NeoPlus members can edit anytime!');
+        return;
+    }
     const textDiv=el.querySelector('.b-text');
     const currentText=el.dataset.text||'';
     const ts=el.dataset.ts||'';
@@ -4056,10 +4534,10 @@ function handleFile(input){
             cv.width=w; cv.height=h;
             cv.getContext('2d').drawImage(img,0,0,w,h);
             const b64=cv.toDataURL('image/jpeg',0.70).split(',')[1];
-            e2ePub(topic,JSON.stringify({
-                type:'image', sender:myName, data:b64, mime:'jpeg',
-                ts:now(), system:false,
-            }),{qos:0});
+            const imsg={type:'image', sender:myName, data:b64, mime:'jpeg',
+                ts:now(), system:false};
+            const _pw=plusWire(); if(_pw) imsg.plus=_pw;
+            e2ePub(topic,JSON.stringify(imsg),{qos:0});
         };
         img.src=e.target.result;
     };
@@ -4083,8 +4561,10 @@ function handleAnyFile(input){
     const file=input.files[0];
     if(!file||!clients.length){ input.value=''; return; }
     input.value='';
-    if(file.size>100*1024*1024){
-        alert('This file is '+(file.size/1024/1024).toFixed(0)+' MB. The limit is 100 MB — please choose a smaller file or video.');
+    if(file.size>maxTransferBytes()){
+        const lim=maxTransferBytes()/1024/1024;
+        alert('This file is '+(file.size/1024/1024).toFixed(0)+' MB. The limit is '+lim+' MB — please choose a smaller file or video.'
+            +(plusActive()?'':'\n⭐ NeoPlus raises the limit to 500 MB.'));
         return;
     }
     const CHUNK=100*1024; // 100 KB
@@ -4127,10 +4607,10 @@ function handleAnyFile(input){
     const reader=new FileReader();
     reader.onload=e=>{
         const b64=e.target.result.split(',')[1];
-        e2ePub(topic,JSON.stringify({
-            type:'file', sender:myName, name:file.name, data:b64, size:file.size,
-            ts:now(), system:false,
-        }),{qos:0});
+        const fmsg={type:'file', sender:myName, name:file.name, data:b64,
+            size:file.size, ts:now(), system:false};
+        const _pw=plusWire(); if(_pw) fmsg.plus=_pw;
+        e2ePub(topic,JSON.stringify(fmsg),{qos:0});
     };
     reader.readAsDataURL(file);
 }
@@ -4918,6 +5398,18 @@ function showEmojiPicker(bid, msgId, e){
     _emojiMsgId = msgId;
     const pk = document.getElementById('emoji-picker');
     if(!pk) return;
+    // NeoPlus exclusive reactions appear at the end of the picker
+    if(plusActive() && !pk.dataset.plusAdded){
+        PLUS_REACTIONS.forEach(em=>{
+            const b=document.createElement('button');
+            b.className='emoji-btn';
+            b.style.background='rgba(255,215,0,0.08)';
+            b.textContent=em;
+            b.onclick=()=>pickReaction(em);
+            pk.appendChild(b);
+        });
+        pk.dataset.plusAdded='1';
+    }
     pk.classList.add('show');
     const r = e.target.getBoundingClientRect();
     pk.style.left = Math.min(r.left, window.innerWidth-180)+'px';
@@ -4988,6 +5480,7 @@ function startVoiceRec(){
             reader.onload=()=>{
                 const b64=reader.result.split(',')[1];
                 const msg={type:'voice',sender:myName,data:b64,mime:mime,duration:duration,ts:now(),system:false};
+                const _pw=plusWire(); if(_pw) msg.plus=_pw;
                 e2ePub(topic,JSON.stringify(msg),{qos:1});
             };
             reader.readAsDataURL(blob);
@@ -5076,8 +5569,9 @@ function dismissNotifBar(){
 }
 function _showNotif(sender, text){
     if(document.hasFocus()) return;
+    playPlusSound();   // NeoPlus custom melody (silent for free / sound 'none')
     if(typeof Notification==='undefined'||Notification.permission!=='granted') return;
-    try{ new Notification('NeoChat — '+sender,{body:text,icon:''}); }catch(e){}
+    try{ new Notification('NeoChat — '+sender,{body:text,icon:'',silent:plusActive()}); }catch(e){}
 }
 
 // ── Screen sharing ────────────────────────────────────────────────────────────
@@ -5134,14 +5628,24 @@ function addRoom(){
     _rooms.push({name:code.trim(),code:code.trim(),safe:san(code.trim())});
     renderRoomTabs();
 }
+let _roomDrafts={};   // NeoPlus per-room drafts — room code → unfinished input
 function switchRoom(idx){
     if(idx===_curRoomIdx||idx<0||idx>=_rooms.length) return;
+    // NeoPlus: keep what you were typing in the room you're leaving
+    if(plusActive()&&_rooms[_curRoomIdx]){
+        const inp=document.getElementById('msg-in');
+        if(inp) _roomDrafts[_rooms[_curRoomIdx].code]=inp.value;
+    }
     _curRoomIdx=idx;
     const r=_rooms[idx];
     // Reconnect to new room
     document.getElementById('code-in').value=r.code;
     renderRoomTabs();
     doConnect();
+    if(plusActive()){
+        const inp=document.getElementById('msg-in');
+        if(inp) inp.value=_roomDrafts[r.code]||'';
+    }
 }
 function closeRoom(idx){
     if(idx<=0||idx>=_rooms.length) return;
@@ -5426,6 +5930,13 @@ function setTTL(secs){
     const btn=document.getElementById('ttl-btn');
     if(btn&&_ttlActive) btn.title='Self-destruct ON ('+secs+'s)';
 }
+function setTTLCustom(){
+    const m=document.getElementById('ttl-menu');
+    if(m) m.classList.remove('show');
+    if(!plusActive()){ alert('⭐ Custom self-destruct timers are a NeoPlus perk.'); return; }
+    const v=parseInt(prompt('Self-destruct after (seconds, 5–86400):','120')||'',10);
+    if(!isNaN(v)&&v>=5&&v<=86400) setTTL(v);
+}
 // Long-press to open TTL menu
 (function(){
     let _ttlTimer=null;
@@ -5547,7 +6058,113 @@ function openProfileScreen(){
     }
     const dot = document.getElementById('accent-color-dot');
     if(dot) dot.style.background = getAccent();
+    renderPlusCard();
     s.classList.add('open');
+}
+
+// ── NeoPlus profile-screen card ──
+function renderPlusCard(){
+    const card=document.getElementById('plus-card');
+    if(!card) return;
+    const st=plusState();
+    if(plusActive()){
+        const untl=st.exp?('until '+st.exp):'permanent';
+        card.innerHTML=`<div class="profile-card-title" style="color:#ffd700;">⭐ NEOPLUS — ACTIVE (${esc(untl)})</div>`
+            +plusOptBtn('🏷','Badge title', st.badge||'—', 'plusSetBadge()')
+            +plusOptBtn('🎨','Name color', '<span style="display:inline-block;width:14px;height:14px;border-radius:50%;vertical-align:middle;background:'+esc(st.color||PLUS_GOLD)+'"></span>', 'plusSetColor()')
+            +plusOptBtn('💬','Profile bio', st.bio?'✓':'—', 'plusSetBio()')
+            +plusOptBtn('🖼','Chat background', st.bg_img?'image':(st.bg||'none'), 'plusSetBg()')
+            +plusOptBtn('🔔','Notification sound', st.sound||'chime', 'plusSetSound()')
+            +plusOptBtn('✨','Send effects', st.fx!==false?'ON':'OFF', 'plusToggleFx()')
+            +plusOptBtn('🌗','Seasonal theme', st.seasonal?'ON':'OFF', 'plusToggleSeasonal()')
+            +plusOptBtn('👑','Gold theme', '', 'plusGoldTheme()');
+    } else {
+        card.innerHTML=`<div class="profile-card-title" style="color:#ffd700;">⭐ NEOPLUS</div>`
+            +plusOptBtn('⭐','Activate NeoPlus…', '', 'plusPromptActivate()')
+            +`<div style="color:#4a6080;font-size:10px;padding:2px 14px 10px;">Gold name &amp; badge · 500 MB uploads · animated stickers · themes · scheduling · and more</div>`;
+    }
+}
+function plusOptBtn(icon,label,value,handler){
+    return `<button class="profile-opt" onclick="${handler}">`
+        +`<span class="profile-opt-icon">${icon}</span>`
+        +`<span class="profile-opt-label">${esc(label)}</span>`
+        +(value?`<span class="profile-opt-value">${value}</span>`:'')
+        +`<span class="profile-opt-arrow">›</span></button>`;
+}
+async function plusPromptActivate(){
+    const code=prompt('Paste your NeoPlus activation code:');
+    if(!code||!code.trim()) return;
+    const res=await activatePlus(code.trim());
+    alert(res.ok?('⭐ '+res.msg):res.msg);
+    if(res.ok){ renderPlusCard(); playSparkle(); }
+}
+function plusSetBadge(){
+    const st=plusState();
+    const v=prompt('Badge title shown next to your name (e.g. Founder, VIP):', st.badge||'');
+    if(v===null) return;
+    st.badge=v.trim().slice(0,20); savePlus(st); renderPlusCard();
+}
+function plusSetColor(){
+    const st=plusState();
+    const names=PLUS_NAME_COLORS.map((c,i)=>`${i+1} — ${c[0]}`).join('\n');
+    const v=prompt('Pick a name color (1–'+PLUS_NAME_COLORS.length+'):\n'+names,'1');
+    const i=parseInt(v||'',10)-1;
+    if(isNaN(i)||i<0||i>=PLUS_NAME_COLORS.length) return;
+    st.color=PLUS_NAME_COLORS[i][1]; savePlus(st); renderPlusCard();
+}
+function plusSetBio(){
+    const st=plusState();
+    const v=prompt('A short line about you (shown on your profile card):', st.bio||'');
+    if(v===null) return;
+    st.bio=v.trim().slice(0,80); savePlus(st); renderPlusCard();
+}
+function plusSetBg(){
+    const st=plusState();
+    const keys=Object.keys(PLUS_BACKGROUNDS);
+    const v=prompt('Chat background:\n'+keys.map((k,i)=>`${i+1} — ${k}`).join('\n')
+        +`\n${keys.length+1} — custom image…`, '1');
+    const i=parseInt(v||'',10)-1;
+    if(isNaN(i)||i<0||i>keys.length) return;
+    if(i===keys.length){
+        // custom image via hidden file input
+        let fi=document.getElementById('plus-bg-file');
+        if(!fi){
+            fi=document.createElement('input');
+            fi.type='file'; fi.accept='image/*'; fi.id='plus-bg-file'; fi.style.display='none';
+            fi.onchange=()=>{
+                const f=fi.files&&fi.files[0]; fi.value='';
+                if(!f||f.size>2*1024*1024){ if(f) alert('Image too large — keep it under 2 MB.'); return; }
+                const rd=new FileReader();
+                rd.onload=()=>{ const s2=plusState(); s2.bg_img=rd.result; savePlus(s2); applyPlusBg(); renderPlusCard(); };
+                rd.readAsDataURL(f);
+            };
+            document.body.appendChild(fi);
+        }
+        fi.click();
+        return;
+    }
+    st.bg=keys[i]; st.bg_img=''; savePlus(st); applyPlusBg(); renderPlusCard();
+}
+function plusSetSound(){
+    const st=plusState();
+    const v=prompt('NeoPlus melody:\n1 — chime (soft bell)\n2 — pulse (sci-fi blips)\n3 — retro (arcade jingle)\n4 — none (silent)','1');
+    const i=parseInt(v||'',10)-1;
+    if(isNaN(i)||i<0||i>=PLUS_SOUNDS.length) return;
+    st.sound=PLUS_SOUNDS[i]; savePlus(st); renderPlusCard();
+    if(st.sound!=='none') playPlusSound();
+}
+function plusToggleFx(){
+    const st=plusState(); st.fx=st.fx===false; savePlus(st); renderPlusCard();
+    if(st.fx) playSparkle();
+}
+function plusToggleSeasonal(){
+    const st=plusState(); st.seasonal=!st.seasonal; savePlus(st);
+    if(st.seasonal) applyAccent(seasonalAccent());
+    renderPlusCard();
+}
+function plusGoldTheme(){
+    const st=plusState(); st.seasonal=false; savePlus(st);
+    applyAccent(PLUS_GOLD); renderPlusCard();
 }
 function closeProfileScreen(){
     const s = document.getElementById('profile-screen');
@@ -5807,6 +6424,23 @@ function _handleNotifyMessage(raw){
                 nb.classList.add('show');
             }
         }
+        else if(d.type==='plus_grant' && d.to && d.code &&
+                d.to.toLowerCase()===(myName||'').toLowerCase() && !plusActive()){
+            // Remote NeoPlus activation from the creator's admin panel
+            activatePlus(d.code).then(res=>{
+                if(!res.ok) return;
+                try{ renderPlusCard(); }catch(e){}
+                playSparkle();
+                const nb=document.getElementById('notif-bar');
+                if(nb){
+                    nb.innerHTML=`⭐ You have been granted <b>NeoPlus</b>! 🎉 (${esc(res.msg)})`+
+                        `<button class="btn-notif-dismiss" onclick="this.parentElement.classList.remove('show')">✕</button>`;
+                    nb.classList.add('show');
+                }
+                // Clear the retained grant so it doesn't replay every launch
+                _oneShotPublish('neochat/__notify__/'+myName.toLowerCase(), '', true);
+            });
+        }
     }catch(e){}
 }
 
@@ -5868,6 +6502,21 @@ function _deleteGroupById(id){ _saveGroups(_loadGroups().filter(x=>x.id!==id)); 
 function _genId(){ return Math.random().toString(36).slice(2,14); }
 
 // One-shot publish (works even when not joined to a room), mirrors Python's invite.
+async function grantPlus(){
+    const st=document.getElementById('plus-grant-status');
+    const user=(document.getElementById('plus-user-in')||{value:''}).value.trim();
+    const code=(document.getElementById('plus-code-in')||{value:''}).value.trim();
+    if(!user||!code){ if(st) st.textContent='Enter a username and a code.'; return; }
+    if(!(await verifyPlusCode(code))){
+        if(st) st.textContent='⚠ That is not a valid NeoPlus code — mint one with neoplus_codegen.py.';
+        return;
+    }
+    const payload=JSON.stringify({type:'plus_grant', to:user, code, from:'MrMiner', ts:now()});
+    _oneShotPublish('neochat/__notify__/'+user.toLowerCase(), payload, true);
+    if(st) st.textContent='⭐ NeoPlus grant sent to '+user+' — it activates when their app is online.';
+    const ci=document.getElementById('plus-code-in'); if(ci) ci.value='';
+}
+
 function _oneShotPublish(topicName, payload, retain){
     if(typeof mqtt==='undefined') return;
     const urls=(typeof BROKER_URLS!=='undefined' && BROKER_URLS.length)
@@ -5927,7 +6576,16 @@ function stopGlobalNotify(){
 function grpGenCode(){
     const abc='ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
     let c=''; for(let i=0;i<6;i++) c+=abc[Math.floor(Math.random()*abc.length)];
+    const cb=document.getElementById('grp-plus-only');
+    if(cb&&cb.checked) c='PLUS-'+c;
     document.getElementById('grp-code-in').value=c;
+}
+function grpTogglePlusCode(on){
+    const inp=document.getElementById('grp-code-in');
+    if(!inp) return;
+    const code=inp.value.trim();
+    if(on&&code&&!code.toUpperCase().startsWith('PLUS-')) inp.value='PLUS-'+code;
+    else if(!on&&code.toUpperCase().startsWith('PLUS-')) inp.value=code.slice(5);
 }
 
 function openGroupsScreen(){
@@ -5975,6 +6633,10 @@ function grpShowCreate(){
     _grpInvites=[];
     document.getElementById('grp-name-in').value='';
     document.getElementById('grp-invite-in').value='';
+    const pr=document.getElementById('grp-plus-only-row');
+    if(pr) pr.style.display=plusActive()?'flex':'none';
+    const pc=document.getElementById('grp-plus-only');
+    if(pc) pc.checked=false;
     _grpRenderChips();
     grpGenCode();
 }
