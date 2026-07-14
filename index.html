@@ -7227,25 +7227,13 @@ function declineGroupInvite(code){
 
 // ── Login chooser (3 ways to start) ──────────────────────────────────────────
 // Which home screen a device gets (chat list vs. the PC card chooser) is a
-// much bigger decision than NEO_UI_MODE's original job of picking CSS sizing
-// — NEO_UI_MODE also flips on a plain window resize (<900px falls back to
-// "mobile" sizing even on a real desktop, which was harmless when it only
-// affected padding/font-size). Reusing it here meant simply not maximizing
-// your browser window could silently swap your home screen to the phone
-// layout. This resolves the screen choice from a steadier signal instead:
-// an explicit Settings → Interface choice always wins; absent that, only
-// genuine phone/tablet detection (not window width) picks the chat list.
-function _homeIsPhoneScreen(){
-    let pref=null; try{ pref=localStorage.getItem('neochat_ui'); }catch(e){}
-    if(pref==='mobile') return true;
-    if(pref==='desktop') return false;
-    return !!window.NEO_DEVICE_MOBILE;
-}
+// The Telegram-style chat list is now the home screen on every device,
+// desktop included — the original 4-card chooser is no longer shown by
+// default (its options all still exist, now inside the same "+" sheet
+// used on mobile).
 function loginShow(view){
-    const phoneHome = _homeIsPhoneScreen();
-    // 'home' resolves to whichever screen is this device's default: the
-    // Telegram-style chat list on phones, the original card chooser on PC.
-    if(view==='home') view = phoneHome ? 'list' : 'chooser';
+    // 'home' always resolves to the chat list now.
+    if(view==='home') view = 'list';
     const ch=document.getElementById('login-chooser');
     const lc=document.getElementById('login-chatlist');
     const jp=document.getElementById('login-join-panel');
@@ -7255,7 +7243,7 @@ function loginShow(view){
     if(lc) lc.style.display = view==='list' ? 'flex' : 'none';
     if(jp) jp.style.display = view==='join' ? 'flex' : 'none';
     if(dp) dp.style.display = view==='dm' ? 'flex' : 'none';
-    if(fab) fab.style.display = (phoneHome && view==='list') ? 'flex' : 'none';
+    if(fab) fab.style.display = view==='list' ? 'flex' : 'none';
     const loginEl=document.getElementById('login');
     if(loginEl) loginEl.classList.toggle('list-mode', view==='list');
     if(view==='list') renderChatList();
