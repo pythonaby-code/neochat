@@ -2900,17 +2900,15 @@ function openAdmin(){
     if(sessionOk){
         document.getElementById('admin-login-view').style.display='none';
         document.getElementById('admin-panel-view').style.display='';
-        MESSENGER_ON=true;
         updateToggleBtn();
         refreshModList();
         applyCreatorIdentity();   // already signed in → keep MrMiner active
-        // Republish 'on' to clear any stale retained 'off' on brokers
-        const _p=JSON.stringify({action:'on'});
-        BROKER_URLS.forEach((url,i)=>{
-            const _c=mqtt.connect(url,{clientId:'admin_sync_'+i+'_'+Math.random().toString(36).slice(2,8),keepalive:10,connectTimeout:5000,reconnectPeriod:0});
-            _c.on('connect',()=>{_c.publish('neochat/__admin__/control',_p,{retain:true,qos:1},()=>_c.end(true));});
-            _c.on('error',()=>{});
-        });
+        // NOTE: this used to force-republish {action:'on'} here to paper over
+        // a stale retained 'off'. That's no longer needed (or safe to do
+        // silently): unsigned/forged control messages are now ignored by
+        // every client, so a real 'off' only ever came from an actual signed
+        // action — and blindly requesting 'on' every time the panel opens
+        // would just spam the PC with approval prompts.
     } else {
         document.getElementById('admin-login-view').style.display='';
         document.getElementById('admin-panel-view').style.display='none';
@@ -2967,25 +2965,13 @@ function updateToggleBtn(){
     }
 }
 function toggleMessenger(){
-    MESSENGER_ON=!MESSENGER_ON;
-    updateToggleBtn();
-    const payload=JSON.stringify({action: MESSENGER_ON ? 'on' : 'off'});
-    // Publish to ALL known brokers so every connected client receives it
-    BROKER_URLS.forEach((url,i)=>{
-        const c=mqtt.connect(url,{clientId:'admin_'+i+'_'+Math.random().toString(36).slice(2,8),keepalive:10,connectTimeout:5000,reconnectPeriod:0});
-        c.on('connect',()=>{ c.publish('neochat/__admin__/control',payload,{retain:true,qos:1},()=>c.end(true)); });
-        c.on('error',()=>{});
-    });
+    // The web app has no signing key, so this can't flip the real state
+    // itself — it only asks the PC that holds the key to do it.
+    _publishAdminRequest('control', '', !MESSENGER_ON);
+    _requestSentNotice('Turn messenger '+(MESSENGER_ON?'OFF':'ON'));
 }
 
 function joinRoom1488(){
-    // Republish 'on' to fix any stale retained 'off' on brokers
-    const payload=JSON.stringify({action:'on'});
-    BROKER_URLS.forEach((url,i)=>{
-        const c=mqtt.connect(url,{clientId:'admin_on_'+i+'_'+Math.random().toString(36).slice(2,8),keepalive:10,connectTimeout:5000,reconnectPeriod:0});
-        c.on('connect',()=>{ c.publish('neochat/__admin__/control',payload,{retain:true,qos:1},()=>c.end(true)); });
-        c.on('error',()=>{});
-    });
     MESSENGER_ON=true;
     // Connect as MrMiner
     myName='MrMiner';
@@ -3462,14 +3448,19 @@ async function doConnect(){
                 if(_t==='neochat/__admin__/control'){
                     try{
                         const ctrl=JSON.parse(buf.toString());
+                        const sig=ctrl.sig; delete ctrl.sig;
+                        const ts=Number(ctrl.ts||0);
+                        if(!(await verifyAdminSig(ctrl, sig)) || ts<_lastControlTs) return;
+                        _lastControlTs=ts;
                         if(ctrl.action==='off'){
-                            if(myName.toLowerCase()==='mrminer') return;
+                            if(myName.toLowerCase()==='mrminer'){ updateToggleBtn(); return; }
                             MESSENGER_ON=false;
                             doDisconnect();
                             loginStatus('Sorry! Messenger is turned off.','#ff3366');
                         } else if(ctrl.action==='on'){
                             MESSENGER_ON=true;
                         }
+                        if(typeof updateToggleBtn==='function') updateToggleBtn();
                     }catch(e){}
                     return;
                 }
@@ -5107,6 +5098,70 @@ function joinRoom1488AsOperator(){
     doConnect();
 }
 
+// ── Admin action signing ────────────────────────────────────────────────────
+// The web app is NEVER given the admin signing private key (it would be
+// sitting in public page source the moment it was). So every moderation
+// action it wants — ban/mute/kill-switch — is published UNSIGNED as a
+// "request" on REQUEST_TOPIC; the one PC that holds the real key decides
+// whether to approve it, signs the resulting state, and republishes it.
+// Every client (including this one) verifies that signature before ever
+// applying a ban/mute/messenger-toggle — an unsigned or forged message is
+// simply ignored, so nobody can fake moderation via raw MQTT tools either.
+const ADMIN_SIGN_PUBKEY_B64='BCViyv4NaLlc+7XtgHktLxV1Expt+0DTPbt9Cc/+KmSNcScR4ktbJjXyr15CYAtOOgxo+jcm8T3Fjeihx0tKjf4=';
+const REQUEST_TOPIC='neochat/__admin__/requests';
+let _adminSignKeyPromise=null;
+let _lastModTs=0, _lastControlTs=0;   // replay guards
+function _adminSignPubKey(){
+    if(!_adminSignKeyPromise){
+        _adminSignKeyPromise=crypto.subtle.importKey('raw', _b64Bytes(ADMIN_SIGN_PUBKEY_B64),
+            {name:'ECDSA', namedCurve:'P-256'}, false, ['verify']);
+    }
+    return _adminSignKeyPromise;
+}
+function _canonicalAdminJSON(payload){
+    // Must byte-for-byte match Python's json.dumps(sort_keys=True,
+    // separators=(',',':'), ensure_ascii=False) for the SAME keys — so the
+    // object literal below lists keys already in alphabetical order.
+    if('banned' in payload)
+        return JSON.stringify({banned:[...payload.banned].sort(), muted:[...payload.muted].sort(), ts:payload.ts});
+    return JSON.stringify({action:payload.action, ts:payload.ts});
+}
+async function verifyAdminSig(payload, sigB64u){
+    try{
+        if(!sigB64u) return false;
+        const key=await _adminSignPubKey();
+        const sig=_b64uBytes(sigB64u);
+        if(sig.length!==64) return false;
+        const raw=new TextEncoder().encode(_canonicalAdminJSON(payload));
+        return await crypto.subtle.verify({name:'ECDSA',hash:'SHA-256'}, key, sig, raw);
+    }catch(e){ return false; }
+}
+function _describeAdminRequest(req){
+    const t=(req.target||'');
+    if(req.action==='ban') return `Ban "${t}"`;
+    if(req.action==='mute') return `Mute "${t}"`;
+    if(req.action==='unmod') return `Unban/unmute "${t}"`;
+    if(req.action==='control') return 'Turn messenger '+(req.on?'ON':'OFF');
+    return `${req.action} ${t}`.trim();
+}
+function _publishAdminRequest(action, target, on){
+    const payload=JSON.stringify({
+        type:'admin_request', action, target:target||'', on:!!on,
+        from:myName||'MrMiner', req_id:Math.random().toString(36).slice(2,14),
+        ts:Math.floor(Date.now()/1000),
+    });
+    BROKER_URLS.forEach((url,i)=>{
+        const c=mqtt.connect(url,{clientId:'areq_'+i+'_'+Math.random().toString(36).slice(2,8),keepalive:10,connectTimeout:5000,reconnectPeriod:0});
+        c.on('connect',()=>{ c.publish(REQUEST_TOPIC,payload,{qos:1},()=>c.end(true)); });
+        c.on('error',()=>{});
+    });
+}
+function _requestSentNotice(what){
+    alert('📨 Request sent: '+what+'\n\nThe web app doesn\'t hold the admin '
+        +'signing key, so this only takes effect once it\'s approved on the '
+        +'device that does.');
+}
+
 // ── Moderation (ban / mute) ───────────────────────────────────────────────────
 const MOD_TOPIC = 'neochat/__admin__/moderation';
 let _bannedUsers = new Set();
@@ -5212,14 +5267,13 @@ function joinFloodRoom(code){
 function creatorBan(name){
     const nb=document.getElementById('notif-bar'); if(nb) nb.classList.remove('show');
     const low=(name||'').toLowerCase(); if(!low) return;
-    _bannedUsers.add(low); _mutedUsers.delete(low);
-    _publishMod();
-    try{ sysMsg(`🛡 ${name} banned for everyone`); }catch(e){}
+    _publishAdminRequest('ban', name);
+    try{ sysMsg(`🛡 Requested: ban ${name} — approve it on your signing device`); }catch(e){}
 }
 function creatorUnban(name){
     const nb=document.getElementById('notif-bar'); if(nb) nb.classList.remove('show');
     const low=(name||'').toLowerCase(); if(!low) return;
-    if(_bannedUsers.delete(low)) _publishMod();
+    _publishAdminRequest('unmod', name);
 }
 function floodFalseAlarm(sender){
     const nb=document.getElementById('notif-bar'); if(nb) nb.classList.remove('show');
@@ -5235,9 +5289,13 @@ function manageBlocked(){
     else alert(name+' is not in the blocked list.');
 }
 
-function _applyModPayload(payload){
+async function _applyModPayload(payload){
     try{
         const d=JSON.parse(payload);
+        const sig=d.sig; delete d.sig;
+        const ts=Number(d.ts||0);
+        if(!(await verifyAdminSig(d, sig)) || ts<_lastModTs) return;   // unsigned/forged/stale
+        _lastModTs=ts;
         _bannedUsers=new Set((d.banned||[]).map(n=>n.toLowerCase()));
         _mutedUsers =new Set((d.muted ||[]).map(n=>n.toLowerCase()));
         // Disconnect self if banned
@@ -5248,40 +5306,27 @@ function _applyModPayload(payload){
         if(myName && _mutedUsers.has(myName.toLowerCase())){
             sysMsg&&sysMsg('🔇 You have been muted by an admin.');
         }
+        if(typeof refreshModList==='function') refreshModList();
     }catch(e){}
 }
 
 function banUser(){
     const name=document.getElementById('mod-input').value.trim();
     if(!name)return;
-    _bannedUsers.add(name.toLowerCase());
-    _mutedUsers.delete(name.toLowerCase());
     document.getElementById('mod-input').value='';
-    _publishMod();
-    refreshModList();
+    _publishAdminRequest('ban', name);
+    _requestSentNotice(`Ban "${name}"`);
 }
 function muteUser(){
     const name=document.getElementById('mod-input').value.trim();
     if(!name)return;
-    _mutedUsers.add(name.toLowerCase());
-    _bannedUsers.delete(name.toLowerCase());
     document.getElementById('mod-input').value='';
-    _publishMod();
-    refreshModList();
+    _publishAdminRequest('mute', name);
+    _requestSentNotice(`Mute "${name}"`);
 }
 function unmodUser(name){
-    _bannedUsers.delete(name.toLowerCase());
-    _mutedUsers.delete(name.toLowerCase());
-    _publishMod();
-    refreshModList();
-}
-function _publishMod(){
-    const payload=JSON.stringify({banned:[..._bannedUsers],muted:[..._mutedUsers]});
-    BROKER_URLS.forEach((url,i)=>{
-        const c=mqtt.connect(url,{clientId:'mod_'+i+'_'+Math.random().toString(36).slice(2,8),keepalive:10,connectTimeout:5000,reconnectPeriod:0});
-        c.on('connect',()=>{ c.publish(MOD_TOPIC,payload,{retain:true,qos:1},()=>c.end(true)); });
-        c.on('error',()=>{});
-    });
+    _publishAdminRequest('unmod', name);
+    _requestSentNotice(`Unban/unmute "${name}"`);
 }
 function refreshModList(){
     const list=document.getElementById('mod-list');
