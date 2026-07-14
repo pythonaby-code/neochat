@@ -86,6 +86,16 @@
     lang=((navigator.language||'').toLowerCase().indexOf('ru')===0)?'ru':'en';
   window.NEO_LANG=lang;
   root.setAttribute('lang',lang);
+
+  // Theme: saved choice wins; NeoChat defaults to dark regardless of system
+  // preference (it's a dark-first design), light is opt-in.
+  var theme=null; try{ theme=localStorage.getItem('neochat_theme'); }catch(e){}
+  window.NEO_THEME=(theme==='light')?'light':'dark';
+  root.classList.toggle('theme-light', window.NEO_THEME==='light');
+
+  // Message text size, same early application so there's no visible jump.
+  var tsize=null; try{ tsize=localStorage.getItem('neochat_textsize'); }catch(e){}
+  if(tsize==='sm'||tsize==='lg'||tsize==='xl') root.classList.add('text-'+tsize);
 })();
 </script>
 <style>
@@ -142,7 +152,115 @@
   --font: 'Space Grotesk',system-ui,-apple-system,'Segoe UI',sans-serif;
   --mono: 'JetBrains Mono',ui-monospace,SFMono-Regular,monospace;
   --accent: var(--teal); --neon: var(--teal); --neon-2: var(--cyan);
+
+  /* ── Sheet/modal/overlay base colors as a shared RGB triplet — every sheet,
+     picker, drawer and modal below uses rgba(var(--sheet-rgb),alpha) /
+     rgba(var(--overlay-rgb),alpha) instead of a hardcoded color, so the
+     light theme only needs to override these two, not every rule. ── */
+  --sheet-rgb: 7,5,20;
+  --overlay-rgb: 4,2,12;
+  --sent-text: #0a0a0a;
+  --sent-text-2: rgba(10,10,10,.7);
+  --sent-text-3: rgba(10,10,10,.5);
 }
+
+/* ══════════════════════════════════════════════════════════════════
+   LIGHT THEME — same layout/behavior as dark, different palette.
+   Toggled via html.theme-light (Settings → Theme), persisted in
+   localStorage. Kept as a straight variable-override block so every
+   rule elsewhere that already uses var(--t1)/var(--b1)/etc. picks it
+   up automatically with zero per-rule changes.
+   ══════════════════════════════════════════════════════════════════ */
+html.theme-light{
+  --void:  #f4f5f9;
+  --space: #ffffff;
+  --deep:  #eef0f6;
+  --panel: rgba(255,255,255,0.92);
+
+  --glass-1: rgba(255,255,255,0.86);
+  --glass-2: rgba(255,255,255,0.66);
+  --glass-3: rgba(246,247,251,0.88);
+
+  --teal:      #6d28d9;   /* violet accent — reads on white, matches the app's Aurora identity */
+  --teal-dark: #5b21b6;
+  --teal-deep: #4c1d95;
+  --teal-glow: rgba(109,40,217,0.22);
+  --teal-faint:rgba(109,40,217,0.08);
+  --cyan:      #2563eb;
+  --cyan-glow: rgba(37,99,235,0.25);
+  --accent-blue: #2563eb;
+
+  --sent-bg:  #6d28d9;
+  --recv-bg:  #f0f1f6;
+  --sent-text: #ffffff;
+  --sent-text-2: rgba(255,255,255,.82);
+  --sent-text-3: rgba(255,255,255,.68);
+
+  --t1: #14161c;
+  --t2: rgba(20,22,28,0.68);
+  --t3: rgba(20,22,28,0.48);
+  --t4: rgba(20,22,28,0.30);
+
+  --online:  #16a34a;
+  --danger:  #dc2626;
+  --warn:    #ea580c;
+  --info:    #2563eb;
+
+  --b1: rgba(20,22,28,0.12);
+  --b2: rgba(20,22,28,0.07);
+  --b3: rgba(20,22,28,0.18);
+  --b4: rgba(20,22,28,0.38);
+
+  --s1: 0 4px 24px rgba(20,22,28,0.10);
+  --s2: 0 16px 48px rgba(20,22,28,0.16);
+  --neon-shadow: 0 0 18px rgba(109,40,217,0.25);
+
+  --accent: var(--teal); --neon: var(--teal); --neon-2: var(--cyan);
+  --sheet-rgb: 255,255,255;
+  --overlay-rgb: 30,32,40;
+}
+html.theme-light body{background:var(--space);}
+html.theme-light body::before{
+  background:
+    radial-gradient(130% 120% at 50% 50%,transparent 55%,rgba(120,110,160,0.06)),
+    radial-gradient(1500px 1500px at 28% -28%,rgba(109,40,217,0.05),transparent 60%),
+    radial-gradient(1100px 1100px at 90% 120%,rgba(37,99,235,0.05),transparent 62%),
+    linear-gradient(rgba(20,22,28,0.025) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(20,22,28,0.025) 1px,transparent 1px),
+    #f4f5f9;
+  background-size:100% 100%,100% 100%,100% 100%,64px 64px,64px 64px,100% 100%;
+}
+html.theme-light body::after{display:none;}   /* film grain suits dark mode only */
+html.theme-light input{background:rgba(20,22,28,0.04);}
+html.theme-light .bubble.mine{box-shadow:0 4px 18px rgba(109,40,217,0.28);}
+html.theme-light .bubble.theirs{background:var(--recv-bg);border:1px solid var(--b2);}
+html.theme-light ::-webkit-scrollbar-thumb{background:rgba(20,22,28,0.18);}
+html.theme-light ::-webkit-scrollbar-thumb:hover{background:rgba(20,22,28,0.32);}
+html.theme-light .date-sep span{background:rgba(255,255,255,0.85);border-color:var(--b1);color:var(--t2);}
+html.theme-light .chatlist-search,html.theme-light .side-search{background:rgba(20,22,28,0.045);}
+/* Highest-traffic "frosted glass" surfaces (buttons/rows/cards) used a white
+   tint everywhere for dark mode — on a light background that reads as
+   nearly invisible, so the most-used ones get an explicit dark-tint swap.
+   (Rarer one-off hover tints elsewhere may still read a little flat —
+   the core screens below are the ones covered.) */
+html.theme-light .login-action{background:rgba(20,22,28,0.035);border-color:var(--b1);}
+html.theme-light .login-action:hover{background:rgba(20,22,28,0.06);}
+html.theme-light .more-menu-item:hover,html.theme-light .settings-item:hover{background:rgba(20,22,28,0.05);}
+html.theme-light .attach-opt{background:rgba(20,22,28,0.035);}
+html.theme-light .attach-opt:hover{background:rgba(20,22,28,0.07);}
+html.theme-light .chat-row:active,html.theme-light .chat-row:hover{background:rgba(20,22,28,0.045);}
+html.theme-light .chat-row.pinned{background:rgba(20,22,28,0.025);}
+html.theme-light .dm-item{background:rgba(20,22,28,0.03);}
+html.theme-light .dm-item:hover{background:rgba(20,22,28,0.05);}
+html.theme-light #acc-info-bar{background:rgba(20,22,28,0.045);}
+html.theme-light .btn-secondary{color:var(--t2);}
+html.theme-light .btn-dice{background:rgba(99,102,241,0.08);}
+html.theme-light #plus-profile-card .ppc-inner{background:#ffffff;}
+html.theme-light #users-drawer,html.theme-light .dm-sheet,
+html.theme-light .attach-sheet-inner,html.theme-light .more-menu-inner,
+html.theme-light .settings-sheet-inner,html.theme-light .groups-sheet-inner,
+html.theme-light #ttl-menu,html.theme-light #emoji-picker,html.theme-light #text-emoji-picker,
+html.theme-light #sticker-picker{box-shadow:0 -8px 32px rgba(20,22,28,0.10);}
 
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
 html,body{height:100%;height:100dvh;}
@@ -246,6 +364,9 @@ button:active{transform:scale(0.96);opacity:0.9;}
 .bubble{max-width:80%;padding:11px 15px;border-radius:20px;word-break:break-word;position:relative;animation:.25s ease-out both;}
 .bubble .b-name{font-size:10px;font-weight:700;opacity:.8;margin-bottom:3px;}
 .bubble .b-text{font-size:14px;line-height:1.5;color:var(--t1);}
+html.text-sm .bubble .b-text{font-size:12.5px;}
+html.text-lg .bubble .b-text{font-size:16.5px;}
+html.text-xl .bubble .b-text{font-size:19px;}
 .bubble .b-ts{font-size:10px;margin-top:4px;display:flex;align-items:center;gap:4px;}
 
 /* Sent: solid white pill with soft white glow */
@@ -282,9 +403,27 @@ button:active{transform:scale(0.96);opacity:0.9;}
 .msg-avatar{width:28px;height:28px;min-width:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;flex-shrink:0;margin-bottom:2px;box-shadow:0 2px 8px rgba(0,0,0,0.40);}
 .msg-avatar-spacer{width:28px;min-width:28px;flex-shrink:0;}
 
-.date-sep{display:flex;align-items:center;gap:10px;color:var(--t3);font-size:11px;margin:14px 8px 6px;}
+.date-sep{display:flex;align-items:center;gap:10px;color:var(--t3);font-size:11px;margin:14px 8px 6px;
+  position:sticky;top:0;z-index:5;pointer-events:none;}
 .date-sep::before,.date-sep::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.12),transparent);}
-.date-sep span{padding:3px 12px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);border-radius:20px;letter-spacing:.5px;white-space:nowrap;}
+.date-sep span{padding:4px 13px;background:rgba(14,15,20,0.72);border:1px solid rgba(255,255,255,0.14);
+  border-radius:20px;letter-spacing:.5px;white-space:nowrap;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+  box-shadow:0 2px 10px rgba(0,0,0,.25);}
+
+/* ── Jump-to-latest pill + reconnect banner ── */
+#jump-latest-btn{position:absolute;right:14px;bottom:16px;background:var(--accent);color:#04130a;
+  border-radius:999px;padding:9px 16px;font-size:12.5px;font-weight:800;display:none;
+  align-items:center;gap:7px;box-shadow:0 8px 24px rgba(0,0,0,.45);z-index:30;cursor:pointer;
+  width:auto;border:none;}
+#jump-latest-btn.show{display:flex;}
+#jump-latest-btn:active{transform:scale(0.95);}
+#jump-latest-btn .jl-badge{background:rgba(0,0,0,.25);border-radius:999px;padding:1px 7px;font-size:11px;}
+#reconnect-banner{background:rgba(244,63,94,0.10);border-bottom:1px solid rgba(244,63,94,0.28);
+  padding:7px 12px;display:none;align-items:center;gap:8px;flex-shrink:0;font-size:11.5px;
+  color:var(--danger);font-weight:600;}
+#reconnect-banner.show{display:flex;}
+#reconnect-banner .recon-dot{width:6px;height:6px;border-radius:50%;background:var(--danger);
+  flex-shrink:0;animation:pulse-r 1s ease-in-out infinite;}
 
 .b-quote{border-left:2px solid rgba(255,255,255,0.45);padding:3px 8px;margin-bottom:5px;background:rgba(255,255,255,0.06);border-radius:0 6px 6px 0;cursor:pointer;}
 .bubble.theirs .b-quote{border-left-color:rgba(255,255,255,0.22);}
@@ -377,11 +516,13 @@ button:active{transform:scale(0.96);opacity:0.9;}
 .btn-voice-rec{background:rgba(244,63,94,0.10);border:1px solid rgba(244,63,94,0.28);color:var(--danger);width:46px;height:46px;border-radius:50%;flex-shrink:0;font-size:20px;padding:0;display:flex;align-items:center;justify-content:center;transition:all .15s;}
 .btn-voice-rec.recording{background:rgba(244,63,94,0.28);border-color:rgba(244,63,94,0.65);animation:pulse-r .8s ease-in-out infinite;}
 @keyframes pulse-r{50%{transform:scale(1.1);box-shadow:0 0 14px rgba(244,63,94,0.50);}}
+@keyframes send-pulse{0%{box-shadow:0 0 0 0 rgba(255,255,255,.32);}100%{box-shadow:0 0 0 16px rgba(255,255,255,0);}}
+.bubble.just-sent{animation:send-pulse .45s ease-out;}
 
 /* ── Drawer ── */
-#drawer-overlay{position:fixed;inset:0;background:rgba(4,2,12,0.65);z-index:49;display:none;backdrop-filter:blur(4px);}
+#drawer-overlay{position:fixed;inset:0;background:rgba(var(--overlay-rgb),0.65);z-index:49;display:none;backdrop-filter:blur(4px);}
 #drawer-overlay.open{display:block;}
-#users-drawer{position:fixed;left:0;top:0;height:100%;width:78%;max-width:260px;background:rgba(7,5,20,0.97);border-right:1px solid var(--b1);z-index:50;display:flex;flex-direction:column;transform:translateX(-100%);transition:transform .28s cubic-bezier(.4,0,.2,1);backdrop-filter:blur(24px);}
+#users-drawer{position:fixed;left:0;top:0;height:100%;width:78%;max-width:260px;background:rgba(var(--sheet-rgb),0.97);border-right:1px solid var(--b1);z-index:50;display:flex;flex-direction:column;transform:translateX(-100%);transition:transform .28s cubic-bezier(.4,0,.2,1);backdrop-filter:blur(24px);}
 #users-drawer.open{transform:translateX(0);box-shadow:6px 0 32px rgba(0,0,0,0.60);}
 .drawer-hdr{background:rgba(255,255,255,0.05);border-bottom:1px solid var(--b1);padding:12px 14px;padding-top:max(12px,env(safe-area-inset-top));display:flex;align-items:center;gap:10px;flex-shrink:0;}
 .drawer-hdr-title{color:var(--teal);font-size:11px;font-weight:700;letter-spacing:3px;flex:1;}
@@ -397,24 +538,25 @@ button:active{transform:scale(0.96);opacity:0.9;}
 .btn-user-call{background:rgba(255,255,255,0.10);border:1px solid rgba(255,255,255,0.24);color:var(--teal);border-radius:8px;width:30px;height:30px;font-size:14px;padding:0;flex-shrink:0;display:flex;align-items:center;justify-content:center;}
 
 /* ── Modals & Sheets ── */
-#dm-modal{position:fixed;inset:0;background:rgba(4,2,12,0.82);z-index:60;display:none;align-items:flex-end;backdrop-filter:blur(8px);}
+#dm-modal{position:fixed;inset:0;background:rgba(var(--overlay-rgb),0.82);z-index:60;display:none;align-items:flex-end;backdrop-filter:blur(8px);}
 #dm-modal.open{display:flex;}
-.dm-sheet{width:100%;background:rgba(7,5,20,0.98);border-top:1px solid var(--b1);border-radius:22px 22px 0 0;padding:20px 16px;padding-bottom:max(20px,env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:12px;box-shadow:0 -16px 48px rgba(0,0,0,0.50);}
+.dm-sheet{width:100%;background:rgba(var(--sheet-rgb),0.98);border-top:1px solid var(--b1);border-radius:22px 22px 0 0;padding:20px 16px;padding-bottom:max(20px,env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:12px;box-shadow:0 -16px 48px rgba(0,0,0,0.50);}
 .dm-sheet-title{color:var(--info);font-size:12px;font-weight:700;letter-spacing:1.5px;}
 .dm-row{display:flex;gap:10px;align-items:center;}
 .dm-row input{flex:1;border-radius:22px;padding:12px 16px;font-size:14px;margin:0;}
 .btn-dm-send{background:rgba(96,165,250,0.14);border:1px solid rgba(96,165,250,0.36);color:var(--info);border-radius:50%;width:46px;height:46px;font-size:20px;padding:0;flex-shrink:0;display:flex;align-items:center;justify-content:center;}
 .btn-dm-cancel{background:transparent;border:none;color:var(--t3);font-size:13px;padding:4px 0;text-align:center;}
 
-#attach-sheet,#more-menu,#settings-sheet,#groups-sheet,#new-chat-sheet{position:fixed;inset:0;z-index:100;background:rgba(4,2,12,0.75);display:none;align-items:flex-end;backdrop-filter:blur(8px);}
-#attach-sheet.open,#more-menu.open,#settings-sheet.open,#groups-sheet.open,#new-chat-sheet.open{display:flex;}
-.attach-sheet-inner,.more-menu-inner,.settings-sheet-inner{width:100%;background:rgba(7,5,20,0.98);border-top:1px solid var(--b1);border-radius:22px 22px 0 0;box-shadow:0 -16px 48px rgba(0,0,0,0.50);}
-.groups-sheet-inner{width:100%;background:rgba(7,5,20,0.98);border-top:1px solid var(--b1);border-radius:22px 22px 0 0;box-shadow:0 -16px 48px rgba(0,0,0,0.50);}
+#attach-sheet,#more-menu,#settings-sheet,#groups-sheet,#new-chat-sheet,#chat-row-menu{position:fixed;inset:0;z-index:100;background:rgba(var(--overlay-rgb),0.75);display:none;align-items:flex-end;backdrop-filter:blur(8px);}
+#attach-sheet.open,#more-menu.open,#settings-sheet.open,#groups-sheet.open,#new-chat-sheet.open,#chat-row-menu.open{display:flex;}
+.attach-sheet-inner,.more-menu-inner,.settings-sheet-inner{width:100%;background:rgba(var(--sheet-rgb),0.98);border-top:1px solid var(--b1);border-radius:22px 22px 0 0;box-shadow:0 -16px 48px rgba(0,0,0,0.50);}
+.groups-sheet-inner{width:100%;background:rgba(var(--sheet-rgb),0.98);border-top:1px solid var(--b1);border-radius:22px 22px 0 0;box-shadow:0 -16px 48px rgba(0,0,0,0.50);}
 .attach-sheet-inner{padding:20px 16px;padding-bottom:max(20px,env(safe-area-inset-bottom));display:flex;gap:8px;flex-wrap:wrap;}
 .more-menu-inner,.settings-sheet-inner{padding:10px 0;padding-bottom:max(10px,env(safe-area-inset-bottom));display:flex;flex-direction:column;}
 .groups-sheet-inner{padding:20px 16px;padding-bottom:max(20px,env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:12px;}
 .attach-opt{background:rgba(255,255,255,0.05);border:1px solid var(--b1);border-radius:14px;color:var(--t1);cursor:pointer;width:auto;display:flex;flex-direction:column;align-items:center;gap:6px;padding:14px 18px;font-family:var(--font);min-width:72px;transition:all .18s;}
 .attach-opt:hover{background:rgba(255,255,255,0.08);border-color:rgba(255,255,255,0.22);transform:translateY(-2px);}
+.attach-opt.recording{background:rgba(244,63,94,0.18);border-color:rgba(244,63,94,0.55);color:var(--danger);animation:pulse-r .8s ease-in-out infinite;}
 .attach-opt-icon{font-size:26px;}
 .attach-opt-label{font-size:11px;color:var(--t2);font-weight:600;}
 .more-menu-item,.settings-item{background:none;border:none;color:var(--t1);cursor:pointer;display:flex;align-items:center;gap:14px;padding:14px 20px;font-size:14px;width:100%;text-align:left;transition:background .12s;font-family:var(--font);border-bottom:1px solid var(--b2);border-left:none;border-right:none;border-top:none;}
@@ -438,7 +580,7 @@ button:active{transform:scale(0.96);opacity:0.9;}
 /* ── TTL ── */
 .btn-ttl{background:rgba(251,146,60,0.10);border:1px solid rgba(251,146,60,0.28);color:var(--warn);width:46px;height:46px;border-radius:50%;flex-shrink:0;font-size:20px;padding:0;display:flex;align-items:center;justify-content:center;transition:all .15s;}
 .btn-ttl.active{background:rgba(244,63,94,0.24);border-color:rgba(244,63,94,0.58);color:var(--danger);}
-#ttl-menu{position:fixed;z-index:500;background:rgba(7,5,20,0.98);border:1px solid rgba(251,146,60,0.25);border-radius:12px;padding:6px;display:none;flex-direction:column;gap:4px;box-shadow:var(--s2);backdrop-filter:blur(16px);}
+#ttl-menu{position:fixed;z-index:500;background:rgba(var(--sheet-rgb),0.98);border:1px solid rgba(251,146,60,0.25);border-radius:12px;padding:6px;display:none;flex-direction:column;gap:4px;box-shadow:var(--s2);backdrop-filter:blur(16px);}
 #ttl-menu.show{display:flex;}
 .ttl-opt{background:none;border:none;color:var(--t1);font-size:13px;padding:6px 16px;border-radius:8px;cursor:pointer;width:auto;text-align:left;font-family:var(--font);}
 .ttl-opt:hover{background:rgba(251,146,60,0.14);}
@@ -451,7 +593,7 @@ button:active{transform:scale(0.96);opacity:0.9;}
 .link-preview-img{max-width:100%;border-radius:6px;margin-top:5px;display:block;}
 
 /* ── Link modal ── */
-#link-modal{position:fixed;inset:0;background:rgba(4,2,12,0.90);z-index:300;display:none;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(10px);}
+#link-modal{position:fixed;inset:0;background:rgba(var(--overlay-rgb),0.90);z-index:300;display:none;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(10px);}
 #link-modal.open{display:flex;}
 .link-modal-url{font-size:11px;color:var(--t3);word-break:break-all;background:rgba(0,0,0,0.30);border-radius:8px;padding:8px;margin:8px 0;max-height:80px;overflow:auto;}
 
@@ -473,7 +615,7 @@ button:active{transform:scale(0.96);opacity:0.9;}
 .btn-add-room:hover{color:var(--teal);}
 
 /* ── Gallery ── */
-#gallery-modal{position:fixed;inset:0;background:rgba(4,2,12,0.97);z-index:200;display:none;flex-direction:column;backdrop-filter:blur(24px);}
+#gallery-modal{position:fixed;inset:0;background:rgba(var(--overlay-rgb),0.97);z-index:200;display:none;flex-direction:column;backdrop-filter:blur(24px);}
 #gallery-modal.open{display:flex;}
 .gallery-hdr{background:rgba(6,12,26,0.94);border-bottom:1px solid var(--b1);padding:12px 14px;display:flex;align-items:center;gap:10px;flex-shrink:0;}
 .gallery-hdr-title{color:var(--teal);font-size:14px;font-weight:700;flex:1;}
@@ -506,7 +648,7 @@ button:active{transform:scale(0.96);opacity:0.9;}
 #plus-profile-card .ppc-bio{color:#aab3d6;font-size:11px;text-align:center;max-width:240px;}
 #plus-profile-card .ppc-sub{color:#4a6080;font-size:10px;}
 .plus-name-star{font-size:9px;font-weight:700;}
-#emoji-picker,#text-emoji-picker{position:fixed;z-index:300;background:rgba(7,5,20,0.98);border:1px solid var(--b1);border-radius:var(--r2);padding:10px;gap:4px;display:none;flex-wrap:wrap;width:196px;box-shadow:var(--s2);backdrop-filter:blur(20px);}
+#emoji-picker,#text-emoji-picker{position:fixed;z-index:300;background:rgba(var(--sheet-rgb),0.98);border:1px solid var(--b1);border-radius:var(--r2);padding:10px;gap:4px;display:none;flex-wrap:wrap;width:196px;box-shadow:var(--s2);backdrop-filter:blur(20px);}
 #emoji-picker.show,#text-emoji-picker.show{display:flex;}
 .emoji-btn{background:none;border:none;font-size:22px;width:40px;height:40px;border-radius:9px;padding:0;cursor:pointer;transition:all .15s;}
 .emoji-btn:hover{background:rgba(255,255,255,0.10);transform:scale(1.16);}
@@ -516,7 +658,7 @@ button:active{transform:scale(0.96);opacity:0.9;}
 /* ── Stickers ── */
 .bubble.sticker{background:none!important;border:none!important;box-shadow:none!important;}
 .bubble.sticker .b-text{font-size:52px;line-height:1.15;}
-#sticker-picker{position:fixed;left:50%;bottom:88px;transform:translateX(-50%);z-index:300;background:rgba(7,5,20,0.98);border:1px solid var(--b1);border-radius:16px;padding:12px;display:none;flex-wrap:wrap;gap:6px;width:288px;max-width:92vw;box-shadow:var(--s2);backdrop-filter:blur(20px);justify-content:center;}
+#sticker-picker{position:fixed;left:50%;bottom:88px;transform:translateX(-50%);z-index:300;background:rgba(var(--sheet-rgb),0.98);border:1px solid var(--b1);border-radius:16px;padding:12px;display:none;flex-wrap:wrap;gap:6px;width:288px;max-width:92vw;box-shadow:var(--s2);backdrop-filter:blur(20px);justify-content:center;}
 #sticker-picker.show{display:flex;}
 .sticker-btn{background:none;border:none;font-size:32px;width:48px;height:48px;border-radius:10px;padding:0;cursor:pointer;transition:transform .15s,background .15s;}
 .sticker-btn:hover{background:rgba(255,255,255,0.10);transform:scale(1.18);}
@@ -622,6 +764,8 @@ button:active{transform:scale(0.96);opacity:0.9;}
 .chat-row-time{color:var(--t3);font-size:11.5px;flex-shrink:0;}
 .chat-row-bottom{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:2px;}
 .chat-row-preview{color:var(--t3);font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.chat-row-preview.is-draft{color:var(--warn);}
+.chat-row-preview.is-draft b{font-weight:700;}
 .chat-row-badge{background:var(--accent);color:#04130a;border-radius:999px;min-width:20px;height:20px;
   font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;padding:0 6px;flex-shrink:0;}
 .chatlist-empty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
@@ -634,6 +778,10 @@ button:active{transform:scale(0.96);opacity:0.9;}
   font-size:22px;padding:0;display:flex;align-items:center;justify-content:center;
   box-shadow:0 8px 28px rgba(0,0,0,.45),0 0 0 1px rgba(255,255,255,.12);z-index:40;}
 .chatlist-fab:active{transform:scale(0.94);}
+.chat-row.pinned{background:rgba(255,255,255,.025);}
+.chat-row-pin,.chat-row-mute{font-size:.85em;opacity:.75;}
+.chat-row-menu-title{color:var(--t2);font-size:12px;font-weight:700;padding:12px 20px 4px;
+  letter-spacing:.5px;text-transform:uppercase;}
 .profile-body{flex:1;overflow-y:auto;padding:24px 20px 12px;display:flex;flex-direction:column;align-items:center;gap:0;}
 .profile-body::-webkit-scrollbar{display:none;}
 .profile-avatar-xl{width:84px;height:84px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:34px;font-weight:700;color:#fff;box-shadow:0 8px 32px rgba(0,0,0,.50);margin-bottom:14px;position:relative;}
@@ -652,9 +800,9 @@ button:active{transform:scale(0.96);opacity:0.9;}
 #accent-color-dot{display:inline-block;width:14px;height:14px;border-radius:50%;vertical-align:middle;}
 
 /* ── Settings / Groups sheets ── */
-#settings-sheet{position:fixed;inset:0;z-index:100;background:rgba(4,2,12,.75);display:none;align-items:flex-end;backdrop-filter:blur(8px);}
+#settings-sheet{position:fixed;inset:0;z-index:100;background:rgba(var(--overlay-rgb),.75);display:none;align-items:flex-end;backdrop-filter:blur(8px);}
 #settings-sheet.open{display:flex;}
-#groups-sheet{position:fixed;inset:0;z-index:100;background:rgba(4,2,12,.75);display:none;align-items:flex-end;backdrop-filter:blur(8px);}
+#groups-sheet{position:fixed;inset:0;z-index:100;background:rgba(var(--overlay-rgb),.75);display:none;align-items:flex-end;backdrop-filter:blur(8px);}
 #groups-sheet.open{display:flex;}
 
 /* ── Backward compat ── */
@@ -759,9 +907,9 @@ input::placeholder{color:var(--t4);font-weight:400;}
 .bubble{font-family:var(--font);}
 .bubble .b-text{font-weight:450;}
 .bubble.mine{box-shadow:0 0 26px rgba(255,255,255,.34),0 0 60px rgba(255,255,255,.14);}
-.bubble.mine .b-text{color:#0a0a0a;font-weight:500;}
-.bubble.mine .b-name{color:rgba(10,10,10,.7);}
-.bubble.mine .b-ts{color:rgba(10,10,10,.5);}
+.bubble.mine .b-text{color:var(--sent-text);font-weight:500;}
+.bubble.mine .b-name{color:var(--sent-text-2);}
+.bubble.mine .b-ts{color:var(--sent-text-3);}
 .bubble.theirs{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);}
 
 /* ── Nav labels & section headings in the display face for cohesion ── */
@@ -779,7 +927,7 @@ input::placeholder{color:var(--t4);font-weight:400;}
    Right: existing header + thread + input (wrapped in .chat-main).
    Phones keep the single-pane mobile flow untouched.
    ════════════════════════════════════════════════════════════════ */
-.chat-main{flex:1;min-width:0;min-height:0;display:flex;flex-direction:column;}
+.chat-main{flex:1;min-width:0;min-height:0;display:flex;flex-direction:column;position:relative;}
 .side-brand{display:none;}
 .user-avatar{width:38px;height:38px;border-radius:50%;flex-shrink:0;display:flex;
   align-items:center;justify-content:center;font-size:14px;font-weight:600;color:#fff;
@@ -1038,6 +1186,8 @@ html.ui-mobile{
   .bubble img{max-width:min(240px,64vw);}
   .btn-bubble-act{font-size:12px;padding:5px 10px;border-radius:9px;}
   .date-sep{font-size:12px;}
+  /* React button: hover-to-reveal doesn't exist on touch — always show, bigger target */
+  .btn-react-add{opacity:1;padding:5px 10px;font-size:15px;border-radius:14px;}
 
   /* ── input bar: big thumb-friendly send ── */
   .input-bar{padding:8px 10px;padding-bottom:max(8px,env(safe-area-inset-bottom));gap:6px;}
@@ -1085,6 +1235,15 @@ html.ui-mobile{
   .no-users-msg{font-size:13px;}
   #typing-ind{font-size:12px;}
 }
+
+/* Text-size setting must win over the mobile bubble rule above. Written as a
+   standalone compound selector (NOT nested inside html.ui-mobile{}) because
+   both classes land on the same <html> element — nesting a same-element
+   selector inside another same-element block produces an ancestor/descendant
+   selector that can never match (one element can't be its own descendant). */
+html.ui-mobile.text-sm .bubble .b-text{font-size:13.5px;}
+html.ui-mobile.text-lg .bubble .b-text{font-size:17.5px;}
+html.ui-mobile.text-xl .bubble .b-text{font-size:20px;}
 
 /* ════════════════════════════════════════════════════════════════
    UI PILLS (language / interface switch) + first-run mode toast
@@ -1451,7 +1610,16 @@ window.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key==='Escap
         <button class="btn-notif-dismiss" onclick="dismissNotifBar()">✕</button>
     </div>
 
+    <!-- Reconnecting banner — shown only after we WERE connected and dropped -->
+    <div id="reconnect-banner">
+        <span class="recon-dot"></span>
+        <span>Reconnecting…</span>
+    </div>
+
     <div class="messages" id="messages"></div>
+    <button id="jump-latest-btn" onclick="jumpToLatest()" title="Jump to latest">
+        <span>↓ New messages</span><span class="jl-badge" id="jump-latest-badge">1</span>
+    </button>
 
     <!-- Typing indicator -->
     <div id="typing-ind"></div>
@@ -1746,6 +1914,29 @@ window.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key==='Escap
     </div>
 </div>
 
+<!-- Chat row quick-actions sheet — opened by long-press (or right-click) on a chat -->
+<div id="chat-row-menu" onclick="if(event.target===this)closeChatRowMenu()">
+    <div class="more-menu-inner">
+        <div class="chat-row-menu-title" id="chat-row-menu-title">Chat</div>
+        <button class="more-menu-item" onclick="chatRowMenuPin()">
+            <span class="more-menu-item-icon">📌</span>
+            <span class="more-menu-item-label" id="chat-row-menu-pin-label">Pin to top</span>
+        </button>
+        <button class="more-menu-item" onclick="chatRowMenuMute()">
+            <span class="more-menu-item-icon">🔕</span>
+            <span class="more-menu-item-label" id="chat-row-menu-mute-label">Mute notifications</span>
+        </button>
+        <button class="more-menu-item" onclick="chatRowMenuDelete()">
+            <span class="more-menu-item-icon">🗑</span>
+            <span class="more-menu-item-label">Remove from list</span>
+        </button>
+        <button class="more-menu-item" onclick="closeChatRowMenu()">
+            <span class="more-menu-item-icon">✕</span>
+            <span class="more-menu-item-label">Cancel</span>
+        </button>
+    </div>
+</div>
+
 <div id="settings-sheet" onclick="if(event.target===this)closeSettingsSheet()">
     <div class="settings-sheet-inner">
         <button class="settings-item" onclick="pickAccentColor();closeSettingsSheet()">
@@ -1774,6 +1965,16 @@ window.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key==='Escap
             <span class="settings-item-icon">📱</span>
             <span class="settings-item-label">Interface</span>
             <span class="settings-item-value" id="settings-ui-val"></span>
+        </button>
+        <button class="settings-item" onclick="toggleTheme()">
+            <span class="settings-item-icon">🌗</span>
+            <span class="settings-item-label">Theme</span>
+            <span class="settings-item-value" id="settings-theme-val"></span>
+        </button>
+        <button class="settings-item" onclick="cycleTextSize()">
+            <span class="settings-item-icon">🔤</span>
+            <span class="settings-item-label">Text Size</span>
+            <span class="settings-item-value" id="settings-textsize-val"></span>
         </button>
         <button class="settings-item" onclick="closeSettingsSheet()">
             <span class="settings-item-icon">✕</span>
@@ -2514,6 +2715,35 @@ function toggleUiMode(){
   }catch(e){}
   location.reload();
 }
+// ── Theme (dark/light) — pure CSS-variable swap, applies instantly, no reload ──
+function toggleTheme(){
+  const next = window.NEO_THEME==='light' ? 'dark' : 'light';
+  window.NEO_THEME = next;
+  document.documentElement.classList.toggle('theme-light', next==='light');
+  try{ localStorage.setItem('neochat_theme', next); }catch(e){}
+  const v=document.getElementById('settings-theme-val');
+  if(v) v.textContent = t(next==='light' ? 'Light' : 'Dark');
+}
+// ── Message text size — cycles Small → Normal → Large → Extra large ──
+const TEXT_SIZES=['sm','md','lg','xl'];
+const TEXT_SIZE_LABELS={sm:'Small',md:'Normal',lg:'Large',xl:'Extra large'};
+function getTextSize(){
+  let s=null; try{ s=localStorage.getItem('neochat_textsize'); }catch(e){}
+  return TEXT_SIZES.includes(s) ? s : 'md';
+}
+function applyTextSize(size){
+  const root=document.documentElement;
+  TEXT_SIZES.forEach(s=>root.classList.remove('text-'+s));
+  if(size!=='md') root.classList.add('text-'+size);
+  const v=document.getElementById('settings-textsize-val');
+  if(v) v.textContent=t(TEXT_SIZE_LABELS[size]);
+}
+function cycleTextSize(){
+  const cur=getTextSize();
+  const next=TEXT_SIZES[(TEXT_SIZES.indexOf(cur)+1)%TEXT_SIZES.length];
+  try{ localStorage.setItem('neochat_textsize', next); }catch(e){}
+  applyTextSize(next);
+}
 function _updUiPills(screenId){
   const p=document.getElementById('ui-pills'); if(!p) return;
   p.classList.toggle('show', screenId==='account'||screenId==='login');
@@ -2555,6 +2785,9 @@ function _i18nUiInit(){
   const uv=document.getElementById('settings-ui-val');
   if(lv) lv.textContent=t(window.NEO_LANG==='ru'?'Russian':'English');
   if(uv) uv.textContent=t(mob?'Phone':'Computer');
+  const tv=document.getElementById('settings-theme-val');
+  if(tv) tv.textContent=t(window.NEO_THEME==='light'?'Light':'Dark');
+  applyTextSize(getTextSize());
   _mobileHeaderMerge();
   const cur=document.querySelector('.screen:not(.hidden)');
   _updUiPills(cur?cur.id:'account');
@@ -3478,10 +3711,18 @@ function loginStatus(msg, color){
     el.textContent=msg; el.style.color=color||'#4a5580';
 }
 
+let _wasEverConnected=false;
 function setDot(state){
     const d=document.getElementById('hdr-dot');
     d.className='hdr-dot'+(state==='on'?' on':state==='off'?' off':'');
     d.textContent=state==='on'?'● online':state==='off'?'● offline':'● connecting';
+    // Only show the reconnecting banner after we'd actually been connected —
+    // the very first "connecting…" on a fresh join already has its own
+    // loginStatus message and doesn't need a second, more alarming banner.
+    const rb=document.getElementById('reconnect-banner');
+    if(!rb) return;
+    if(state==='on'){ _wasEverConnected=true; rb.classList.remove('show'); }
+    else if(state==='off' && _wasEverConnected){ rb.classList.add('show'); }
 }
 
 // ── Connect ───────────────────────────────────────────────────────────────────
@@ -3503,6 +3744,7 @@ async function doConnect(){
     const safeCode=san(code);
     safeRoom=safeCode;
     markChatSeen(safeCode);   // opening a chat clears its unread badge on the list
+    _restoreDraft(safeCode);  // bring back whatever you were mid-typing here
     topic     =`neochat/v1/${safeCode}`;
     callTopic = CALL_TOPIC_PREFIX + safeCode;
     // In DM mode the header already set by startDM; otherwise show room code
@@ -3512,6 +3754,7 @@ async function doConnect(){
         if(hdrRoom) hdrRoom.textContent = code;
         if(hdrAvatar){ hdrAvatar.textContent='💬'; hdrAvatar.style.background=''; hdrAvatar.style.color=''; hdrAvatar.style.fontSize=''; hdrAvatar.style.border=''; }
     }
+    _wasEverConnected=false;   // fresh room: don't show the reconnect banner on its first connect
     setDot('');
     clearMsgs();
     _seen.clear();
@@ -3840,6 +4083,7 @@ function sendMsg(){
     if(!txt||!clients.length)return;
     if(_mutedUsers.has(myName.toLowerCase())){ sysMsg('🔇 You are muted and cannot send messages.'); return; }
     inp.value='';
+    _clearDraft(safeRoom);
     // Keep focus so the phone keyboard stays open for the next message
     try{ inp.focus(); }catch(e){}
     const msg={sender:myName,text:txt,ts:now(),system:false};
@@ -3852,6 +4096,10 @@ function sendMsg(){
     if(_pw&&_pw.fx===1) playSparkle();
     // Show own message
     addBubble(myName,txt,msg.ts,true,msg.quote||null,msg.thread_id||null);
+    {
+        const _b=document.getElementById('b'+(_bubbleCounter-1));
+        if(_b){ _b.classList.add('just-sent'); setTimeout(()=>_b.classList.remove('just-sent'),450); }
+    }
     if(_ttlActive&&_ttlSeconds>0){
         const b=document.getElementById('b'+(_bubbleCounter-1));
         if(b) setTimeout(()=>{
@@ -4568,12 +4816,50 @@ function sysMsg(text){
     d.innerHTML=`<div class="b-text">— ${esc(text)} —</div>`;
     appendEl(d);
 }
+// ── Jump-to-latest: don't yank the user to the bottom if they've scrolled up
+// to read history; show a floating pill with an unseen count instead ──
+let _unseenCount=0;
+function _isNearBottom(box){ return (box.scrollHeight-box.scrollTop-box.clientHeight) < 120; }
+function _updateJumpBtn(){
+    const btn=document.getElementById('jump-latest-btn');
+    if(!btn) return;
+    if(_unseenCount>0){
+        const b=document.getElementById('jump-latest-badge');
+        if(b) b.textContent = _unseenCount>99?'99+':String(_unseenCount);
+        btn.classList.add('show');
+    } else {
+        btn.classList.remove('show');
+    }
+}
+function jumpToLatest(){
+    const box=document.getElementById('messages');
+    if(box) box.scrollTop=box.scrollHeight;
+    _unseenCount=0;
+    _updateJumpBtn();
+}
+(function(){
+    const box=document.getElementById('messages');
+    if(box) box.addEventListener('scroll',()=>{
+        if(_unseenCount>0 && _isNearBottom(box)){ _unseenCount=0; _updateJumpBtn(); }
+    });
+})();
 function appendEl(el){
     const box=document.getElementById('messages');
+    const wasAtBottom=_isNearBottom(box);
     box.appendChild(el);
-    box.scrollTop=box.scrollHeight;
+    if(wasAtBottom){
+        box.scrollTop=box.scrollHeight;
+    } else if(!el.classList.contains('date-sep')){
+        _unseenCount++;
+        _updateJumpBtn();
+    }
 }
-function clearMsgs(){ document.getElementById('messages').innerHTML=''; _lastDate=''; }
+function clearMsgs(){
+    document.getElementById('messages').innerHTML='';
+    _lastDate='';
+    _unseenCount=0;
+    _updateJumpBtn();
+}
 
 // ── Username uniqueness (MQTT retained registry) ──────────────────────────────
 function checkUsernameAvailable(name){
@@ -4631,8 +4917,11 @@ async function doRegister(){
 // ── File / image sending ──────────────────────────────────────────────────────
 function handleFile(input){
     const file=input.files[0];
-    if(!file||!clients.length){ input.value=''; return; }
     input.value='';
+    _sendImageBlob(file);
+}
+function _sendImageBlob(file){
+    if(!file||!clients.length) return;
     const reader=new FileReader();
     reader.onload=e=>{
         const img=new Image();
@@ -4656,6 +4945,21 @@ function handleFile(input){
     };
     reader.readAsDataURL(file);
 }
+// ── Paste an image straight from the clipboard into the message box ──────────
+(function(){
+    const inp=document.getElementById('msg-in');
+    if(!inp) return;
+    inp.addEventListener('paste', e=>{
+        const items=(e.clipboardData||{}).items||[];
+        for(const item of items){
+            if(item.kind==='file' && item.type.indexOf('image/')===0){
+                const file=item.getAsFile();
+                if(file){ e.preventDefault(); _sendImageBlob(file); }
+                return;
+            }
+        }
+    });
+})();
 function addImageBubble(sender,b64,mime,ts,mine){
     const d=document.createElement('div');
     d.className='bubble '+(mine?'mine':'theirs');
@@ -5493,7 +5797,28 @@ let _rooms         = [];     // [{name,code,msgs:[],date,bubbles}]
 let _curRoomIdx    = -1;
 
 // ── Typing indicator ──────────────────────────────────────────────────────────
+// ── Draft autosave — never lose what you typed if you navigate away ──────────
+function _draftKey(room){ return 'neochat_draft_'+room; }
+function _saveDraft(){
+    if(!safeRoom) return;
+    const inp=document.getElementById('msg-in');
+    const val=inp?inp.value:'';
+    try{
+        if(val) localStorage.setItem(_draftKey(safeRoom), val);
+        else localStorage.removeItem(_draftKey(safeRoom));
+    }catch(e){}
+}
+function _restoreDraft(room){
+    try{
+        const val=localStorage.getItem(_draftKey(room));
+        const inp=document.getElementById('msg-in');
+        if(inp && val) inp.value=val;
+    }catch(e){}
+}
+function _clearDraft(room){ try{ localStorage.removeItem(_draftKey(room)); }catch(e){} }
+
 function onMsgKey(){
+    _saveDraft();
     if(!clients.length) return;
     clearTimeout(_typingTimer);
     pubAll(topic, JSON.stringify({type:'typing',from:myName,ts:now()}), {qos:0});
@@ -5633,6 +5958,16 @@ function toggleVoiceRec(){
     if(_voiceRecording) stopVoiceRec();
     else startVoiceRec();
 }
+let _voiceRecTimer=null;
+function _startVoiceRecTimer(){ _updateVoiceRecLabel(); _voiceRecTimer=setInterval(_updateVoiceRecLabel,500); }
+function _stopVoiceRecTimer(){ if(_voiceRecTimer){ clearInterval(_voiceRecTimer); _voiceRecTimer=null; } }
+function _updateVoiceRecLabel(){
+    const btn=document.getElementById('voice-rec-btn');
+    const lb=btn&&btn.querySelector('.attach-opt-label');
+    if(!lb) return;
+    const secs=Math.floor((Date.now()-_voiceStart)/1000);
+    lb.textContent=Math.floor(secs/60)+':'+String(secs%60).padStart(2,'0');
+}
 function startVoiceRec(){
     navigator.mediaDevices.getUserMedia({audio:true}).then(stream=>{
         _voiceChunks=[];
@@ -5652,14 +5987,23 @@ function startVoiceRec(){
             };
             reader.readAsDataURL(blob);
             _voiceRecording=false;
+            _stopVoiceRecTimer();
             const btn=document.getElementById('voice-rec-btn');
-            if(btn){ btn.classList.remove('recording'); btn.textContent='🎤'; }
+            if(btn){
+                btn.classList.remove('recording');
+                const ic=btn.querySelector('.attach-opt-icon'); if(ic) ic.textContent='🎤';
+                const lb=btn.querySelector('.attach-opt-label'); if(lb) lb.textContent='Voice';
+            }
         };
         _mediaRecorder.start();
         _voiceRecording=true;
         _voiceStart=Date.now();
         const btn=document.getElementById('voice-rec-btn');
-        if(btn){ btn.classList.add('recording'); btn.textContent='⏹'; }
+        if(btn){
+            btn.classList.add('recording');
+            const ic=btn.querySelector('.attach-opt-icon'); if(ic) ic.textContent='⏹';
+        }
+        _startVoiceRecTimer();
     }).catch(err=>{ sysMsg('Microphone error: '+(err.message||err)); });
 }
 function stopVoiceRec(){
@@ -5736,6 +6080,7 @@ function dismissNotifBar(){
 }
 function _showNotif(sender, text){
     if(document.hasFocus()) return;
+    if(isMutedChat(safeRoom)) return;   // this specific chat was muted locally
     playPlusSound();   // NeoPlus custom melody (silent for free / sound 'none')
     if(typeof Notification==='undefined'||Notification.permission!=='granted') return;
     try{ new Notification('NeoChat — '+sender,{body:text,icon:'',silent:plusActive()}); }catch(e){}
@@ -6553,7 +6898,16 @@ function _buildRecentChats(){
             open:()=>{ grpOpenById(g.id); },
         });
     });
-    items.sort((a,b)=>b.ts-a.ts);
+    // An unsent draft in a chat takes over its preview line, like "Draft: …"
+    items.forEach(it=>{
+        let draft=null; try{ draft=localStorage.getItem(_draftKey(it.code)); }catch(e){}
+        if(draft){ it.preview=draft; it.isDraft=true; }
+    });
+    items.sort((a,b)=>{
+        const ap=isPinnedChat(a.code)?1:0, bp=isPinnedChat(b.code)?1:0;
+        if(ap!==bp) return bp-ap;   // pinned chats float to the top
+        return b.ts-a.ts;
+    });
     return items;
 }
 function openRoomByCode(code){
@@ -6574,19 +6928,26 @@ function renderChatList(){
     if(empty) empty.style.display='none';
     items.forEach(it=>{
         const row=document.createElement('div');
-        row.className='chat-row';
+        const pinned=isPinnedChat(it.code), muted=isMutedChat(it.code);
+        row.className='chat-row'+(pinned?' pinned':'');
         row.dataset.name=it.name.toLowerCase();
         const glyph = it.kind==='room' ? '💬' : (it.name[0]||'?').toUpperCase();
         row.innerHTML=
             `<div class="chat-row-avatar" style="background:${_avatarColor(it.name)}">${esc(glyph)}</div>`+
             `<div class="chat-row-body">`+
-                `<div class="chat-row-top"><span class="chat-row-name">${esc(it.name)}</span>`+
+                `<div class="chat-row-top"><span class="chat-row-name">`+
+                    (pinned?'<span class="chat-row-pin">📌</span> ':'')+esc(it.name)+
+                    (muted?' <span class="chat-row-mute">🔕</span>':'')+
+                    `</span>`+
                     `<span class="chat-row-time">${_relTime(it.ts)}</span></div>`+
-                `<div class="chat-row-bottom"><span class="chat-row-preview">${esc(it.preview||'')}</span>`+
-                    (it.unread>0?`<span class="chat-row-badge">${it.unread>99?'99+':it.unread}</span>`:'')+
+                `<div class="chat-row-bottom"><span class="chat-row-preview${it.isDraft?' is-draft':''}">`+
+                    (it.isDraft?'<b>Draft:</b> ':'')+esc(it.preview||'')+`</span>`+
+                    (it.unread>0 && !muted?`<span class="chat-row-badge">${it.unread>99?'99+':it.unread}</span>`:'')+
                 `</div>`+
             `</div>`;
         row.onclick=()=>{ it.open(); };   // doConnect() marks the chat seen
+        row.oncontextmenu=(e)=>{ e.preventDefault(); openChatRowMenu(it); };   // right-click on desktop
+        _attachLongPress(row, it);
         wrap.appendChild(row);
     });
 }
@@ -6598,6 +6959,80 @@ function filterChatList(q){
 }
 function openNewChatSheet(){ document.getElementById('new-chat-sheet').classList.add('open'); }
 function closeNewChatSheet(){ document.getElementById('new-chat-sheet').classList.remove('open'); }
+
+// ── Chat list quick actions: pin / mute / delete via long-press ──────────────
+const PINNED_CHATS_KEY='neochat_pinned_chats';
+const MUTED_CHATS_KEY='neochat_muted_chats';
+function _loadCodeSet(key){ try{ return new Set(JSON.parse(localStorage.getItem(key)||'[]')); }catch(e){ return new Set(); } }
+function _saveCodeSet(key,set){ try{ localStorage.setItem(key, JSON.stringify([...set])); }catch(e){} }
+function isPinnedChat(code){ return _loadCodeSet(PINNED_CHATS_KEY).has(code); }
+function isMutedChat(code){ return _loadCodeSet(MUTED_CHATS_KEY).has(code); }
+function toggleChatPinned(code){
+    const s=_loadCodeSet(PINNED_CHATS_KEY);
+    if(s.has(code)) s.delete(code); else s.add(code);
+    _saveCodeSet(PINNED_CHATS_KEY,s);
+    renderChatList();
+}
+function toggleChatMuted(code){
+    const s=_loadCodeSet(MUTED_CHATS_KEY);
+    if(s.has(code)) s.delete(code); else s.add(code);
+    _saveCodeSet(MUTED_CHATS_KEY,s);
+    renderChatList();
+}
+function deleteChatFromList(item){
+    _clearHist(item.code);
+    try{ localStorage.removeItem(_lastSeenKey(item.code)); }catch(e){}
+    if(item.kind==='dm'){
+        const list=_getDMContacts().filter(c=>c.username!==item.name);
+        try{ localStorage.setItem(DM_CONTACTS_KEY, JSON.stringify(list)); }catch(e){}
+    } else if(item.kind==='group'){
+        const g=_loadGroups().find(x=>san(x.code||'')===item.code);
+        if(g) _deleteGroupById(g.id);
+    }
+    // plain 'room': clearing its history above is enough — with nothing left
+    // to read, it naturally drops out of the list until you message it again
+    const p=_loadCodeSet(PINNED_CHATS_KEY); p.delete(item.code); _saveCodeSet(PINNED_CHATS_KEY,p);
+    const m=_loadCodeSet(MUTED_CHATS_KEY); m.delete(item.code); _saveCodeSet(MUTED_CHATS_KEY,m);
+    renderChatList();
+}
+
+let _pressTimer=null;
+let _longPressItem=null;
+function _attachLongPress(rowEl, item){
+    const start=()=>{ _pressTimer=setTimeout(()=>{ _pressTimer=null; openChatRowMenu(item); },480); };
+    const cancel=()=>{ if(_pressTimer){ clearTimeout(_pressTimer); _pressTimer=null; } };
+    rowEl.addEventListener('touchstart',start,{passive:true});
+    rowEl.addEventListener('touchend',cancel);
+    rowEl.addEventListener('touchmove',cancel);
+    rowEl.addEventListener('touchcancel',cancel);
+    rowEl.addEventListener('mousedown',start);
+    rowEl.addEventListener('mouseup',cancel);
+    rowEl.addEventListener('mouseleave',cancel);
+}
+function openChatRowMenu(item){
+    _longPressItem=item;
+    const title=document.getElementById('chat-row-menu-title');
+    if(title) title.textContent=item.name;
+    const pinLbl=document.getElementById('chat-row-menu-pin-label');
+    if(pinLbl) pinLbl.textContent = isPinnedChat(item.code)?'Unpin':'Pin to top';
+    const muteLbl=document.getElementById('chat-row-menu-mute-label');
+    if(muteLbl) muteLbl.textContent = isMutedChat(item.code)?'Unmute notifications':'Mute notifications';
+    document.getElementById('chat-row-menu').classList.add('open');
+}
+function closeChatRowMenu(){
+    const m=document.getElementById('chat-row-menu');
+    if(m) m.classList.remove('open');
+    _longPressItem=null;
+}
+function chatRowMenuPin(){ if(_longPressItem) toggleChatPinned(_longPressItem.code); closeChatRowMenu(); }
+function chatRowMenuMute(){ if(_longPressItem) toggleChatMuted(_longPressItem.code); closeChatRowMenu(); }
+function chatRowMenuDelete(){
+    const item=_longPressItem;
+    closeChatRowMenu();
+    if(item && confirm('Remove "'+item.name+'" from your chat list?\n\nThis only clears it from this device — it does not affect other members or your account elsewhere.')){
+        deleteChatFromList(item);
+    }
+}
 
 async function searchUser(){
     const inp=document.getElementById('contact-search-in');
