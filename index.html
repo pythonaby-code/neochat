@@ -318,20 +318,7 @@ button:active{transform:scale(0.96);opacity:0.9;}
 .logo p{color:var(--t3);font-size:13px;margin-top:8px;letter-spacing:.5px;}
 
 /* ── Login / Account screens ── */
-#login{justify-content:center;align-items:center;padding:40px 28px;gap:16px;overflow-y:auto;}
-/* On a real desktop the login/chooser content used to stretch edge-to-edge
-   across the whole window (no cap, unlike .account-card's own max-width) —
-   looked like an empty, unfinished strip on any wide monitor. Cap it to a
-   readable panel width and center it, same idea as the account card. */
-#login>#acc-info-bar,#login>.logo,#login>#login-chooser,
-#login>#login-join-panel,#login>#login-dm-panel,#login>.login-admin-row{
-  width:100%;max-width:480px;
-}
-/* The phone chat list is a different shape entirely (full-height scrolling
-   list, not a small centered card) — it must keep filling the screen's full
-   width; align-items:center above would otherwise shrink it to fit content
-   since it has no width of its own. */
-#login>#login-chatlist{align-self:stretch;}
+#login{justify-content:center;padding:40px 28px;gap:16px;overflow-y:auto;}
 /* Chat-list mode (mobile home): top-aligned, no card centering, list fills height.
    Only ever applied on mobile — kept here at base specificity; the mobile block
    below re-declares it nested under html.ui-mobile so it still wins over that
@@ -1553,7 +1540,7 @@ window.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key==='Escap
             end-to-end encrypted chat — only the two of you can read it.</div>
     </div>
 
-    <div class="login-admin-row" style="display:flex; justify-content:flex-end; gap:2px; margin-top:-8px;">
+    <div style="display:flex; justify-content:flex-end; gap:2px; margin-top:-8px;">
         <button class="btn-admin" onclick="openOperator()">💻</button>
         <button class="btn-admin" onclick="openAdmin()">🔐</button>
     </div>
