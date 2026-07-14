@@ -71,9 +71,15 @@
     var pref=null; try{ pref=localStorage.getItem('neochat_ui'); }catch(e){}
     var mode=(pref==='mobile'||pref==='desktop') ? pref
              : (window.NEO_DEVICE_MOBILE ? 'mobile' : 'desktop');
-    /* auto-desktop falls back to the phone layout in a narrow window;
-       an explicit user choice is honored as-is */
-    if(mode==='desktop' && !pref && window.innerWidth<900) mode='mobile';
+    /* Device type (or an explicit Settings → Interface choice) decides the
+       mode — NOT window width. A narrow-window fallback used to live here,
+       but ui-desktop/ui-mobile now drive real structural layout (the
+       two-pane sidebar chat window, the phone chat-list home screen), not
+       just cosmetic sizing — so a plain unmaximized PC window would silently
+       flip a real desktop into the phone layout on every resize. A genuinely
+       tiny window already degrades gracefully on its own via a dedicated
+       @media(max-width:699px) rule nested under html.ui-desktop, which drops
+       the sidebar without touching the device classification itself. */
     root.classList.toggle('ui-desktop', mode==='desktop');
     root.classList.toggle('ui-mobile',  mode==='mobile');
     window.NEO_UI_MODE=mode;
