@@ -195,6 +195,13 @@ button:active{transform:scale(0.96);opacity:0.9;}
 
 /* ── Login / Account screens ── */
 #login{justify-content:center;padding:40px 28px;gap:16px;overflow-y:auto;}
+/* Chat-list mode (mobile home): top-aligned, no card centering, list fills height.
+   Only ever applied on mobile — kept here at base specificity; the mobile block
+   below re-declares it nested under html.ui-mobile so it still wins over that
+   block's own plain #login rule (higher specificity from the extra nesting). */
+#login.list-mode{justify-content:flex-start;padding:0;gap:0;overflow-y:hidden;}
+#login.list-mode .logo{display:none;}
+#login.list-mode #acc-info-bar{margin:calc(10px + env(safe-area-inset-top)) 14px 2px;}
 #account{justify-content:center;align-items:center;padding:24px;overflow-y:auto;}
 .account-card{width:100%;max-width:390px;background:var(--glass-1);border:1px solid var(--b1);border-radius:var(--r4);padding:36px 28px;display:flex;flex-direction:column;gap:15px;box-shadow:var(--s2),0 0 60px rgba(0,0,0,0.4);backdrop-filter:blur(24px) saturate(140%);-webkit-backdrop-filter:blur(24px) saturate(140%);position:relative;z-index:2;animation:card-rise 9s ease-in-out infinite;}
 @keyframes card-rise{0%,100%{transform:translateY(0);box-shadow:var(--s2),0 0 60px rgba(0,0,0,0.4),0 0 80px rgba(255,255,255,0.06);}50%{transform:translateY(-4px);box-shadow:var(--s2),0 0 60px rgba(0,0,0,0.4),0 0 110px rgba(255,255,255,0.14);}}
@@ -399,8 +406,8 @@ button:active{transform:scale(0.96);opacity:0.9;}
 .btn-dm-send{background:rgba(96,165,250,0.14);border:1px solid rgba(96,165,250,0.36);color:var(--info);border-radius:50%;width:46px;height:46px;font-size:20px;padding:0;flex-shrink:0;display:flex;align-items:center;justify-content:center;}
 .btn-dm-cancel{background:transparent;border:none;color:var(--t3);font-size:13px;padding:4px 0;text-align:center;}
 
-#attach-sheet,#more-menu,#settings-sheet,#groups-sheet{position:fixed;inset:0;z-index:100;background:rgba(4,2,12,0.75);display:none;align-items:flex-end;backdrop-filter:blur(8px);}
-#attach-sheet.open,#more-menu.open,#settings-sheet.open,#groups-sheet.open{display:flex;}
+#attach-sheet,#more-menu,#settings-sheet,#groups-sheet,#new-chat-sheet{position:fixed;inset:0;z-index:100;background:rgba(4,2,12,0.75);display:none;align-items:flex-end;backdrop-filter:blur(8px);}
+#attach-sheet.open,#more-menu.open,#settings-sheet.open,#groups-sheet.open,#new-chat-sheet.open{display:flex;}
 .attach-sheet-inner,.more-menu-inner,.settings-sheet-inner{width:100%;background:rgba(7,5,20,0.98);border-top:1px solid var(--b1);border-radius:22px 22px 0 0;box-shadow:0 -16px 48px rgba(0,0,0,0.50);}
 .groups-sheet-inner{width:100%;background:rgba(7,5,20,0.98);border-top:1px solid var(--b1);border-radius:22px 22px 0 0;box-shadow:0 -16px 48px rgba(0,0,0,0.50);}
 .attach-sheet-inner{padding:20px 16px;padding-bottom:max(20px,env(safe-area-inset-bottom));display:flex;gap:8px;flex-wrap:wrap;}
@@ -593,6 +600,40 @@ button:active{transform:scale(0.96);opacity:0.9;}
 .dm-item-info{flex:1;min-width:0;}
 .dm-item-name{color:var(--t1);font-size:14px;font-weight:600;}
 .dm-item-preview{color:var(--t3);font-size:11px;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+
+/* ── Chat list (mobile home) — Telegram-style recent-conversations screen ── */
+.chatlist-title-row{display:flex;align-items:center;justify-content:space-between;
+  padding:calc(14px + env(safe-area-inset-top)) 18px 6px;flex-shrink:0;}
+.chatlist-title{color:var(--t1);font-size:26px;font-weight:800;letter-spacing:.3px;}
+.chatlist-settings-btn{background:none;border:none;color:var(--t2);font-size:19px;width:auto;padding:4px 6px;}
+.chatlist-search{display:flex;align-items:center;gap:9px;margin:6px 14px 8px;padding:10px 14px;
+  border-radius:14px;background:rgba(255,255,255,.05);border:1px solid var(--b2);flex-shrink:0;}
+.chatlist-search input{flex:1;width:auto;background:none;border:none;padding:0;margin:0;font-size:14px;}
+.chatlist-search input:focus{box-shadow:none;border:none;background:none;}
+.chatlist-items{flex:1;min-height:0;overflow-y:auto;padding:2px 4px calc(84px + env(safe-area-inset-bottom));-webkit-overflow-scrolling:touch;}
+.chat-row{display:flex;align-items:center;gap:12px;padding:10px 14px;cursor:pointer;
+  border-radius:14px;margin:1px 6px;transition:background .12s;}
+.chat-row:active,.chat-row:hover{background:rgba(255,255,255,.05);}
+.chat-row-avatar{width:52px;height:52px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  font-size:20px;font-weight:700;color:#fff;flex-shrink:0;box-shadow:0 4px 14px rgba(0,0,0,.35);}
+.chat-row-body{flex:1;min-width:0;}
+.chat-row-top{display:flex;align-items:baseline;justify-content:space-between;gap:8px;}
+.chat-row-name{color:var(--t1);font-size:15.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.chat-row-time{color:var(--t3);font-size:11.5px;flex-shrink:0;}
+.chat-row-bottom{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:2px;}
+.chat-row-preview{color:var(--t3);font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.chat-row-badge{background:var(--accent);color:#04130a;border-radius:999px;min-width:20px;height:20px;
+  font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;padding:0 6px;flex-shrink:0;}
+.chatlist-empty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:8px;padding:24px;text-align:center;}
+.chatlist-empty-ico{font-size:44px;opacity:.5;}
+.chatlist-empty-title{color:var(--t2);font-size:16px;font-weight:700;}
+.chatlist-empty-sub{color:var(--t3);font-size:12.5px;line-height:1.5;}
+.chatlist-fab{position:fixed;right:18px;bottom:calc(20px + env(safe-area-inset-bottom));
+  width:56px;height:56px;border-radius:50%;background:var(--accent);color:#04130a;
+  font-size:22px;padding:0;display:flex;align-items:center;justify-content:center;
+  box-shadow:0 8px 28px rgba(0,0,0,.45),0 0 0 1px rgba(255,255,255,.12);z-index:40;}
+.chatlist-fab:active{transform:scale(0.94);}
 .profile-body{flex:1;overflow-y:auto;padding:24px 20px 12px;display:flex;flex-direction:column;align-items:center;gap:0;}
 .profile-body::-webkit-scrollbar{display:none;}
 .profile-avatar-xl{width:84px;height:84px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:34px;font-weight:700;color:#fff;box-shadow:0 8px 32px rgba(0,0,0,.50);margin-bottom:14px;position:relative;}
@@ -970,6 +1011,20 @@ html.ui-mobile{
   .login-action-sub{font-size:12px;}
   .login-action-arrow{font-size:24px;}
   #acc-info-bar{border-radius:16px;padding:12px 16px;}
+  /* Chat-list mode wins over the plain #login rule above (extra nesting = higher specificity) */
+  #login.list-mode{padding:0;gap:0;}
+
+  /* ── chat list (Telegram-style home): bigger rows/avatars for touch ── */
+  .chatlist-title{font-size:29px;}
+  .chatlist-settings-btn{font-size:21px;padding:6px 8px;}
+  .chatlist-search{padding:12px 16px;border-radius:16px;}
+  .chatlist-search input{font-size:16px;}
+  .chat-row{padding:12px 16px;gap:13px;}
+  .chat-row-avatar{width:56px;height:56px;font-size:21px;}
+  .chat-row-name{font-size:16px;}
+  .chat-row-preview{font-size:13.5px;}
+  .chat-row-badge{min-width:22px;height:22px;font-size:11.5px;}
+  .chatlist-fab{width:58px;height:58px;font-size:23px;}
 
   /* ── chat: single-row header (rows merged by JS), roomier bubbles ── */
   .chat-hdr-contact{padding:6px 10px 8px;padding-top:max(8px,env(safe-area-inset-top));gap:8px;}
@@ -1237,7 +1292,7 @@ window.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key==='Escap
         <p>Real-time Internet Messenger</p>
     </div>
 
-    <!-- Chooser: 3 ways to start -->
+    <!-- Chooser: 3 ways to start (desktop default view) -->
     <div id="login-chooser" style="display:flex;flex-direction:column;gap:10px;">
         <button class="login-action" onclick="loginShow('join')">
             <span class="login-action-ico">🔑</span>
@@ -1265,9 +1320,29 @@ window.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key==='Escap
         </button>
     </div>
 
+    <!-- Chat list: mobile default view — recent DMs/groups/rooms, Telegram-style -->
+    <div id="login-chatlist" style="display:none;flex-direction:column;flex:1;min-height:0;">
+        <div class="chatlist-title-row">
+            <span class="chatlist-title">Chats</span>
+            <button class="chatlist-settings-btn" onclick="openSettingsSheet()" title="Settings">⚙️</button>
+        </div>
+        <div class="chatlist-search">
+            <span class="side-search-ico">🔍</span>
+            <input id="chatlist-search-in" type="text" placeholder="Search"
+                   oninput="filterChatList(this.value)" autocomplete="off">
+        </div>
+        <div id="chatlist-items" class="chatlist-items"></div>
+        <div id="chatlist-empty" class="chatlist-empty" style="display:none;">
+            <div class="chatlist-empty-ico">💬</div>
+            <div class="chatlist-empty-title">No chats yet</div>
+            <div class="chatlist-empty-sub">Tap the ✎ button to join a room, message<br>someone, or start a group.</div>
+        </div>
+    </div>
+    <button id="chatlist-fab" class="chatlist-fab" onclick="openNewChatSheet()" title="New chat" style="display:none;">✎</button>
+
     <!-- Join with code panel -->
     <div id="login-join-panel" style="display:none;flex-direction:column;gap:14px;">
-        <button class="grp-back" onclick="loginShow('chooser')">←  Back</button>
+        <button class="grp-back" onclick="loginShow('home')">←  Back</button>
         <div>
             <span class="field-label">Room code</span>
             <div class="code-row">
@@ -1286,7 +1361,7 @@ window.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key==='Escap
 
     <!-- Send private message panel -->
     <div id="login-dm-panel" style="display:none;flex-direction:column;gap:14px;">
-        <button class="grp-back" onclick="loginShow('chooser')">←  Back</button>
+        <button class="grp-back" onclick="loginShow('home')">←  Back</button>
         <div>
             <span class="field-label">Send a private message</span>
             <div class="code-row">
@@ -1637,6 +1712,40 @@ window.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key==='Escap
 </div>
 
 <!-- Settings sheet -->
+<!-- New chat sheet — the mobile chat-list's "+" button (Join / DM / Group / Bots) -->
+<div id="new-chat-sheet" onclick="if(event.target===this)closeNewChatSheet()">
+    <div class="more-menu-inner">
+        <button class="more-menu-item" onclick="closeNewChatSheet();loginShow('join')">
+            <span class="more-menu-item-icon">🔑</span>
+            <span class="more-menu-item-label">Join a chat with a code</span>
+        </button>
+        <button class="more-menu-item" onclick="closeNewChatSheet();loginShow('dm')">
+            <span class="more-menu-item-icon">✉️</span>
+            <span class="more-menu-item-label">Send a private message</span>
+        </button>
+        <button class="more-menu-item" onclick="closeNewChatSheet();openGroupsScreen()">
+            <span class="more-menu-item-icon">👥</span>
+            <span class="more-menu-item-label">Create a group</span>
+        </button>
+        <button class="more-menu-item" onclick="closeNewChatSheet();openBotsScreen()">
+            <span class="more-menu-item-icon">🤖</span>
+            <span class="more-menu-item-label">Platform of Bots</span>
+        </button>
+        <button class="more-menu-item" onclick="closeNewChatSheet();openOperator()">
+            <span class="more-menu-item-icon">💻</span>
+            <span class="more-menu-item-label">Operator Panel</span>
+        </button>
+        <button class="more-menu-item" onclick="closeNewChatSheet();openAdmin()">
+            <span class="more-menu-item-icon">🔐</span>
+            <span class="more-menu-item-label">Creator Panel</span>
+        </button>
+        <button class="more-menu-item" onclick="closeNewChatSheet()">
+            <span class="more-menu-item-icon">✕</span>
+            <span class="more-menu-item-label">Close</span>
+        </button>
+    </div>
+</div>
+
 <div id="settings-sheet" onclick="if(event.target===this)closeSettingsSheet()">
     <div class="settings-sheet-inner">
         <button class="settings-item" onclick="pickAccentColor();closeSettingsSheet()">
@@ -3356,7 +3465,7 @@ function genCode(){
     document.getElementById('code-in').value=c;
 }
 
-function showLogin(){ show('login'); try{ loginShow('chooser'); }catch(e){} }
+function showLogin(){ show('login'); try{ loginShow('home'); }catch(e){} }
 function showChat() { show('chat');  }
 function show(id){
     document.querySelectorAll('.screen').forEach(s=>s.classList.add('hidden'));
@@ -3393,6 +3502,7 @@ async function doConnect(){
     myName=name;
     const safeCode=san(code);
     safeRoom=safeCode;
+    markChatSeen(safeCode);   // opening a chat clears its unread badge on the list
     topic     =`neochat/v1/${safeCode}`;
     callTopic = CALL_TOPIC_PREFIX + safeCode;
     // In DM mode the header already set by startDM; otherwise show room code
@@ -6337,6 +6447,158 @@ function renderRecentDMs(){
     });
 }
 
+// ── Chat list (mobile home screen) — Telegram-style recent conversations ──
+// Built from data that already exists: DM_CONTACTS_KEY for DMs (friendly
+// name + preview already resolved), and the per-room local history
+// (neochat_hist_<code>) for groups/plain rooms — no new wire protocol,
+// no new tracking needed beyond "when did I last look at this chat".
+function _lastSeenKey(code){ return 'neochat_lastseen_'+code; }
+function markChatSeen(code){
+    if(!code) return;
+    try{ localStorage.setItem(_lastSeenKey(code), String(Date.now())); }catch(e){}
+}
+function _lastSeen(code){
+    try{ return Number(localStorage.getItem(_lastSeenKey(code))||0); }catch(e){ return 0; }
+}
+function _histEntryEpoch(entry){
+    // History entries store ts as 'HH:MM' + a separate 'date' (YYYY-MM-DD) —
+    // combine them into a real sortable/comparable timestamp.
+    try{
+        const d = entry.date || new Date().toISOString().slice(0,10);
+        const t = entry.ts || '00:00';
+        const ms = Date.parse(d+'T'+t+':00');
+        return isNaN(ms) ? 0 : ms;
+    }catch(e){ return 0; }
+}
+function _histEntryPreview(entry){
+    if(!entry) return '';
+    switch(entry.type){
+        case 'image': return '📎 Photo';
+        case 'voice': return '🎤 Voice message';
+        case 'file':  return '📁 '+(entry.name||'File');
+        case 'sys':   return entry.text||'';
+        default:      return (entry.sender?esc(entry.sender)+': ':'')+(entry.text||'');
+    }
+}
+function _lastRealEntry(hist){
+    // Prefer the last non-system entry; fall back to whatever's there.
+    for(let i=hist.length-1;i>=0;i--){ if(hist[i] && hist[i].type!=='sys') return hist[i]; }
+    return hist[hist.length-1]||null;
+}
+function _unreadCount(code, hist, lastSeen){
+    if(!lastSeen) return 0;   // never opened locally yet (fresh device) — don't guess
+    let n=0;
+    for(const e of hist){
+        if(e.type==='sys') continue;
+        if(e.sender && myName && e.sender===myName) continue;   // never count our own
+        if(_histEntryEpoch(e) > lastSeen) n++;
+    }
+    return n;
+}
+function _relTime(epochMs){
+    if(!epochMs) return '';
+    const diff = Date.now()-epochMs;
+    const min = Math.floor(diff/60000);
+    if(min<1) return 'now';
+    if(min<60) return min+'m';
+    const hr = Math.floor(min/60);
+    if(hr<24) return hr+'h';
+    const day = Math.floor(hr/24);
+    if(day<7) return day+'d';
+    const d = new Date(epochMs);
+    return d.toLocaleDateString(undefined,{month:'short',day:'numeric'});
+}
+function _buildRecentChats(){
+    const items=[];
+    _getDMContacts().forEach(c=>{
+        const code = san('__dm__'+[myName,c.username].filter(Boolean).sort().join('_'));
+        const seen = _lastSeen(code);
+        let hist=[]; try{ hist=JSON.parse(localStorage.getItem(_histKey(code))||'[]'); }catch(e){}
+        items.push({
+            kind:'dm', name:c.username, code, preview:c.preview||'Tap to message',
+            ts:c.ts||0, unread:_unreadCount(code,hist,seen),
+            open:()=>{ startDM(c.username); },
+        });
+    });
+    const groups=_loadGroups();
+    const dmCodes=new Set(items.map(i=>i.code));
+    const seenGroupCodes=new Set();
+    for(let i=0;i<localStorage.length;i++){
+        const k=localStorage.key(i);
+        if(!k || k.indexOf('neochat_hist_')!==0) continue;
+        const code=k.slice('neochat_hist_'.length);
+        if(code.indexOf('__dm__')===0 || dmCodes.has(code)) continue;   // DMs handled above
+        let hist; try{ hist=JSON.parse(localStorage.getItem(k)||'[]'); }catch(e){ continue; }
+        if(!hist || !hist.length) continue;
+        const last=_lastRealEntry(hist);
+        if(!last) continue;
+        const grp=groups.find(g=>san(g.code||'')===code);
+        if(grp) seenGroupCodes.add(grp.id);
+        const seen=_lastSeen(code);
+        items.push({
+            kind: grp?'group':'room', name: grp?(grp.name||'Group'):code, code,
+            preview:_histEntryPreview(last), ts:_histEntryEpoch(last),
+            unread:_unreadCount(code,hist,seen),
+            open:()=>{ if(grp) grpOpenById(grp.id); else openRoomByCode(code); },
+        });
+    }
+    // Groups with no messages yet still belong on the list (you just made or
+    // joined one) — show them with a placeholder preview, sorted by creation.
+    groups.forEach(g=>{
+        if(seenGroupCodes.has(g.id)) return;
+        const created = Date.parse((g.created||'')+'T00:00:00') || 0;
+        items.push({
+            kind:'group', name:g.name||'Group', code:g.code,
+            preview:'No messages yet', ts:created, unread:0,
+            open:()=>{ grpOpenById(g.id); },
+        });
+    });
+    items.sort((a,b)=>b.ts-a.ts);
+    return items;
+}
+function openRoomByCode(code){
+    document.getElementById('code-in').value=code;
+    const pw=document.getElementById('room-pw-in'); if(pw) pw.value='';
+    doConnect();
+}
+function renderChatList(){
+    const wrap=document.getElementById('chatlist-items');
+    const empty=document.getElementById('chatlist-empty');
+    if(!wrap) return;
+    const items=_buildRecentChats();
+    wrap.innerHTML='';
+    if(!items.length){
+        if(empty) empty.style.display='flex';
+        return;
+    }
+    if(empty) empty.style.display='none';
+    items.forEach(it=>{
+        const row=document.createElement('div');
+        row.className='chat-row';
+        row.dataset.name=it.name.toLowerCase();
+        const glyph = it.kind==='room' ? '💬' : (it.name[0]||'?').toUpperCase();
+        row.innerHTML=
+            `<div class="chat-row-avatar" style="background:${_avatarColor(it.name)}">${esc(glyph)}</div>`+
+            `<div class="chat-row-body">`+
+                `<div class="chat-row-top"><span class="chat-row-name">${esc(it.name)}</span>`+
+                    `<span class="chat-row-time">${_relTime(it.ts)}</span></div>`+
+                `<div class="chat-row-bottom"><span class="chat-row-preview">${esc(it.preview||'')}</span>`+
+                    (it.unread>0?`<span class="chat-row-badge">${it.unread>99?'99+':it.unread}</span>`:'')+
+                `</div>`+
+            `</div>`;
+        row.onclick=()=>{ it.open(); };   // doConnect() marks the chat seen
+        wrap.appendChild(row);
+    });
+}
+function filterChatList(q){
+    q=(q||'').trim().toLowerCase();
+    document.querySelectorAll('#chatlist-items .chat-row').forEach(row=>{
+        row.style.display = !q || (row.dataset.name||'').includes(q) ? '' : 'none';
+    });
+}
+function openNewChatSheet(){ document.getElementById('new-chat-sheet').classList.add('open'); }
+function closeNewChatSheet(){ document.getElementById('new-chat-sheet').classList.remove('open'); }
+
 async function searchUser(){
     const inp=document.getElementById('contact-search-in');
     const res=document.getElementById('contact-search-result');
@@ -6524,12 +6786,23 @@ function declineGroupInvite(code){
 
 // ── Login chooser (3 ways to start) ──────────────────────────────────────────
 function loginShow(view){
+    const isMobile = window.NEO_UI_MODE==='mobile';
+    // 'home' resolves to whichever screen is this device's default: the
+    // Telegram-style chat list on mobile, the original card chooser on desktop.
+    if(view==='home') view = isMobile ? 'list' : 'chooser';
     const ch=document.getElementById('login-chooser');
+    const lc=document.getElementById('login-chatlist');
     const jp=document.getElementById('login-join-panel');
     const dp=document.getElementById('login-dm-panel');
+    const fab=document.getElementById('chatlist-fab');
     if(ch) ch.style.display = view==='chooser' ? 'flex' : 'none';
+    if(lc) lc.style.display = view==='list' ? 'flex' : 'none';
     if(jp) jp.style.display = view==='join' ? 'flex' : 'none';
     if(dp) dp.style.display = view==='dm' ? 'flex' : 'none';
+    if(fab) fab.style.display = (isMobile && view==='list') ? 'flex' : 'none';
+    const loginEl=document.getElementById('login');
+    if(loginEl) loginEl.classList.toggle('list-mode', view==='list');
+    if(view==='list') renderChatList();
     if(view==='join'){ const e=document.getElementById('code-in'); if(e) setTimeout(()=>e.focus(),50); }
     if(view==='dm'){ const e=document.getElementById('login-dm-in'); if(e) setTimeout(()=>e.focus(),50); }
 }
@@ -6790,7 +7063,7 @@ function _grpOpen(g){
 }
 
 // ── Init ──────────────────────────────────────────────────────────────────────
-loginShow('chooser');
+loginShow('home');
 genCode();
 _i18nUiInit();   // language (RU/EN) + phone/PC interface mode
 
