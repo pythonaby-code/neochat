@@ -2702,7 +2702,7 @@ async function doSignIn(){
     accStatus('');
     document.getElementById('acc-in-pw').value = '';
     applyAccount();
-    show('chat');
+    showLogin();
 }
 
 function showNewAccount(){
@@ -2761,9 +2761,12 @@ function confirmSwitch(){ /* kept for compatibility */ }
 (function initAccount(){
     const acc = getAccount();
     if(acc){
-        // Known device: restore the session and open the chat window.
+        // Known device: restore the session and open the home menu (NOT the
+        // raw chat screen — nothing is connected yet, and #chat has no path
+        // back to Profile/Settings/Creator Panel, so this used to strand
+        // returning users on a static "Room / connecting" placeholder).
         applyAccount();
-        show('chat');
+        showLogin();
         // NeoPlus login flourish — golden burst + seasonal accent refresh
         setTimeout(()=>{ try{
             if(plusActive()){
@@ -2917,18 +2920,27 @@ function openAdmin(){
     }
     show('admin');
 }
-function closeAdmin(){ show('chat'); }
+function closeAdmin(){ showLogin(); }
 function logoutAdmin(){
     localStorage.removeItem(ADMIN_SESSION_KEY);
     try{ startGlobalNotify(); }catch(e){}   // drop the creator subscription
     revertCreatorIdentity();                // back to the normal account
-    show('chat');
+    showLogin();
 }
 
-function doAdminLogin(){
+// Admin password is never stored in plain text — only its salted hash is
+// compared. To rotate the password, hash the new one the same way (salt
+// 'neochat_admin_v1::') and replace ADMIN_PASS_HASH below in BOTH apps.
+const ADMIN_PASS_HASH='40ec0e67196c788fa104d4b24b04d827632d9ee6d02da21a2bd2bb795b6d6a52';
+async function _checkAdminPw(pw){
+    const buf=await crypto.subtle.digest('SHA-256', new TextEncoder().encode('neochat_admin_v1::'+pw));
+    const hex=Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+    return hex===ADMIN_PASS_HASH;
+}
+async function doAdminLogin(){
     const u=document.getElementById('admin-user').value.trim();
     const p=document.getElementById('admin-pass').value;
-    if(u==='MrMiner' && p==='FunLand2014'){
+    if(u==='MrMiner' && await _checkAdminPw(p)){
         localStorage.setItem(ADMIN_SESSION_KEY,'true');
         document.getElementById('admin-login-view').style.display='none';
         document.getElementById('admin-panel-view').style.display='';
@@ -4512,7 +4524,7 @@ async function doRegister(){
     saveAccount({username:name,pwHash:hash});
     claimUsername(name);
     applyAccount();
-    show('chat');
+    showLogin();
 }
 
 // ── File / image sending ──────────────────────────────────────────────────────
