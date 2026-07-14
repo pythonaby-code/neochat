@@ -1577,6 +1577,15 @@ window.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key==='Escap
             end-to-end encrypted chat — only the two of you can read it.</div>
     </div>
 
+    <!-- Desktop's default content when nothing is open — calm placeholder,
+         not an editable form (no auto-connect risk). Room joining now only
+         happens deliberately via the sidebar's ✎ → Enter Room flow. -->
+    <div id="login-empty-state" style="display:none;flex-direction:column;align-items:center;justify-content:center;gap:10px;flex:1;text-align:center;color:#6b7280;">
+        <div style="font-size:38px;">💬</div>
+        <div style="font-size:14px;font-weight:700;color:#9aa3b8;">Select a chat</div>
+        <div style="font-size:12px;max-width:220px;">Tap ✎ in the sidebar to join a room, message someone, or start a group.</div>
+    </div>
+
     <div style="display:flex; justify-content:flex-end; gap:2px; margin-top:-8px;">
         <button class="btn-admin" onclick="openOperator()">💻</button>
         <button class="btn-admin" onclick="openAdmin()">🔐</button>
@@ -1813,6 +1822,18 @@ window.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key==='Escap
     </div>
 
     <!-- Poll creation modal -->
+    <!-- Quick room entry: pencil → Enter Room → type the code → done, no
+         separate password step or extra Connect click. -->
+    <div id="quick-join-modal" style="position:fixed;inset:0;background:rgba(6,13,27,0.93);z-index:200;display:none;align-items:center;justify-content:center;padding:20px;" onclick="if(event.target===this)closeQuickJoin()">
+        <div class="account-card" style="max-width:320px;gap:14px;">
+            <div style="font-size:16px;font-weight:700;color:#ffffff;">Enter Room</div>
+            <input id="quick-join-in" type="text" placeholder="Room number" autocomplete="off"
+                   autocorrect="off" autocapitalize="characters" maxlength="20"
+                   onkeydown="if(event.key==='Enter')submitQuickJoin()">
+            <button class="btn-connect" onclick="submitQuickJoin()">Join →</button>
+        </div>
+    </div>
+
     <div id="poll-modal" style="position:fixed;inset:0;background:rgba(6,13,27,0.93);z-index:200;display:none;align-items:center;justify-content:center;padding:20px;" onclick="if(event.target===this)closePollModal()">
         <div class="account-card" style="max-width:340px;gap:12px;">
             <div style="font-size:14px;font-weight:700;color:#00ff9f;">📊 Create Poll</div>
@@ -1926,9 +1947,9 @@ window.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key==='Escap
 <!-- New chat sheet — the mobile chat-list's "+" button (Join / DM / Group / Bots) -->
 <div id="new-chat-sheet" onclick="if(event.target===this)closeNewChatSheet()">
     <div class="more-menu-inner">
-        <button class="more-menu-item" onclick="closeNewChatSheet();loginShow('join')">
+        <button class="more-menu-item" onclick="openQuickJoin()">
             <span class="more-menu-item-icon">🔑</span>
-            <span class="more-menu-item-label">Join a chat with a code</span>
+            <span class="more-menu-item-label">Enter Room</span>
         </button>
         <button class="more-menu-item" onclick="closeNewChatSheet();loginShow('dm')">
             <span class="more-menu-item-icon">✉️</span>
@@ -2456,6 +2477,9 @@ const RU = {
   'Current password':'Текущий пароль','Confirm →':'Подтвердить →','Cancel':'Отмена',
   // ── login hub ──
   'Join a chat with a code':'Войти в чат по коду',
+  'Enter Room':'Войти в комнату',
+  'Room number':'Номер комнаты',
+  'Join →':'Войти →',
   'Enter a room code someone shared with you':'Введите код комнаты, которым с вами поделились',
   'Send a private message':'Личное сообщение',
   'Message someone directly by their @username':'Напишите человеку напрямую по @имени',
@@ -7020,6 +7044,27 @@ function filterAppSidebar(q){ _filterRowsIn('app-sidebar-items', q); }
 function openNewChatSheet(){ document.getElementById('new-chat-sheet').classList.add('open'); }
 function closeNewChatSheet(){ document.getElementById('new-chat-sheet').classList.remove('open'); }
 
+// ── Quick room entry ──────────────────────────────────────────────────────────
+function openQuickJoin(){
+    closeNewChatSheet();
+    const modal=document.getElementById('quick-join-modal');
+    const inp=document.getElementById('quick-join-in');
+    if(inp) inp.value='';
+    if(modal) modal.style.display='flex';
+    if(inp) setTimeout(()=>inp.focus(),50);
+}
+function closeQuickJoin(){
+    const modal=document.getElementById('quick-join-modal');
+    if(modal) modal.style.display='none';
+}
+function submitQuickJoin(){
+    const inp=document.getElementById('quick-join-in');
+    const code=(inp&&inp.value||'').trim();
+    if(!code) return;
+    closeQuickJoin();
+    openRoomByCode(code);   // sets #code-in, clears password, calls doConnect()
+}
+
 // ── Chat list quick actions: pin / mute / delete via long-press ──────────────
 const PINNED_CHATS_KEY='neochat_pinned_chats';
 const MUTED_CHATS_KEY='neochat_muted_chats';
@@ -7283,8 +7328,11 @@ function declineGroupInvite(code){
 // Home screen: on phones, the Telegram-style full-screen chat list (unchanged).
 // On desktop, the persistent #app-sidebar (always mounted, see its own CSS/
 // render code) already shows the chat list permanently, so #login's own
-// content area just needs the simple room-code join form — the original
-// 4-card chooser is no longer shown by default anywhere.
+// content area defaults to a calm "select a chat" placeholder — no editable
+// form sitting there by default. Joining a room is now a deliberate action
+// (sidebar ✎ → Enter Room → quick-join modal, see openQuickJoin()), not a
+// static field that could be triggered accidentally. The original 4-card
+// chooser is no longer shown by default anywhere.
 function _homeIsPhoneScreen(){
     let pref=null; try{ pref=localStorage.getItem('neochat_ui'); }catch(e){}
     if(pref==='mobile') return true;
@@ -7293,21 +7341,22 @@ function _homeIsPhoneScreen(){
 }
 function loginShow(view){
     const phoneHome = _homeIsPhoneScreen();
-    if(view==='home') view = phoneHome ? 'list' : 'join';
+    if(view==='home') view = phoneHome ? 'list' : 'empty';
     const ch=document.getElementById('login-chooser');
     const lc=document.getElementById('login-chatlist');
     const jp=document.getElementById('login-join-panel');
     const dp=document.getElementById('login-dm-panel');
+    const es=document.getElementById('login-empty-state');
     const fab=document.getElementById('chatlist-fab');
     const jback=document.getElementById('login-join-back');
     if(ch) ch.style.display = view==='chooser' ? 'flex' : 'none';
     if(lc) lc.style.display = (phoneHome && view==='list') ? 'flex' : 'none';
     if(jp) jp.style.display = view==='join' ? 'flex' : 'none';
     if(dp) dp.style.display = view==='dm' ? 'flex' : 'none';
+    if(es) es.style.display = view==='empty' ? 'flex' : 'none';
     if(fab) fab.style.display = (phoneHome && view==='list') ? 'flex' : 'none';
     // The join panel's "Back" button only makes sense on phones, where it
-    // was reached from the full-screen chat list — on desktop the join
-    // form IS the default content, and the sidebar handles navigation.
+    // was reached from the full-screen chat list.
     if(jback) jback.style.display = (view==='join' && phoneHome) ? '' : 'none';
     const loginEl=document.getElementById('login');
     if(loginEl) loginEl.classList.toggle('list-mode', phoneHome && view==='list');
