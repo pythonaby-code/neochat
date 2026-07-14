@@ -288,6 +288,9 @@ body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
   background-size:100% 100%,100% 100%,100% 100%,64px 64px,64px 64px,100% 100%;}
 .screen{position:absolute;inset:0;display:flex;flex-direction:column;opacity:1;transition:opacity 0.22s ease;z-index:1;}
 .screen.hidden{opacity:0;pointer-events:none;}
+#app-sidebar{display:none;}
+#app-sidebar.screen-hide-sidebar{display:none !important;}
+.chat-row.active{background:rgba(255,255,255,.08);box-shadow:inset 0 0 0 1px rgba(255,255,255,.14);}
 
 /* ── Typography ── */
 .field-label{color:var(--t3);font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;margin-bottom:6px;display:block;}
@@ -952,6 +955,16 @@ input::placeholder{color:var(--t4);font-weight:400;}
 /* Desktop layout is now switched by device detection (html.ui-desktop),
    not by window width — see the bootstrap script in <head>. */
 html.ui-desktop{
+  /* Persistent chats sidebar — always mounted, stays on screen across both
+     the pre-connect login screen and an open chat. #login/#chat are shifted
+     right to make room for it (see #login/#chat rules below); #chat's own
+     centering math is adjusted the same way so it still centers itself in
+     the space to the right of the sidebar, not the full viewport. */
+  #app-sidebar{display:flex;flex-direction:column;position:fixed;left:0;top:0;bottom:0;
+    width:340px;z-index:10;background:rgba(255,255,255,0.015);
+    border-right:1px solid var(--b1);backdrop-filter:blur(24px);}
+  #app-sidebar #app-sidebar-items{flex:1;overflow-y:auto;padding-bottom:10px;}
+  #login{left:340px;}
   #chat{flex-direction:row;}
   #chat .chat-main{height:100%;}
   #chat .messages{padding:20px 26px 10px;}
@@ -1003,8 +1016,10 @@ html.ui-desktop{
   /* widen the conversation bubbles a touch in the larger pane */
   #chat .bubble{max-width:62%;}
 
-  /* ---- the chat as a floating rounded window on the grid (like the video) ---- */
-  #chat{left:50%;top:50%;right:auto;bottom:auto;
+  /* ---- the chat as a floating rounded window on the grid (like the video) ----
+     Centered in the space to the right of the persistent sidebar (170px =
+     half its 340px width) rather than the full viewport. */
+  #chat{left:calc(170px + 50vw);top:50%;right:auto;bottom:auto;
     margin-left:calc(min(1180px,94vw) / -2);margin-top:calc(min(760px,92vh) / -2);
     width:min(1180px,94vw);height:min(760px,92vh);
     border-radius:26px;border:1px solid rgba(255,255,255,.14);background:var(--panel);
@@ -1036,10 +1051,12 @@ html.ui-desktop{
   .side-add-menu button:hover{background:rgba(255,255,255,.08);}
   .side-add-menu button span{font-size:17px;}
 
-  /* Explicit desktop mode in a very narrow window: drop the sidebar,
-     stretch the chat window edge-to-edge so nothing is crushed. */
+  /* Explicit desktop mode in a very narrow window: drop both sidebars,
+     stretch things edge-to-edge so nothing is crushed. */
   @media (max-width:699px){
     #users-drawer{display:none;}
+    #app-sidebar{display:none;}
+    #login{left:0;}
     #chat{left:0;top:0;margin:0;width:100%;height:100%;border-radius:0;border:none;}
     #chat .chat-hdr-top{display:flex;}
     #chat>.bottom-nav{display:flex;}
@@ -1290,6 +1307,26 @@ html.ui-mobile.text-xl .bubble .b-text{font-size:20px;}
     <button onclick="hideUiToast()" style="background:none;border:none;color:var(--t3);padding:7px 4px;">✕</button>
 </div>
 
+<!-- Persistent desktop sidebar: your chats, always on screen while browsing
+     or messaging — matches the showcase video's app-shell layout. Hidden on
+     mobile entirely (phones keep their own full-screen chat list). -->
+<div id="app-sidebar">
+    <div class="side-brand">
+        <div class="side-brand-top">
+            <span class="side-orb"></span><span class="side-word">NeoChat</span>
+            <button class="side-profile" onclick="openProfileScreen()" title="Profile" aria-label="Profile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.6"/><path d="M5 20a7 7 0 0 1 14 0"/></svg></button>
+        </div>
+        <div class="side-search"><span class="side-search-ico">🔍</span><input id="app-sidebar-search-in" type="text" placeholder="Search" oninput="filterAppSidebar(this.value)" autocomplete="off"></div>
+    </div>
+    <div id="app-sidebar-items" class="chatlist-items"></div>
+    <div id="app-sidebar-empty" class="chatlist-empty" style="display:none;">
+        <div class="chatlist-empty-ico">💬</div>
+        <div class="chatlist-empty-title">No chats yet</div>
+        <div class="chatlist-empty-sub">Tap ✎ to join a room, message<br>someone, or start a group.</div>
+    </div>
+    <button class="side-fab" onclick="openNewChatSheet()" title="New chat or group" aria-label="New chat or group">✎</button>
+</div>
+
 <!-- Shared chrome gradients for the brand logo mark -->
 <!-- ✦ Cinematic intro — the N draws itself, "NeoChat" appears, then the app reveals ✦ -->
 <div id="intro" aria-hidden="true">
@@ -1507,7 +1544,7 @@ window.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key==='Escap
 
     <!-- Join with code panel -->
     <div id="login-join-panel" style="display:none;flex-direction:column;gap:14px;">
-        <button class="grp-back" onclick="loginShow('home')">←  Back</button>
+        <button id="login-join-back" class="grp-back" onclick="loginShow('home')">←  Back</button>
         <div>
             <span class="field-label">Room code</span>
             <div class="code-row">
@@ -3704,12 +3741,17 @@ function genCode(){
     document.getElementById('code-in').value=c;
 }
 
-function showLogin(){ show('login'); try{ loginShow('home'); }catch(e){} }
+function showLogin(){ show('login'); try{ loginShow('home'); }catch(e){} try{ renderChatList(); }catch(e){} }
 function showChat() { show('chat');  }
 function show(id){
     document.querySelectorAll('.screen').forEach(s=>s.classList.add('hidden'));
     document.getElementById(id).classList.remove('hidden');
     try{ _updUiPills(id); }catch(e){}
+    // The persistent chats sidebar only makes sense alongside the login/chat
+    // screens — settings-style screens (account/operator/admin) take over
+    // the full window, matching how they behaved before the sidebar existed.
+    const sb=document.getElementById('app-sidebar');
+    if(sb) sb.classList.toggle('screen-hide-sidebar', !(id==='login'||id==='chat'));
 }
 
 function loginStatus(msg, color){
@@ -3750,6 +3792,7 @@ async function doConnect(){
     const safeCode=san(code);
     safeRoom=safeCode;
     markChatSeen(safeCode);   // opening a chat clears its unread badge on the list
+    try{ renderChatList(); }catch(e){}   // refresh sidebar: active highlight + cleared badge
     _restoreDraft(safeCode);  // bring back whatever you were mid-typing here
     topic     =`neochat/v1/${safeCode}`;
     callTopic = CALL_TOPIC_PREFIX + safeCode;
@@ -4071,6 +4114,7 @@ function doDisconnect(){
     }
     activeUsers.clear(); renderUsers();
     closeDrawer();
+    safeRoom='';   // clear the sidebar's active-chat highlight now that nothing is open
     showLogin();
     loginStatus('Enter a room code, then tap Connect.');
 }
@@ -6921,11 +6965,13 @@ function openRoomByCode(code){
     const pw=document.getElementById('room-pw-in'); if(pw) pw.value='';
     doConnect();
 }
-function renderChatList(){
-    const wrap=document.getElementById('chatlist-items');
-    const empty=document.getElementById('chatlist-empty');
+// Renders the same chat items into a given list container — used for both
+// the phone's full-screen chat list AND the desktop persistent sidebar, so
+// they always stay in sync with a single call to renderChatList() below.
+function _renderChatRowsInto(wrapId, emptyId, items){
+    const wrap=document.getElementById(wrapId);
+    const empty=document.getElementById(emptyId);
     if(!wrap) return;
-    const items=_buildRecentChats();
     wrap.innerHTML='';
     if(!items.length){
         if(empty) empty.style.display='flex';
@@ -6935,7 +6981,8 @@ function renderChatList(){
     items.forEach(it=>{
         const row=document.createElement('div');
         const pinned=isPinnedChat(it.code), muted=isMutedChat(it.code);
-        row.className='chat-row'+(pinned?' pinned':'');
+        const active = !!it.code && it.code===safeRoom;
+        row.className='chat-row'+(pinned?' pinned':'')+(active?' active':'');
         row.dataset.name=it.name.toLowerCase();
         const glyph = it.kind==='room' ? '💬' : (it.name[0]||'?').toUpperCase();
         row.innerHTML=
@@ -6957,12 +7004,19 @@ function renderChatList(){
         wrap.appendChild(row);
     });
 }
-function filterChatList(q){
+function renderChatList(){
+    const items=_buildRecentChats();
+    _renderChatRowsInto('chatlist-items','chatlist-empty', items);
+    _renderChatRowsInto('app-sidebar-items','app-sidebar-empty', items);
+}
+function _filterRowsIn(wrapId, q){
     q=(q||'').trim().toLowerCase();
-    document.querySelectorAll('#chatlist-items .chat-row').forEach(row=>{
+    document.querySelectorAll('#'+wrapId+' .chat-row').forEach(row=>{
         row.style.display = !q || (row.dataset.name||'').includes(q) ? '' : 'none';
     });
 }
+function filterChatList(q){ _filterRowsIn('chatlist-items', q); }
+function filterAppSidebar(q){ _filterRowsIn('app-sidebar-items', q); }
 function openNewChatSheet(){ document.getElementById('new-chat-sheet').classList.add('open'); }
 function closeNewChatSheet(){ document.getElementById('new-chat-sheet').classList.remove('open'); }
 
@@ -7226,26 +7280,37 @@ function declineGroupInvite(code){
 }
 
 // ── Login chooser (3 ways to start) ──────────────────────────────────────────
-// Which home screen a device gets (chat list vs. the PC card chooser) is a
-// The Telegram-style chat list is now the home screen on every device,
-// desktop included — the original 4-card chooser is no longer shown by
-// default (its options all still exist, now inside the same "+" sheet
-// used on mobile).
+// Home screen: on phones, the Telegram-style full-screen chat list (unchanged).
+// On desktop, the persistent #app-sidebar (always mounted, see its own CSS/
+// render code) already shows the chat list permanently, so #login's own
+// content area just needs the simple room-code join form — the original
+// 4-card chooser is no longer shown by default anywhere.
+function _homeIsPhoneScreen(){
+    let pref=null; try{ pref=localStorage.getItem('neochat_ui'); }catch(e){}
+    if(pref==='mobile') return true;
+    if(pref==='desktop') return false;
+    return !!window.NEO_DEVICE_MOBILE;
+}
 function loginShow(view){
-    // 'home' always resolves to the chat list now.
-    if(view==='home') view = 'list';
+    const phoneHome = _homeIsPhoneScreen();
+    if(view==='home') view = phoneHome ? 'list' : 'join';
     const ch=document.getElementById('login-chooser');
     const lc=document.getElementById('login-chatlist');
     const jp=document.getElementById('login-join-panel');
     const dp=document.getElementById('login-dm-panel');
     const fab=document.getElementById('chatlist-fab');
+    const jback=document.getElementById('login-join-back');
     if(ch) ch.style.display = view==='chooser' ? 'flex' : 'none';
-    if(lc) lc.style.display = view==='list' ? 'flex' : 'none';
+    if(lc) lc.style.display = (phoneHome && view==='list') ? 'flex' : 'none';
     if(jp) jp.style.display = view==='join' ? 'flex' : 'none';
     if(dp) dp.style.display = view==='dm' ? 'flex' : 'none';
-    if(fab) fab.style.display = view==='list' ? 'flex' : 'none';
+    if(fab) fab.style.display = (phoneHome && view==='list') ? 'flex' : 'none';
+    // The join panel's "Back" button only makes sense on phones, where it
+    // was reached from the full-screen chat list — on desktop the join
+    // form IS the default content, and the sidebar handles navigation.
+    if(jback) jback.style.display = (view==='join' && phoneHome) ? '' : 'none';
     const loginEl=document.getElementById('login');
-    if(loginEl) loginEl.classList.toggle('list-mode', view==='list');
+    if(loginEl) loginEl.classList.toggle('list-mode', phoneHome && view==='list');
     if(view==='list') renderChatList();
     if(view==='join'){ const e=document.getElementById('code-in'); if(e) setTimeout(()=>e.focus(),50); }
     if(view==='dm'){ const e=document.getElementById('login-dm-in'); if(e) setTimeout(()=>e.focus(),50); }
