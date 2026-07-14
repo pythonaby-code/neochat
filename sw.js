@@ -1,6 +1,6 @@
 /* NeoChat service worker — enables "Install app" and offline app-shell.
    Bump CACHE_VERSION whenever you upload a new index.html so phones refresh. */
-const CACHE_VERSION = 'neochat-v25';
+const CACHE_VERSION = 'neochat-v26';
 const SHELL = [
   './',
   './index.html',
@@ -35,7 +35,7 @@ self.addEventListener('fetch', (event) => {
 
   if (req.mode === 'navigate') {
     event.respondWith(
-      fetch(req)
+      fetch(req, { cache: 'no-store' })
         .then((res) => {
           const copy = res.clone();
           caches.open(CACHE_VERSION).then((c) => c.put('./index.html', copy));
