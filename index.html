@@ -657,6 +657,26 @@ html.text-xl .bubble .b-text{font-size:19px;}
 #plus-profile-card .ppc-bio{color:#aab3d6;font-size:11px;text-align:center;max-width:240px;}
 #plus-profile-card .ppc-sub{color:#4a6080;font-size:10px;}
 .plus-name-star{font-size:9px;font-weight:700;}
+/* ── NeoUltra ── */
+@keyframes ultraShift{0%{background-position:0% 50%;}100%{background-position:300% 50%;}}
+@keyframes ultraBgShift{0%{background-position:0% 50%;}50%{background-position:100% 50%;}100%{background-position:0% 50%;}}
+@keyframes ultraRingPulse{0%,100%{box-shadow:0 0 0 2px rgba(34,211,238,0.85),0 0 14px rgba(167,139,250,0.75);}50%{box-shadow:0 0 0 2px rgba(244,114,182,0.85),0 0 18px rgba(34,211,238,0.75);}}
+.ultra-name{background:linear-gradient(90deg,#22d3ee,#a78bfa,#f472b6,#22d3ee);background-size:300% auto;-webkit-background-clip:text;background-clip:text;color:transparent!important;animation:ultraShift 5s linear infinite;}
+.bubble.ultra-bubble{border-color:rgba(167,139,250,0.55)!important;box-shadow:0 0 14px rgba(167,139,250,0.16),0 0 4px rgba(34,211,238,0.14);}
+.ultra-ring{animation:ultraRingPulse 3s ease infinite;}
+#plus-profile-card .ppc-inner.ultra-frame{border:1px solid transparent;background:linear-gradient(#0b0820,#0b0820) padding-box,linear-gradient(120deg,#22d3ee,#a78bfa,#f472b6) border-box;}
+html.theme-light #plus-profile-card .ppc-inner.ultra-frame{background:linear-gradient(#ffffff,#ffffff) padding-box,linear-gradient(120deg,#22d3ee,#a78bfa,#f472b6) border-box;}
+/* ── Search & Starred (Ultra update) ── */
+#search-modal,#starred-modal{position:fixed;inset:0;z-index:400;display:none;align-items:flex-start;justify-content:center;background:rgba(var(--overlay-rgb),0.75);backdrop-filter:blur(8px);padding:8vh 14px 14px;}
+#search-modal.open,#starred-modal.open{display:flex;}
+.search-modal-inner,.starred-modal-inner{width:100%;max-width:520px;max-height:78vh;display:flex;flex-direction:column;background:rgba(var(--sheet-rgb),0.98);border:1px solid var(--b1);border-radius:18px;padding:14px;gap:10px;box-shadow:var(--s2);}
+.search-modal-head{display:flex;gap:8px;align-items:center;}
+.search-modal-head input{flex:1;}
+#search-results,#starred-list{overflow-y:auto;display:flex;flex-direction:column;gap:8px;}
+.search-hit{border:1px solid var(--b1);border-radius:12px;padding:9px 12px;font-size:12.5px;}
+.search-hit-meta{color:#4a6080;font-size:10px;margin-bottom:3px;display:flex;justify-content:space-between;gap:8px;}
+.search-hit mark{background:rgba(34,211,238,0.35);color:inherit;border-radius:3px;padding:0 1px;}
+.search-hit .btn-bubble-act{margin-top:5px;}
 #emoji-picker,#text-emoji-picker{position:fixed;z-index:300;background:rgba(var(--sheet-rgb),0.98);border:1px solid var(--b1);border-radius:var(--r2);padding:10px;gap:4px;display:none;flex-wrap:wrap;width:196px;box-shadow:var(--s2);backdrop-filter:blur(20px);}
 #emoji-picker.show,#text-emoji-picker.show{display:flex;}
 .emoji-btn{background:none;border:none;font-size:22px;width:40px;height:40px;border-radius:9px;padding:0;cursor:pointer;transition:all .15s;}
@@ -2077,12 +2097,45 @@ window.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key==='Escap
         <button class="more-menu-item" onclick="openGallery();closeMoreMenu()">
             <span class="more-menu-item-icon">🖼</span> Media Gallery
         </button>
+        <button class="more-menu-item" onclick="openChatSearch();closeMoreMenu()">
+            <span class="more-menu-item-icon">🔍</span> Search Messages
+        </button>
+        <button class="more-menu-item" onclick="openStarred();closeMoreMenu()">
+            <span class="more-menu-item-icon">⭐</span> Starred Messages
+        </button>
+        <button class="more-menu-item" onclick="exportChat();closeMoreMenu()">
+            <span class="more-menu-item-icon">📤</span> Export Chat
+        </button>
         <button class="more-menu-item" onclick="pickAccentColor();closeMoreMenu()">
             <span class="more-menu-item-icon">🎨</span> Accent Color
         </button>
         <button class="more-menu-item" onclick="closeMoreMenu()">
             <span class="more-menu-item-icon">✕</span> Close
         </button>
+    </div>
+</div>
+
+<!-- Message search (local history, all chats) -->
+<div id="search-modal" onclick="if(event.target===this)closeChatSearch()">
+    <div class="search-modal-inner">
+        <div class="search-modal-head">
+            <input id="search-in" type="text" placeholder="Search messages…"
+                   autocomplete="off" autocorrect="off" autocapitalize="off"
+                   oninput="runChatSearch()">
+            <button class="btn-hdr-ico" onclick="closeChatSearch()">✕</button>
+        </div>
+        <div id="search-results"></div>
+    </div>
+</div>
+
+<!-- Starred messages -->
+<div id="starred-modal" onclick="if(event.target===this)closeStarred()">
+    <div class="starred-modal-inner">
+        <div class="search-modal-head">
+            <div style="font-weight:800;flex:1;">⭐ Starred Messages</div>
+            <button class="btn-hdr-ico" onclick="closeStarred()">✕</button>
+        </div>
+        <div id="starred-list"></div>
     </div>
 </div>
 
@@ -2413,7 +2466,7 @@ window.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key==='Escap
         </div>
         <div id="mod-list" style="display:flex;flex-direction:column;gap:6px;"></div>
         <div style="height:1px;background:rgba(255,215,0,0.2);margin:4px 0;"></div>
-        <div style="color:#ffd700;font-size:10px;font-weight:700;letter-spacing:3px;padding:0 4px;">NEOPLUS</div>
+        <div style="color:#ffd700;font-size:10px;font-weight:700;letter-spacing:3px;padding:0 4px;">NEOPLUS / NEOULTRA</div>
         <input id="plus-user-in" type="text" placeholder="Username to grant NeoPlus…"
                autocomplete="off" autocorrect="off" autocapitalize="off" style="font-size:13px;">
         <input id="plus-code-in" type="text" placeholder="Activation code (from neoplus_codegen.py)…"
@@ -2460,6 +2513,36 @@ const RU = {
   '⭐ Grant NeoPlus':'⭐ Выдать NeoPlus',
   'Gold name & badge · 500 MB uploads · animated stickers · themes · scheduling · and more':
       'Золотое имя и бейдж · загрузки 500 МБ · живые стикеры · темы · отложенные сообщения · и не только',
+  // ── NeoUltra ──
+  '💠 NEOULTRA':'💠 NEOULTRA',
+  'Upgrade to NeoUltra…':'Перейти на NeoUltra…',
+  'Avatar ring':'Кольцо аватара',
+  '💠 NeoUltra member':'💠 Участник NeoUltra',
+  'Gradient name & 💠 badge · 1 GB uploads · unlimited bots · animated backgrounds · any name color · Nova effects':
+      'Градиентное имя и бейдж 💠 · загрузки 1 ГБ · безлимит ботов · живые фоны · любой цвет имени · эффекты «Нова»',
+  '💠 This is a NeoUltra-only room. Activate NeoUltra in your Profile!':
+      '💠 Это комната только для NeoUltra. Активируйте NeoUltra в профиле!',
+  'Paste your NeoPlus / NeoUltra activation code:':'Вставьте код активации NeoPlus / NeoUltra:',
+  '💠 NeoUltra is already active — a NeoPlus code would be a downgrade.':
+      '💠 NeoUltra уже активен — код NeoPlus был бы понижением.',
+  'That NeoUltra code has expired.':'Срок действия этого кода NeoUltra истёк.',
+  'Enter any hex color (e.g. #00ff88):':'Введите любой hex-цвет (например, #00ff88):',
+  'That is not a valid hex color — use the form #RRGGBB.':'Это не hex-цвет — используйте формат #RRGGBB.',
+  // ── Ultra update: search / starred / export / slash ──
+  'Search Messages':'Поиск по сообщениям',
+  'Starred Messages':'Избранные сообщения',
+  'Export Chat':'Экспорт чата',
+  'Search messages…':'Поиск сообщений…',
+  '⭐ Starred Messages':'⭐ Избранные сообщения',
+  'Type at least 2 characters…':'Введите минимум 2 символа…',
+  'No matches in your saved history.':'Совпадений в сохранённой истории нет.',
+  'Nothing starred yet — use ⭐ Star on any message.':'Пока пусто — нажмите «⭐ Star» на любом сообщении.',
+  '☆ Unstar':'☆ Убрать',
+  '⭐ Star':'⭐ Звезда',
+  '⭐ Added to Starred — find it in ⋯ → Starred Messages.':'⭐ Добавлено в избранное — смотрите в ⋯ → Избранные сообщения.',
+  '☆ Removed from Starred.':'☆ Убрано из избранного.',
+  'Open a chat first.':'Сначала откройте чат.',
+  'No saved history for this chat yet.':'У этого чата пока нет сохранённой истории.',
   // ── intro / brand ──
   'Conversations, illuminated':'Общение в новом свете',
   'Real-time Internet Messenger':'Интернет-мессенджер в реальном времени',
@@ -2646,6 +2729,13 @@ const RU_PATTERNS = [
   [/^⏰ Scheduled — sends in (\d+) min if NeoChat stays open\.$/, '⏰ Отложено — отправится через $1 мин, если NeoChat открыт.'],
   [/^⏰ A scheduled message was skipped — you left its room\.$/, '⏰ Отложенное сообщение пропущено — вы покинули его комнату.'],
   [/^⭐ NEOPLUS — ACTIVE \((.+)\)$/, '⭐ NEOPLUS — АКТИВЕН ($1)'],
+  // NeoUltra + Ultra update
+  [/^💠 NEOULTRA — ACTIVE \((.+)\)$/, '💠 NEOULTRA — АКТИВЕН ($1)'],
+  [/^💠 NeoUltra grant sent to (.+) — it activates when their app is online\.$/,
+      '💠 NeoUltra выдан $1 — активируется, когда приложение будет в сети.'],
+  [/^NeoUltra active until (.+)$/, 'NeoUltra активен до $1'],
+  [/^💠 NeoUltra activated — (.+)$/, '💠 NeoUltra активирован — $1'],
+  [/^📤 Chat history exported \((\d+) entries\)\.$/, '📤 История чата экспортирована (записей: $1).'],
   [/^(.+) joined the chat 👋$/, '$1 заходит в чат 👋'],
   [/^(.+) left the chat 👋$/, '$1 выходит из чата 👋'],
   [/^(.+) is typing…$/, '$1 печатает…'],
@@ -3095,6 +3185,152 @@ function _loadHist(room){
 }
 function _clearHist(room){ try{ localStorage.removeItem(_histKey(room)); }catch(e){} }
 
+/* ── Ultra update: message search / starred / export / slash commands ────────
+   All local-only (saved history + localStorage) — nothing new on the wire,
+   so old clients stay fully compatible. */
+function _searchableRooms(){
+    const out=[];
+    for(let i=0;i<localStorage.length;i++){
+        const k=localStorage.key(i);
+        if(k&&k.indexOf('neochat_hist_')===0) out.push(k.slice('neochat_hist_'.length));
+    }
+    return out;
+}
+function _prettyRoom(code){
+    if((code||'').startsWith('__dm__')){
+        const parts=code.slice(6).split('__');
+        const me=(myName||'').toLowerCase();
+        const other=parts.find(p=>p&&p!==me);
+        return '@'+(other||'DM');
+    }
+    return code;
+}
+function _escRe(s){ return s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'); }
+function openChatSearch(){
+    const m=document.getElementById('search-modal'); if(!m) return;
+    m.classList.add('open');
+    const i=document.getElementById('search-in');
+    if(i){ i.value=''; setTimeout(()=>i.focus(),60); }
+    runChatSearch();
+}
+function closeChatSearch(){ const m=document.getElementById('search-modal'); if(m) m.classList.remove('open'); }
+function runChatSearch(){
+    const q=((document.getElementById('search-in')||{}).value||'').trim();
+    const box=document.getElementById('search-results');
+    if(!box) return;
+    if(q.length<2){ box.innerHTML='<div style="color:#4a6080;font-size:11px;text-align:center;padding:12px;">Type at least 2 characters…</div>'; return; }
+    const ql=q.toLowerCase(), hits=[];
+    _searchableRooms().forEach(room=>{
+        _loadHist(room).forEach(en=>{
+            const txt=en.type==='msg'?(en.text||''):en.type==='file'?(en.name||''):'';
+            if(txt&&txt.toLowerCase().includes(ql))
+                hits.push({room,sender:en.sender||'',text:txt,ts:en.ts||'',date:en.date||''});
+        });
+    });
+    if(!hits.length){ box.innerHTML='<div style="color:#4a6080;font-size:11px;text-align:center;padding:12px;">No matches in your saved history.</div>'; return; }
+    hits.reverse();   // newest first
+    const re=new RegExp('('+_escRe(esc(q))+')','gi');
+    box.innerHTML=hits.slice(0,80).map(h=>
+        `<div class="search-hit">`
+        +`<div class="search-hit-meta"><span>${esc(h.sender)} · ${esc(_prettyRoom(h.room))}</span><span>${esc(h.date)} ${esc(h.ts)}</span></div>`
+        +`<div>${esc(h.text).replace(re,'<mark>$1</mark>')}</div></div>`).join('');
+}
+
+const STARRED_KEY='neochat_starred';
+function _loadStarred(){ try{ return JSON.parse(localStorage.getItem(STARRED_KEY)||'[]'); }catch(e){ return []; } }
+function _saveStarred(a){ try{ localStorage.setItem(STARRED_KEY, JSON.stringify(a)); }catch(e){} }
+function starBubble(bid){
+    const b=document.getElementById('b'+bid); if(!b) return;
+    const entry={room:safeRoom,sender:b.dataset.sender||'',text:b.dataset.text||'',
+                 ts:b.dataset.ts||'',date:new Date().toISOString().slice(0,10)};
+    const all=_loadStarred();
+    const i=all.findIndex(s=>s.room===entry.room&&s.sender===entry.sender&&s.text===entry.text&&s.ts===entry.ts);
+    if(i>=0){ all.splice(i,1); _saveStarred(all); sysMsg('☆ Removed from Starred.'); }
+    else{ all.unshift(entry); _saveStarred(all.slice(0,200)); sysMsg('⭐ Added to Starred — find it in ⋯ → Starred Messages.'); }
+}
+function openStarred(){
+    const m=document.getElementById('starred-modal'); if(!m) return;
+    renderStarred(); m.classList.add('open');
+}
+function closeStarred(){ const m=document.getElementById('starred-modal'); if(m) m.classList.remove('open'); }
+function renderStarred(){
+    const box=document.getElementById('starred-list'); if(!box) return;
+    const all=_loadStarred();
+    if(!all.length){ box.innerHTML='<div style="color:#4a6080;font-size:11px;text-align:center;padding:12px;">Nothing starred yet — use ⭐ Star on any message.</div>'; return; }
+    box.innerHTML=all.map((s,i)=>
+        `<div class="search-hit">`
+        +`<div class="search-hit-meta"><span>${esc(s.sender)} · ${esc(_prettyRoom(s.room))}</span><span>${esc(s.date)} ${esc(s.ts)}</span></div>`
+        +`<div>${esc(s.text)}</div>`
+        +`<button class="btn-bubble-act" onclick="unstarAt(${i})">☆ Unstar</button></div>`).join('');
+}
+function unstarAt(i){ const all=_loadStarred(); all.splice(i,1); _saveStarred(all); renderStarred(); }
+
+function exportChat(){
+    const room=safeRoom;
+    if(!room){ alert('Open a chat first.'); return; }
+    const hist=_loadHist(room);
+    if(!hist.length){ alert('No saved history for this chat yet.'); return; }
+    const lines=hist.map(en=>{
+        const when=(en.date?en.date+' ':'')+(en.ts||'');
+        if(en.type==='msg')   return `[${when}] ${en.sender}: ${en.text}`;
+        if(en.type==='sys')   return `[${when}] * ${en.text}`;
+        if(en.type==='image') return `[${when}] ${en.sender}: 🖼 (image)`;
+        if(en.type==='voice') return `[${when}] ${en.sender}: 🎤 (voice message)`;
+        if(en.type==='file')  return `[${when}] ${en.sender}: 📁 ${en.name||'file'}`;
+        return '';
+    }).filter(Boolean);
+    const head=`NeoChat — ${_prettyRoom(room)} — exported ${new Date().toISOString().slice(0,10)}\n`
+        +'─'.repeat(46)+'\n';
+    const blob=new Blob([head+lines.join('\n')+'\n'],{type:'text/plain;charset=utf-8'});
+    const a=document.createElement('a');
+    a.href=URL.createObjectURL(blob);
+    a.download='NeoChat-'+room.replace(/[^\w-]/g,'_')+'-'+new Date().toISOString().slice(0,10)+'.txt';
+    document.body.appendChild(a); a.click();
+    setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); },500);
+    sysMsg('📤 Chat history exported ('+lines.length+' entries).');
+}
+
+// Fun slash commands — transformed into plain text BEFORE sending, so every
+// client (web, desktop, old versions) sees the same ordinary message.
+function slashText(txt){
+    if(!txt.startsWith('/')) return txt;
+    const sp=txt.indexOf(' ');
+    const cmd=(sp<0?txt:txt.slice(0,sp)).toLowerCase();
+    const rest=sp<0?'':txt.slice(sp+1).trim();
+    switch(cmd){
+        case '/me':        return rest?`✦ ${myName} ${rest}`:txt;
+        case '/shrug':     return (rest?rest+' ':'')+'¯\\_(ツ)_/¯';
+        case '/tableflip': return (rest?rest+' ':'')+'(╯°□°)╯︵ ┻━┻';
+        case '/unflip':    return (rest?rest+' ':'')+'┬─┬ ノ( ゜-゜ノ)';
+        case '/roll': {
+            const n=parseInt(rest,10);
+            const sides=(n>=2&&n<=1000)?n:6;
+            return `🎲 ${myName} rolled a ${1+Math.floor(Math.random()*sides)} (1–${sides})`;
+        }
+        case '/flip':      return `🪙 ${myName} flipped a coin — ${Math.random()<0.5?'HEADS':'TAILS'}!`;
+        default: return txt;
+    }
+}
+
+// Distinct two-tone ping when someone @mentions you (live messages only)
+function playMentionPing(){
+    try{
+        const ac=new (window.AudioContext||window.webkitAudioContext)();
+        let t=ac.currentTime;
+        [[880,90],[1320,150]].forEach(([f,ms])=>{
+            const o=ac.createOscillator(), g=ac.createGain();
+            o.frequency.value=f; o.type='sine';
+            g.gain.setValueAtTime(0.0001,t);
+            g.gain.exponentialRampToValueAtTime(0.25,t+0.015);
+            g.gain.exponentialRampToValueAtTime(0.0001,t+ms/1000);
+            o.connect(g); g.connect(ac.destination);
+            o.start(t); o.stop(t+ms/1000+0.02);
+            t+=ms/1000;
+        });
+        setTimeout(()=>{ try{ ac.close(); }catch(e){} },700);
+    }catch(e){}
+}
+
 function accStatus(msg){
     ['acc-reg-status','acc-in-status'].forEach(id=>{
         const el=document.getElementById(id);
@@ -3180,7 +3416,7 @@ function confirmSwitch(){ /* kept for compatibility */ }
         setTimeout(()=>{ try{
             if(plusActive()){
                 if(plusState().seasonal) applyAccent(seasonalAccent());
-                playSparkle();
+                playTierFx();
             }
         }catch(e){} }, 900);
     } else {
@@ -3444,6 +3680,16 @@ const FREE_EDIT_WINDOW_MS=5*60*1000;
 const PLUS_REACTIONS=['👑','💎','🦄','⚡','🌟','🏆'];
 const PLUS_NAME_COLORS=[['Gold','#ffd700'],['Sunset','#f97316'],['Rose','#f43f5e'],['Violet','#a855f7'],['Cyan','#22d3ee'],['Mint','#4ade80'],['Magenta','#e879f9'],['White','#ffffff']];
 const PLUS_SOUNDS=['chime','pulse','retro','none'];
+// ── NeoUltra (tier above NeoPlus — every Plus perk, plus these) ──
+const ULTRA_MAX_TRANSFER=1024*1024*1024;   // 1 GB uploads for NeoUltra
+const ULTRA_BOT_SLOTS=999;                 // effectively unlimited bots
+const ULTRA_REACTIONS=['💠','🔮','🌈','🚀','🎇','🫧'];
+const ULTRA_SOUNDS=['nova','crystal','cosmic'];
+const ULTRA_BACKGROUNDS={
+    prism:'linear-gradient(120deg,rgba(34,211,238,0.18),rgba(167,139,250,0.18),rgba(244,114,182,0.18),rgba(34,211,238,0.18))',
+    cosmos:'linear-gradient(160deg,rgba(10,4,40,0.55),rgba(60,8,68,0.40),rgba(4,30,60,0.55),rgba(10,4,40,0.55))',
+    aurora_live:'linear-gradient(200deg,rgba(24,10,64,0.50),rgba(6,46,40,0.45),rgba(6,28,46,0.50),rgba(24,10,64,0.50))'
+};
 const PLUS_BACKGROUNDS={
     none:'',
     aurora:'linear-gradient(135deg,rgba(24,10,64,0.5),rgba(6,28,46,0.5))',
@@ -3466,6 +3712,7 @@ function plusActive(){
     }
     return true;
 }
+function ultraActive(){ return plusActive() && plusState().tier==='u'; }
 function _b64Bytes(b64){ const bin=atob(b64); const u=new Uint8Array(bin.length); for(let i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i); return u; }
 function _b64uBytes(s){ s=s.replace(/-/g,'+').replace(/_/g,'/'); while(s.length%4)s+='='; return _b64Bytes(s); }
 function _plusPubKey(){
@@ -3478,8 +3725,12 @@ function _plusPubKey(){
 async function verifyPlusCode(code){
     try{
         code=(code||'').trim();
-        if(!code.startsWith('NEOPLUS-')||!code.includes('.')) return null;
-        const body=code.slice(8);
+        // Both tiers verify against the same key; the tier itself lives INSIDE
+        // the signed payload ('t':'u'), so a prefix swap can't fake an upgrade.
+        let body=null;
+        if(code.startsWith('NEOPLUS-')) body=code.slice(8);
+        else if(code.startsWith('NEOULTRA-')) body=code.slice(9);
+        if(body===null||!code.includes('.')) return null;
         const dot=body.indexOf('.');
         const raw=_b64uBytes(body.slice(0,dot));
         const sig=_b64uBytes(body.slice(dot+1));
@@ -3494,25 +3745,32 @@ async function verifyPlusCode(code){
 async function activatePlus(code){
     const payload=await verifyPlusCode(code);
     if(!payload) return {ok:false,msg:'That code is not a valid NeoPlus code.'};
+    const ultra=payload.t==='u';
     const today=new Date().toISOString().slice(0,10);
-    if(payload.exp && today>payload.exp) return {ok:false,msg:'That NeoPlus code has expired.'};
+    if(payload.exp && today>payload.exp)
+        return {ok:false,msg:ultra?'That NeoUltra code has expired.':'That NeoPlus code has expired.'};
     const st=plusState();
+    if(st.active && st.tier==='u' && !ultra)
+        return {ok:false,msg:'💠 NeoUltra is already active — a NeoPlus code would be a downgrade.'};
     const used=st.used_ids||[];
     if(payload.id && used.includes(payload.id) && !st.active)
         return {ok:false,msg:'That code was already used on this device.'};
     st.active=true; st.code_id=payload.id||''; st.exp=payload.exp||null;
+    st.tier=ultra?'u':'p';
     st.since=st.since||today;
     if(st.color===undefined) st.color=PLUS_GOLD;
     if(st.sound===undefined) st.sound='chime';
     if(st.fx===undefined) st.fx=true;
     if(payload.id && !used.includes(payload.id)) st.used_ids=used.concat([payload.id]);
     savePlus(st);
-    return {ok:true,msg:st.exp?('NeoPlus active until '+st.exp):'NeoPlus activated — permanent!'};
+    const tierName=ultra?'NeoUltra':'NeoPlus';
+    return {ok:true,ultra,msg:st.exp?(tierName+' active until '+st.exp):(tierName+' activated — permanent!')};
 }
 function plusWire(fx){
     if(!plusActive()) return null;
     const st=plusState();
     const out={c:st.color||PLUS_GOLD};
+    if(st.tier==='u') out.u=1;
     if(st.badge) out.b=String(st.badge).slice(0,20);
     if(st.bio) out.bio=String(st.bio).slice(0,80);
     if(fx && st.fx!==false) out.fx=1;
@@ -3525,14 +3783,16 @@ function notePlusSender(sender, plus){
     if(typeof plus.b==='string' && plus.b.trim()) info.b=plus.b.trim().slice(0,20);
     if(typeof plus.bio==='string' && plus.bio.trim()) info.bio=plus.bio.trim().slice(0,80);
     if(plus.fx===1) info.fx=1;
+    if(plus.u===1) info.u=1;
     if(Object.keys(info).length){ info.c=info.c||PLUS_GOLD; _plusSenders[sender]=info; }
 }
 function plusInfoFor(sender){
     if(sender===myName && plusActive()) return plusWire()||{c:PLUS_GOLD};
     return _plusSenders[sender]||null;
 }
-function maxTransferBytes(){ return plusActive()?PLUS_MAX_TRANSFER:FREE_MAX_TRANSFER; }
+function maxTransferBytes(){ return ultraActive()?ULTRA_MAX_TRANSFER:plusActive()?PLUS_MAX_TRANSFER:FREE_MAX_TRANSFER; }
 function isPlusRoom(code){ return (code||'').trim().toUpperCase().startsWith('PLUS'); }
+function isUltraRoom(code){ return (code||'').trim().toUpperCase().startsWith('ULTRA'); }
 function seasonalAccent(){
     const m=new Date().getMonth()+1;
     if(m===12||m<=2) return '#7dd3fc';
@@ -3547,7 +3807,8 @@ function _hexRgba(hex,a){
 }
 
 // ── NeoPlus send effect — golden particle burst over the chat ──
-function playSparkle(){
+// (NeoUltra reuses the engine with its own palette via playNova.)
+function playSparkle(palette){
     try{
         const host=document.body;
         const cv=document.createElement('canvas');
@@ -3555,7 +3816,7 @@ function playSparkle(){
         cv.width=innerWidth; cv.height=innerHeight;
         host.appendChild(cv);
         const ctx=cv.getContext('2d');
-        const cols=['#ffd700','#ffe98a','#fff6d0','#f7b733'];
+        const cols=(palette&&palette.length)?palette:['#ffd700','#ffe98a','#fff6d0','#f7b733'];
         const parts=Array.from({length:26},()=>({
             x:(0.15+Math.random()*0.7)*cv.width,
             y:cv.height-(0.05+Math.random()*0.2)*cv.height,
@@ -3578,11 +3839,19 @@ function playSparkle(){
     }catch(e){}
 }
 
+// ── NeoUltra "Nova" send effect — cyan/violet/pink starburst ──
+function playNova(){ playSparkle(['#22d3ee','#a78bfa','#f472b6','#ffffff','#67e8f9']); }
+function playTierFx(){ ultraActive()?playNova():playSparkle(); }
+
 // ── NeoPlus notification melodies (WebAudio, no files) ──
 const _PLUS_MELODIES={
     chime:[[880,90],[1175,90],[1568,140]],
     pulse:[[440,70],[0,40],[660,70],[0,40],[880,110]],
-    retro:[[523,80],[659,80],[784,80],[1047,140]]
+    retro:[[523,80],[659,80],[784,80],[1047,140]],
+    // NeoUltra exclusives
+    nova:[[660,80],[880,80],[1320,90],[1760,170]],
+    crystal:[[1568,70],[2093,70],[1568,70],[2637,180]],
+    cosmic:[[220,120],[330,90],[440,90],[660,90],[880,200]]
 };
 function playPlusSound(){
     if(!plusActive()) return false;
@@ -3677,10 +3946,18 @@ function maybeChainBots(botReply, excludeHandle){
 function applyPlusBg(){
     const box=document.getElementById('messages');
     if(!box) return;
-    if(!plusActive()){ box.style.background=''; box.style.backgroundSize=''; return; }
+    box.style.animation=''; box.style.backgroundSize='';
+    if(!plusActive()){ box.style.background=''; return; }
     const st=plusState();
     if(st.bg_img){
         box.style.background=`url("${st.bg_img}") center/cover no-repeat`;
+        return;
+    }
+    // NeoUltra animated backgrounds — the gradient slowly drifts
+    if(ultraActive() && st.bg && ULTRA_BACKGROUNDS[st.bg]){
+        box.style.background=ULTRA_BACKGROUNDS[st.bg];
+        box.style.backgroundSize='300% 300%';
+        box.style.animation='ultraBgShift 18s ease infinite';
         return;
     }
     box.style.background=PLUS_BACKGROUNDS[st.bg||'none']||'';
@@ -3694,14 +3971,15 @@ function showProfileCard(sender){
     if(old) old.remove();
     const av=(typeof _avatarCache!=='undefined'&&_avatarCache[sender.toLowerCase()])||null;
     const col=plus?(plus.c||PLUS_GOLD):'#e8eaf6';
+    const isU=!!(plus&&plus.u===1);
     const wrap=document.createElement('div');
     wrap.id='plus-profile-card';
-    wrap.innerHTML=`<div class="ppc-inner" style="border-color:${plus?_hexRgba(col,0.6):'rgba(255,255,255,0.2)'}">
-        <div class="ppc-av" style="background:${av?`url(${av}) center/cover`:_avatarColor(sender)}">${av?'':esc(sender[0].toUpperCase())}</div>
-        <div class="ppc-name" style="color:${col}">${esc(sender)}</div>
-        ${plus?`<div class="ppc-badge" style="background:${_hexRgba(col,0.9)}">⭐ ${esc(plus.b||'NeoPlus')}</div>`:''}
+    wrap.innerHTML=`<div class="ppc-inner${isU?' ultra-frame':''}" style="border-color:${isU?'transparent':plus?_hexRgba(col,0.6):'rgba(255,255,255,0.2)'}">
+        <div class="ppc-av${isU?' ultra-ring':''}" style="background:${av?`url(${av}) center/cover`:_avatarColor(sender)}">${av?'':esc(sender[0].toUpperCase())}</div>
+        <div class="ppc-name${isU?' ultra-name':''}"${isU?'':` style="color:${col}"`}>${esc(sender)}</div>
+        ${plus?`<div class="ppc-badge" style="background:${isU?'linear-gradient(90deg,#22d3ee,#a78bfa,#f472b6)':_hexRgba(col,0.9)}">${isU?'💠':'⭐'} ${esc(plus.b||(isU?'NeoUltra':'NeoPlus'))}</div>`:''}
         ${plus&&plus.bio?`<div class="ppc-bio">${esc(plus.bio)}</div>`:''}
-        <div class="ppc-sub">${plus?'⭐ NeoPlus member':'NeoChat member'}</div>
+        <div class="ppc-sub">${isU?'💠 NeoUltra member':plus?'⭐ NeoPlus member':'NeoChat member'}</div>
     </div>`;
     wrap.onclick=()=>wrap.remove();
     document.body.appendChild(wrap);
@@ -3807,6 +4085,11 @@ async function doConnect(){
     // NeoPlus-only rooms — codes starting with PLUS need an active NeoPlus
     if(isPlusRoom(code) && !plusActive() && !code.startsWith('__dm__')){
         loginStatus('⭐ This is a NeoPlus-only room. Activate NeoPlus in your Profile!','#ffd700');
+        return;
+    }
+    // NeoUltra-only rooms — codes starting with ULTRA need an active NeoUltra
+    if(isUltraRoom(code) && !ultraActive() && !code.startsWith('__dm__')){
+        loginStatus('💠 This is a NeoUltra-only room. Activate NeoUltra in your Profile!','#22d3ee');
         return;
     }
     const roomPw=(document.getElementById('room-pw-in')||{}).value||'';
@@ -4053,7 +4336,7 @@ async function doConnect(){
                     if(d.sender!==myName){
                         _floodCheck(d.sender);
                         addBubble(d.sender,d.text,d.ts,false,d.quote||null,d.thread_id||null);
-                        if(d.plus&&d.plus.fx===1) playSparkle();
+                        if(d.plus&&d.plus.fx===1){ d.plus.u===1?playNova():playSparkle(); }
                         if(d.ttl>0){
                             const bEl=document.getElementById('b'+(_bubbleCounter-1));
                             if(bEl) setTimeout(()=>{
@@ -4063,6 +4346,7 @@ async function doConnect(){
                         }
                         if(d.text&&myName&&d.text.toLowerCase().includes('@'+myName.toLowerCase())){
                             _showNotif(d.sender,d.text);
+                            playMentionPing();
                         }
                         // Platform of Bots — host our bots for the room: when anyone
                         // else addresses one of our @bots, we publish its reply.
@@ -4109,7 +4393,7 @@ async function doConnect(){
             applyPlusBg();
             startBotSchedules();
             // NeoPlus welcome — golden burst on the first room of the session
-            if(plusActive()&&!_plusWelcomeDone){ _plusWelcomeDone=true; setTimeout(playSparkle,700); }
+            if(plusActive()&&!_plusWelcomeDone){ _plusWelcomeDone=true; setTimeout(playTierFx,700); }
             if(typeof Notification!=='undefined'&&Notification.permission==='default')
                 document.getElementById('notif-bar').classList.add('show');
         },
@@ -4153,9 +4437,10 @@ function pubSystem(text){
 
 function sendMsg(){
     const inp=document.getElementById('msg-in');
-    const txt=inp.value.trim();
+    let txt=inp.value.trim();
     if(!txt||!clients.length)return;
     if(_mutedUsers.has(myName.toLowerCase())){ sysMsg('🔇 You are muted and cannot send messages.'); return; }
+    txt=slashText(txt);   // /me /roll /flip /shrug … → plain text everyone sees
     inp.value='';
     _clearDraft(safeRoom);
     // Keep focus so the phone keyboard stays open for the next message
@@ -4167,7 +4452,7 @@ function sendMsg(){
     const _pw=plusWire(Math.random()<0.2);
     if(_pw) msg.plus=_pw;
     e2ePub(topic,JSON.stringify(msg),{qos:1});
-    if(_pw&&_pw.fx===1) playSparkle();
+    if(_pw&&_pw.fx===1) playTierFx();
     // Show own message
     addBubble(myName,txt,msg.ts,true,msg.quote||null,msg.thread_id||null);
     {
@@ -4451,12 +4736,14 @@ function botSave(){
         st.textContent='⚠  Add at least one rule or a fallback reply.'; return; }
     if(_loadBots().some(o=>(o.handle||'').toLowerCase()===handle && o.id!==_botEditId)){
         st.textContent='⚠  You already have a bot with that handle.'; return; }
-    // Bot slots: 3 free / 10 with NeoPlus (editing existing bots is fine)
+    // Bot slots: 3 free / 10 with NeoPlus / unlimited with NeoUltra
     if(!_botEditId){
-        const limit=plusActive()?PLUS_BOT_SLOTS:FREE_BOT_SLOTS;
+        const limit=ultraActive()?ULTRA_BOT_SLOTS:plusActive()?PLUS_BOT_SLOTS:FREE_BOT_SLOTS;
         if(_loadBots().length>=limit){
             st.textContent='⚠  Bot limit reached ('+limit+'). '
-                +(plusActive()?'Delete a bot first.':'⭐ NeoPlus raises it to 10!');
+                +(ultraActive()?'Delete a bot first.'
+                  :plusActive()?'💠 NeoUltra makes bots unlimited!'
+                  :'⭐ NeoPlus raises it to 10!');
             return;
         }
     }
@@ -4647,10 +4934,17 @@ function addBubble(sender, text, ts, mine, quote, threadId){
         ? ' <span style="color:#ff3366;font-size:9px;font-weight:700;">[Admin NeoNext]</span>'
         : (sender==='NeoBot' || _botHandleSet().has(sender.toLowerCase()))
         ? ' <span style="color:#22d3ee;font-size:9px;font-weight:700;">🤖 Bot</span>' : '';
+    const plusU = !!(plus && plus.u===1);
     if(plus){
-        // NeoPlus: gold border + ⭐ badge (with custom title) + name color
-        d.style.borderColor=_hexRgba(plus.c||PLUS_GOLD,0.55);
-        badge+=` <span class="plus-name-star" style="color:${plus.c||PLUS_GOLD}">⭐${plus.b?' '+esc(plus.b):''}</span>`;
+        if(plusU){
+            // NeoUltra: glowing border + 💠 badge + animated gradient name (CSS)
+            d.classList.add('ultra-bubble');
+            badge+=` <span class="plus-name-star" style="color:#a78bfa">💠${plus.b?' '+esc(plus.b):''}</span>`;
+        } else {
+            // NeoPlus: gold border + ⭐ badge (with custom title) + name color
+            d.style.borderColor=_hexRgba(plus.c||PLUS_GOLD,0.55);
+            badge+=` <span class="plus-name-star" style="color:${plus.c||PLUS_GOLD}">⭐${plus.b?' '+esc(plus.b):''}</span>`;
+        }
     }
 
     // @mention highlight
@@ -4673,6 +4967,7 @@ function addBubble(sender, text, ts, mine, quote, threadId){
               `<button class="btn-bubble-act" onclick="sendDeleteMsg('${esc(ts)}')">🗑 Delete</button>`
             : '')+
         `<button class="btn-bubble-act" onclick="forwardBubble(${bid})">↪ Forward</button>`+
+        `<button class="btn-bubble-act" onclick="starBubble(${bid})">⭐ Star</button>`+
         `<button class="btn-bubble-act" onclick="_pinBubble(${bid})">📌 Pin</button>`+
         `<button class="btn-bubble-act" onclick="startThread('${msgId.replace(/'/g,"\\'")}')">💬 Thread</button>`+
         `<button class="btn-bubble-act" onclick="translateBubble(${bid})">🌐 Translate</button>`+
@@ -4685,7 +4980,7 @@ function addBubble(sender, text, ts, mine, quote, threadId){
             '<span style="color:#ff3366;font-weight:700;">$1</span>')
         : renderMD(text);
 
-    d.innerHTML=`<div class="b-name"${plus?` style="color:${plus.c||PLUS_GOLD};cursor:pointer;"`:' style="cursor:pointer;"'}>${esc(sender)}${badge}</div>`+
+    d.innerHTML=`<div class="b-name${plusU?' ultra-name':''}"${plus&&!plusU?` style="color:${plus.c||PLUS_GOLD};cursor:pointer;"`:' style="cursor:pointer;"'}>${esc(sender)}${badge}</div>`+
         quoteHtml+
         `<div class="b-text">${renderedText}</div>`+
         `<div class="b-ts">${esc(ts)} <button class="btn-react-add" title="Add reaction">+😊</button></div>`+
@@ -5055,7 +5350,9 @@ function handleAnyFile(input){
     if(file.size>maxTransferBytes()){
         const lim=maxTransferBytes()/1024/1024;
         alert('This file is '+(file.size/1024/1024).toFixed(0)+' MB. The limit is '+lim+' MB — please choose a smaller file or video.'
-            +(plusActive()?'':'\n⭐ NeoPlus raises the limit to 500 MB.'));
+            +(ultraActive()?''
+              :plusActive()?'\n💠 NeoUltra raises the limit to 1 GB.'
+              :'\n⭐ NeoPlus raises the limit to 500 MB.'));
         return;
     }
     const CHUNK=100*1024; // 100 KB
@@ -5976,6 +6273,18 @@ function showEmojiPicker(bid, msgId, e){
         });
         pk.dataset.plusAdded='1';
     }
+    // NeoUltra exclusive reactions follow the NeoPlus row
+    if(ultraActive() && !pk.dataset.ultraAdded){
+        ULTRA_REACTIONS.forEach(em=>{
+            const b=document.createElement('button');
+            b.className='emoji-btn';
+            b.style.background='rgba(167,139,250,0.10)';
+            b.textContent=em;
+            b.onclick=()=>pickReaction(em);
+            pk.appendChild(b);
+        });
+        pk.dataset.ultraAdded='1';
+    }
     pk.classList.add('show');
     const r = e.target.getBoundingClientRect();
     pk.style.left = Math.min(r.left, window.innerWidth-180)+'px';
@@ -6645,6 +6954,7 @@ function openProfileScreen(){
     const dot = document.getElementById('accent-color-dot');
     if(dot) dot.style.background = getAccent();
     renderPlusCard();
+    _applyOwnRing();
     s.classList.add('open');
 }
 
@@ -6655,7 +6965,10 @@ function renderPlusCard(){
     const st=plusState();
     if(plusActive()){
         const untl=st.exp?('until '+st.exp):'permanent';
-        card.innerHTML=`<div class="profile-card-title" style="color:#ffd700;">⭐ NEOPLUS — ACTIVE (${esc(untl)})</div>`
+        const ultra=ultraActive();
+        card.innerHTML=(ultra
+                ?`<div class="profile-card-title ultra-name" style="font-weight:800;">💠 NEOULTRA — ACTIVE (${esc(untl)})</div>`
+                :`<div class="profile-card-title" style="color:#ffd700;">⭐ NEOPLUS — ACTIVE (${esc(untl)})</div>`)
             +plusOptBtn('🏷','Badge title', st.badge||'—', 'plusSetBadge()')
             +plusOptBtn('🎨','Name color', '<span style="display:inline-block;width:14px;height:14px;border-radius:50%;vertical-align:middle;background:'+esc(st.color||PLUS_GOLD)+'"></span>', 'plusSetColor()')
             +plusOptBtn('💬','Profile bio', st.bio?'✓':'—', 'plusSetBio()')
@@ -6663,12 +6976,27 @@ function renderPlusCard(){
             +plusOptBtn('🔔','Notification sound', st.sound||'chime', 'plusSetSound()')
             +plusOptBtn('✨','Send effects', st.fx!==false?'ON':'OFF', 'plusToggleFx()')
             +plusOptBtn('🌗','Seasonal theme', st.seasonal?'ON':'OFF', 'plusToggleSeasonal()')
-            +plusOptBtn('👑','Gold theme', '', 'plusGoldTheme()');
+            +plusOptBtn('👑','Gold theme', '', 'plusGoldTheme()')
+            +(ultra
+                ? plusOptBtn('💍','Avatar ring', st.ring!==false?'ON':'OFF', 'ultraToggleRing()')
+                : plusOptBtn('💠','Upgrade to NeoUltra…', '', 'plusPromptActivate()'));
     } else {
         card.innerHTML=`<div class="profile-card-title" style="color:#ffd700;">⭐ NEOPLUS</div>`
             +plusOptBtn('⭐','Activate NeoPlus…', '', 'plusPromptActivate()')
-            +`<div style="color:#4a6080;font-size:10px;padding:2px 14px 10px;">Gold name &amp; badge · 500 MB uploads · animated stickers · themes · scheduling · and more</div>`;
+            +`<div style="color:#4a6080;font-size:10px;padding:2px 14px 10px;">Gold name &amp; badge · 500 MB uploads · animated stickers · themes · scheduling · and more</div>`
+            +`<div class="profile-card-title ultra-name" style="font-weight:800;margin-top:6px;">💠 NEOULTRA</div>`
+            +`<div style="color:#4a6080;font-size:10px;padding:2px 14px 10px;">Gradient name &amp; 💠 badge · 1 GB uploads · unlimited bots · animated backgrounds · any name color · Nova effects</div>`;
     }
+}
+function ultraToggleRing(){
+    const st=plusState(); st.ring=st.ring===false; savePlus(st);
+    renderPlusCard(); _applyOwnRing();
+}
+function _applyOwnRing(){
+    const av=document.getElementById('profile-avatar-xl');
+    if(av) av.classList.toggle('ultra-ring', ultraActive()&&plusState().ring!==false);
+    const nm=document.getElementById('profile-name-xl');
+    if(nm) nm.classList.toggle('ultra-name', ultraActive());
 }
 function plusOptBtn(icon,label,value,handler){
     return `<button class="profile-opt" onclick="${handler}">`
@@ -6678,11 +7006,14 @@ function plusOptBtn(icon,label,value,handler){
         +`<span class="profile-opt-arrow">›</span></button>`;
 }
 async function plusPromptActivate(){
-    const code=prompt('Paste your NeoPlus activation code:');
+    const code=prompt('Paste your NeoPlus / NeoUltra activation code:');
     if(!code||!code.trim()) return;
     const res=await activatePlus(code.trim());
-    alert(res.ok?('⭐ '+res.msg):res.msg);
-    if(res.ok){ renderPlusCard(); playSparkle(); }
+    alert(res.ok?((res.ultra?'💠 ':'⭐ ')+res.msg):res.msg);
+    if(res.ok){
+        renderPlusCard(); _applyOwnRing(); applyPlusBg();
+        res.ultra?playNova():playSparkle();
+    }
 }
 function plusSetBadge(){
     const st=plusState();
@@ -6693,8 +7024,18 @@ function plusSetBadge(){
 function plusSetColor(){
     const st=plusState();
     const names=PLUS_NAME_COLORS.map((c,i)=>`${i+1} — ${c[0]}`).join('\n');
-    const v=prompt('Pick a name color (1–'+PLUS_NAME_COLORS.length+'):\n'+names,'1');
+    // NeoUltra: any hex color, not just the presets
+    const extra=ultraActive()?`\n${PLUS_NAME_COLORS.length+1} — 💠 custom hex…`:'';
+    const v=prompt('Pick a name color (1–'+(PLUS_NAME_COLORS.length+(ultraActive()?1:0))+'):\n'+names+extra,'1');
+    if(v===null) return;
     const i=parseInt(v||'',10)-1;
+    if(ultraActive()&&i===PLUS_NAME_COLORS.length){
+        const h=prompt('Enter any hex color (e.g. #00ff88):', st.color||'#22d3ee');
+        if(!h) return;
+        if(/^#[0-9a-fA-F]{6}$/.test(h.trim())){ st.color=h.trim().toLowerCase(); savePlus(st); renderPlusCard(); }
+        else alert('That is not a valid hex color — use the form #RRGGBB.');
+        return;
+    }
     if(isNaN(i)||i<0||i>=PLUS_NAME_COLORS.length) return;
     st.color=PLUS_NAME_COLORS[i][1]; savePlus(st); renderPlusCard();
 }
@@ -6706,8 +7047,9 @@ function plusSetBio(){
 }
 function plusSetBg(){
     const st=plusState();
-    const keys=Object.keys(PLUS_BACKGROUNDS);
-    const v=prompt('Chat background:\n'+keys.map((k,i)=>`${i+1} — ${k}`).join('\n')
+    const bgs=ultraActive()?Object.assign({},PLUS_BACKGROUNDS,ULTRA_BACKGROUNDS):PLUS_BACKGROUNDS;
+    const keys=Object.keys(bgs);
+    const v=prompt('Chat background:\n'+keys.map((k,i)=>`${i+1} — ${ULTRA_BACKGROUNDS[k]!==undefined?'💠 ':''}${k}`).join('\n')
         +`\n${keys.length+1} — custom image…`, '1');
     const i=parseInt(v||'',10)-1;
     if(isNaN(i)||i<0||i>keys.length) return;
@@ -6733,15 +7075,19 @@ function plusSetBg(){
 }
 function plusSetSound(){
     const st=plusState();
-    const v=prompt('NeoPlus melody:\n1 — chime (soft bell)\n2 — pulse (sci-fi blips)\n3 — retro (arcade jingle)\n4 — none (silent)','1');
+    const list=ultraActive()?['chime','pulse','retro','nova','crystal','cosmic','none']:PLUS_SOUNDS;
+    const labels={chime:'soft bell',pulse:'sci-fi blips',retro:'arcade jingle',
+                  nova:'💠 rising nova',crystal:'💠 crystal ping',cosmic:'💠 deep-space sweep',none:'silent'};
+    const v=prompt((ultraActive()?'NeoUltra melody:\n':'NeoPlus melody:\n')
+        +list.map((k,i)=>`${i+1} — ${k} (${labels[k]})`).join('\n'),'1');
     const i=parseInt(v||'',10)-1;
-    if(isNaN(i)||i<0||i>=PLUS_SOUNDS.length) return;
-    st.sound=PLUS_SOUNDS[i]; savePlus(st); renderPlusCard();
+    if(isNaN(i)||i<0||i>=list.length) return;
+    st.sound=list[i]; savePlus(st); renderPlusCard();
     if(st.sound!=='none') playPlusSound();
 }
 function plusToggleFx(){
     const st=plusState(); st.fx=st.fx===false; savePlus(st); renderPlusCard();
-    if(st.fx) playSparkle();
+    if(st.fx) playTierFx();
 }
 function plusToggleSeasonal(){
     const st=plusState(); st.seasonal=!st.seasonal; savePlus(st);
@@ -7284,15 +7630,18 @@ function _handleNotifyMessage(raw){
             }
         }
         else if(d.type==='plus_grant' && d.to && d.code &&
-                d.to.toLowerCase()===(myName||'').toLowerCase() && !plusActive()){
-            // Remote NeoPlus activation from the creator's admin panel
+                d.to.toLowerCase()===(myName||'').toLowerCase() && !ultraActive()){
+            // Remote NeoPlus/NeoUltra activation from the creator's admin panel
+            // (an Ultra grant upgrades an existing Plus member in place)
             activatePlus(d.code).then(res=>{
                 if(!res.ok) return;
-                try{ renderPlusCard(); }catch(e){}
-                playSparkle();
+                try{ renderPlusCard(); _applyOwnRing(); }catch(e){}
+                res.ultra?playNova():playSparkle();
                 const nb=document.getElementById('notif-bar');
                 if(nb){
-                    nb.innerHTML=`⭐ You have been granted <b>NeoPlus</b>! 🎉 (${esc(res.msg)})`+
+                    nb.innerHTML=(res.ultra
+                            ?`💠 You have been granted <b>NeoUltra</b>! 🎉 (${esc(res.msg)})`
+                            :`⭐ You have been granted <b>NeoPlus</b>! 🎉 (${esc(res.msg)})`)+
                         `<button class="btn-notif-dismiss" onclick="this.parentElement.classList.remove('show')">✕</button>`;
                     nb.classList.add('show');
                 }
@@ -7395,13 +7744,15 @@ async function grantPlus(){
     const user=(document.getElementById('plus-user-in')||{value:''}).value.trim();
     const code=(document.getElementById('plus-code-in')||{value:''}).value.trim();
     if(!user||!code){ if(st) st.textContent='Enter a username and a code.'; return; }
-    if(!(await verifyPlusCode(code))){
+    const verified=await verifyPlusCode(code);
+    if(!verified){
         if(st) st.textContent='⚠ That is not a valid NeoPlus code — mint one with neoplus_codegen.py.';
         return;
     }
+    const isU=verified.t==='u';
     const payload=JSON.stringify({type:'plus_grant', to:user, code, from:'MrMiner', ts:now()});
     _oneShotPublish('neochat/__notify__/'+user.toLowerCase(), payload, true);
-    if(st) st.textContent='⭐ NeoPlus grant sent to '+user+' — it activates when their app is online.';
+    if(st) st.textContent=(isU?'💠 NeoUltra':'⭐ NeoPlus')+' grant sent to '+user+' — it activates when their app is online.';
     const ci=document.getElementById('plus-code-in'); if(ci) ci.value='';
 }
 
