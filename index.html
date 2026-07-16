@@ -1546,6 +1546,7 @@ window.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key==='Escap
     <div id="login-chatlist" style="display:none;flex-direction:column;flex:1;min-height:0;">
         <div class="chatlist-title-row">
             <span class="chatlist-title">Chats</span>
+            <button class="chatlist-settings-btn" onclick="openProfileScreen()" title="Profile">👤</button>
             <button class="chatlist-settings-btn" onclick="openSettingsSheet()" title="Settings">⚙️</button>
         </div>
         <div class="chatlist-search">
@@ -2023,6 +2024,10 @@ window.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key==='Escap
 
 <div id="settings-sheet" onclick="if(event.target===this)closeSettingsSheet()">
     <div class="settings-sheet-inner">
+        <button class="settings-item" onclick="closeSettingsSheet();openProfileScreen()">
+            <span class="settings-item-icon">👤</span>
+            <span class="settings-item-label">Profile</span>
+        </button>
         <button class="settings-item" onclick="pickAccentColor();closeSettingsSheet()">
             <span class="settings-item-icon">🎨</span>
             <span class="settings-item-label">Accent Color</span>
@@ -2060,6 +2065,11 @@ window.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key==='Escap
             <span class="settings-item-label">Text Size</span>
             <span class="settings-item-value" id="settings-textsize-val"></span>
         </button>
+        <div class="settings-item" style="pointer-events:none;opacity:0.65;">
+            <span class="settings-item-icon">ℹ️</span>
+            <span class="settings-item-label">Version</span>
+            <span class="settings-item-value">v31 · Ultra Update</span>
+        </div>
         <button class="settings-item" onclick="closeSettingsSheet()">
             <span class="settings-item-icon">✕</span>
             <span class="settings-item-label">Close</span>
@@ -2594,6 +2604,7 @@ const RU = {
   'Self-Destruct':'Самоуничтожение','Self-destruct message':'Самоуничтожающееся сообщение',
   '⏱ 10 seconds':'⏱ 10 секунд','⏱ 30 seconds':'⏱ 30 секунд','⏱ 60 seconds':'⏱ 60 секунд',
   'Chats':'Чаты','Contacts':'Контакты','Groups':'Группы','Profile':'Профиль',
+  'Version':'Версия',
   'Settings':'Настройки','Bots':'Боты',
   'today':'сегодня','yesterday':'вчера',
   // ── drawer / sidebar ──
