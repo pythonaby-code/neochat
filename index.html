@@ -2068,7 +2068,7 @@ window.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key==='Escap
         <div class="settings-item" style="pointer-events:none;opacity:0.65;">
             <span class="settings-item-icon">ℹ️</span>
             <span class="settings-item-label">Version</span>
-            <span class="settings-item-value">v31 · Ultra Update</span>
+            <span class="settings-item-value">v32 · Ultra Update</span>
         </div>
         <button class="settings-item" onclick="closeSettingsSheet()">
             <span class="settings-item-icon">✕</span>
@@ -2481,7 +2481,10 @@ window.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key==='Escap
                autocomplete="off" autocorrect="off" autocapitalize="off" style="font-size:13px;">
         <input id="plus-code-in" type="text" placeholder="Activation code (from neoplus_codegen.py)…"
                autocomplete="off" autocorrect="off" autocapitalize="off" style="font-size:13px;">
-        <button class="btn-big-admin" style="background:rgba(255,215,0,0.12);border:1px solid rgba(255,215,0,0.45);color:#ffd700;padding:12px;font-size:13px;" onclick="grantPlus()">⭐ Grant NeoPlus</button>
+        <div style="display:flex;gap:10px;">
+            <button class="btn-big-admin" style="background:rgba(255,215,0,0.12);border:1px solid rgba(255,215,0,0.45);color:#ffd700;padding:12px;font-size:13px;flex:1;" onclick="grantPlus('p')">⭐ Grant NeoPlus</button>
+            <button class="btn-big-admin" style="background:rgba(167,139,250,0.14);border:1px solid rgba(167,139,250,0.55);color:#a78bfa;padding:12px;font-size:13px;flex:1;" onclick="grantPlus('u')">💠 Grant NeoUltra</button>
+        </div>
         <div id="plus-grant-status" style="color:#4a6080;font-size:11px;min-height:14px;"></div>
     </div>
 
@@ -2521,6 +2524,11 @@ const RU = {
   'Username to grant NeoPlus…':'Кому выдать NeoPlus…',
   'Activation code (from neoplus_codegen.py)…':'Код активации (из neoplus_codegen.py)…',
   '⭐ Grant NeoPlus':'⭐ Выдать NeoPlus',
+  '💠 Grant NeoUltra':'💠 Выдать NeoUltra',
+  '⚠ That is a NeoPlus code — mint an Ultra one with: py neoplus_codegen.py --ultra':
+      '⚠ Это код NeoPlus — создайте Ultra-код командой: py neoplus_codegen.py --ultra',
+  '⚠ That is a NeoUltra code — use the 💠 Grant NeoUltra button.':
+      '⚠ Это код NeoUltra — используйте кнопку «💠 Выдать NeoUltra».',
   'Gold name & badge · 500 MB uploads · animated stickers · themes · scheduling · and more':
       'Золотое имя и бейдж · загрузки 500 МБ · живые стикеры · темы · отложенные сообщения · и не только',
   // ── NeoUltra ──
@@ -7750,7 +7758,7 @@ function _deleteGroupById(id){ _saveGroups(_loadGroups().filter(x=>x.id!==id)); 
 function _genId(){ return Math.random().toString(36).slice(2,14); }
 
 // One-shot publish (works even when not joined to a room), mirrors Python's invite.
-async function grantPlus(){
+async function grantPlus(expect){
     const st=document.getElementById('plus-grant-status');
     const user=(document.getElementById('plus-user-in')||{value:''}).value.trim();
     const code=(document.getElementById('plus-code-in')||{value:''}).value.trim();
@@ -7761,6 +7769,16 @@ async function grantPlus(){
         return;
     }
     const isU=verified.t==='u';
+    // The button pressed must match the code's tier, so a Plus code can't be
+    // handed out as "Ultra" by mistake (the code itself decides the tier).
+    if(expect==='u' && !isU){
+        if(st) st.textContent='⚠ That is a NeoPlus code — mint an Ultra one with: py neoplus_codegen.py --ultra';
+        return;
+    }
+    if(expect==='p' && isU){
+        if(st) st.textContent='⚠ That is a NeoUltra code — use the 💠 Grant NeoUltra button.';
+        return;
+    }
     const payload=JSON.stringify({type:'plus_grant', to:user, code, from:'MrMiner', ts:now()});
     _oneShotPublish('neochat/__notify__/'+user.toLowerCase(), payload, true);
     if(st) st.textContent=(isU?'💠 NeoUltra':'⭐ NeoPlus')+' grant sent to '+user+' — it activates when their app is online.';
